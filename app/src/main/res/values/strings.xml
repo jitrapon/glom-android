@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">Glom</string>
+    <string name="title_activity_location">Location</string>
+    <string name="locate_me_btn_label">Locate</string>
+    <string name="locate_me_btn_searching">Just a moment...</string>
+    <string name="marker_found_title">You are here</string>
+    <string name="marker_found_snippet">Okay?</string>
+    <string name="title_activity_profile">ProfileActivity</string>
+
+    <string name="profileActivityLabel">My Profile</string>
+
+    <string name="locationActivityLabel">My Location</string>
+
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="title_section1">Basic</string>
+    <string name="title_section2">Mood</string>
+    <string name="title_section3">Goal</string>
+</resources>

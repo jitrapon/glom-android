@@ -1,0 +1,9 @@
+<resources>
+    <!--
+    TODO: Before you run your application, you need a Google Maps API key.
+    https://console.developers.google.com/project/coral-sonar-100904/apiui/credential/key/0
+    -->
+    <string name="google_maps_key" translatable="false" templateMergeStrategy="preserve">
+        AIzaSyC-snCsI7gM6HR5eG1K23iqgummBbhg3-E
+    </string>
+</resources>
