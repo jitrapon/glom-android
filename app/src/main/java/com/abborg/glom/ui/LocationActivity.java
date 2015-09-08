@@ -23,6 +23,9 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+/**
+ * Main activity that renders map and show the user's friends' locations
+ */
 public class LocationActivity extends FragmentActivity implements OnMapReadyCallback,
         LocationListener, ConnectionCallbacks, OnConnectionFailedListener {
 
