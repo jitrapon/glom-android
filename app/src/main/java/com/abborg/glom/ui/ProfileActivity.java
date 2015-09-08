@@ -11,7 +11,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.abborg.glom.Const;
 import com.abborg.glom.R;
+import com.abborg.glom.model.User;
 
 import java.util.Locale;
 
@@ -34,16 +36,33 @@ public class ProfileActivity extends AppCompatActivity implements ActionBar.TabL
      */
     ViewPager mViewPager;
 
+    /* This profile's user */
+    private User user;
+
+    /**
+     * This is supposed to be in the main activity not here
+     */
+    private void fillDefaultUserInfo() {
+        user = new User(Const.TEST_USER_FULL_NAME, Const.TEST_USER_NAME, null);
+    }
+
+    public User getUser() {
+        return user;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
+        // DEBUG test user
+        fillDefaultUserInfo();
+
         // Set up the action bar.
         final ActionBar actionBar = getSupportActionBar();
         actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
 
-        actionBar.setTitle(R.string.profileActivityLabel);
+        actionBar.setTitle(R.string.profile_activity_label);
 
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.

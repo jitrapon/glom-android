@@ -14,6 +14,7 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.abborg.glom.R;
+import com.abborg.glom.model.User;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -21,7 +22,6 @@ import com.abborg.glom.R;
 public class ProfileBasicFragment extends Fragment implements View.OnClickListener {
 
     Button mapButton;
-    public final static String USER = "com.abborg.glom.user";
     static ProfileBasicFragment instance;
 
     /**
@@ -58,9 +58,11 @@ public class ProfileBasicFragment extends Fragment implements View.OnClickListen
         //do what you want to do when button is clicked
         switch (v.getId()) {
             case R.id.buttonMap:
+                User user = ((ProfileActivity) this.getActivity()).getUser();
+
                 Toast.makeText(getActivity().getApplicationContext(), "Showing map...", Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent(this.getActivity().getApplicationContext(), LocationActivity.class);
-                intent.putExtra(USER, "Jitrapon");
+                intent.putExtra(getString(R.string.main_user_intent_key), user);
                 startActivity(intent);
                 break;
         }
