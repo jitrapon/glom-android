@@ -1,10 +1,14 @@
 package com.abborg.glom.ui;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -13,16 +17,17 @@ import android.widget.Toast;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.model.User;
+import com.abborg.glom.service.BaseGcmListenerService;
+import com.abborg.glom.service.BaseInstanceIDListenerService;
+import com.abborg.glom.service.RegistrationIntentService;
+import com.abborg.glom.utils.Connection;
 import com.abborg.glom.utils.RequestHandler;
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
-import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
@@ -31,20 +36,27 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.gson.Gson;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Main activity that renders map and show the user's friends' locations
+ * Updates user's location in SQLite
  */
 public class LocationActivity extends FragmentActivity implements OnMapReadyCallback,
-        LocationListener, ConnectionCallbacks, OnConnectionFailedListener {
+        LocationListener {
 
     /* Might be null if Google Play services APK is not available. */
     private GoogleMap googleMap;
@@ -65,10 +77,20 @@ public class LocationActivity extends FragmentActivity implements OnMapReadyCall
     private SharedPreferences sharedPref;
 
     /* This profile's user */
-    private User user;
+    private User currentUser;
 
     /* GSON java-to-JSON converter */
     private Gson gson;
+
+    /* Map of all the accepted users' locations for easily updating their markers */
+    private Map<String, Marker> userMarkers;
+
+    /**
+     * Broadcast receiver for receiving updates for location from the GCM listener
+     */
+    private BroadcastReceiver broadcastReceiver;
+
+    private boolean mapIsReady = false;
 
     /*******************************************************************
      * CONSTANTS
@@ -85,40 +107,86 @@ public class LocationActivity extends FragmentActivity implements OnMapReadyCall
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_location);
 
-        // initialize stuff
-        init();
+        // register the broadcast receiver for our gcm listener service updates
+        broadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if ( intent.getAction().equals(getResources().getString(R.string.gcm_location_update_intent_key)) ) {
+                    String json = intent.getStringExtra(getResources().getString(R.string.gcm_location_update_intent_extra));
+
+                    try {
+                        // update the location markers
+                        JSONArray users = new JSONArray(json);
+                        List<User> userList = new ArrayList<User>();
+
+                        for (int i = 0; i < users.length(); i++) {
+                            JSONObject user = users.getJSONObject(i);
+                            JSONObject locationJson = user.getJSONObject("location");
+                            Location location = new Location("");
+                            location.setLatitude(locationJson.getDouble("lat"));
+                            location.setLongitude(locationJson.getDouble("long"));
+                            userList.add(new User(null, user.getString("id"), location));
+
+                            Log.i(TAG, "User ID: " + user.getString("id") + "\nLat: " + user.getJSONObject("location").getDouble("lat") + "\nLong: " +
+                                    user.getJSONObject("location").getDouble("long"));
+                        }
+
+                        if (userList.size() > 0) {
+                            updateUI(userList);
+
+                            Toast.makeText(context, userList.get(0).getId() + ": " + userList.get(0).getLocation().getLatitude()
+                                    + ", " + userList.get(0).getLocation().getLongitude(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                    catch (JSONException ex) {
+                        Log.e(TAG, ex.getMessage());
+                    }
+                }
+            }
+        };
 
         // retrieve the shared preferences
-        sharedPref = this.getSharedPreferences( getString(R.string.preference_file_key), Context.MODE_PRIVATE );
+        sharedPref = this.getSharedPreferences(getString(R.string.preference_file_key), Context.MODE_PRIVATE);
 
         // create and initialize the Google Play Location service
         locationRequest = LocationRequest.create();
         locationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
-        apiClient = new GoogleApiClient.Builder(this)
-                .addApi(LocationServices.API)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .build();
 
-        // initialize the map's default settings
-        setUpMapIfNeeded();
+        if ( Connection.getInstance(this).verifyGooglePlayServices(this) ) {
+            apiClient = Connection.getInstance(this).getApiClient();
 
-        /**
-         * Locate button callback
-         */
-        final Button locateBtn = (Button) findViewById(R.id.locate_me_btn);
-        locateBtn.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                getUserLocation(false, LOCATION_REQUEST_INTERVAL);
-//                getUserLocation(true, 0);
-            }
-        });
+            // initialize the map's default settings
+            setUpMapIfNeeded();
+
+            // initialize stuff
+            init();
+
+            /**
+             * Locate button callback
+             */
+            final Button locateBtn = (Button) findViewById(R.id.locate_me_btn);
+            locateBtn.setOnClickListener(new View.OnClickListener() {
+                public void onClick(View v) {
+                    getUserLocation(false, LOCATION_REQUEST_INTERVAL);
+                }
+            });
+
+            // start IntentService to register this application with GCM
+            Intent intent = new Intent(this, RegistrationIntentService.class);
+            startService(intent);
+
+            startService(new Intent(this, BaseInstanceIDListenerService.class));
+            startService(new Intent(this, BaseGcmListenerService.class));
+        }
+        else {
+            finish();
+        }
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        apiClient.connect();
+        if (!apiClient.isConnected()) apiClient.connect();
     }
 
     @Override
@@ -131,13 +199,20 @@ public class LocationActivity extends FragmentActivity implements OnMapReadyCall
 
     @Override
     protected void onResume() {
+        LocalBroadcastManager broadcastManager = LocalBroadcastManager.getInstance(this);
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(getResources().getString(R.string.gcm_location_update_intent_key));
+        broadcastManager.registerReceiver(broadcastReceiver, intentFilter);
+
         super.onResume();
         setUpMapIfNeeded();
-        apiClient.connect();
+        if (!apiClient.isConnected()) apiClient.connect();
     }
 
     @Override
     protected void onPause() {
+        LocalBroadcastManager broadcastManager = LocalBroadcastManager.getInstance(this);
+        broadcastManager.unregisterReceiver(broadcastReceiver);
         super.onPause();
         if (apiClient.isConnected()) {
             apiClient.disconnect();
@@ -145,35 +220,38 @@ public class LocationActivity extends FragmentActivity implements OnMapReadyCall
     }
 
     @Override
-    public void onConnected(Bundle bundle) {
-        Log.i(TAG, "Location services connected.");
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-        Log.i(TAG, "Location services suspended. Please reconnect.");
-    }
-
-    @Override
     public void onLocationChanged(Location location) {
         Log.i(TAG, "Location has changed.");
         if (location != null) {
-            user.setLocation(location);
-            updateUI(location);
-            sendLocationUpdateRequest(location);
+            currentUser.setLocation(location);
+            updateUI(Arrays.asList(currentUser));
+            if (currentUser.isBroadcastingLocation()) sendLocationUpdateRequest(location);
         }
     }
 
     @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
-
+    public void onMapReady(GoogleMap map) {
+        mapIsReady = true;
     }
 
     private void init() {
         gson = new Gson();
 
         // retrieve the current user
-        user = (User)getIntent().getExtras().getSerializable( getString(R.string.main_user_intent_key) );
+        currentUser = (User)getIntent().getExtras().getSerializable( getString(R.string.main_user_intent_key) );
+
+        // initialize all list of users
+        userMarkers = new ConcurrentHashMap<>();
+
+        // initialize the default user's marker from sqlite
+        String markerTitle = currentUser.getId();
+        String markerSnippet = getResources().getString(R.string.marker_msg_placeholder);
+        MarkerOptions options = new MarkerOptions()
+                .title(markerTitle)
+                .snippet(markerSnippet)
+                .position(new LatLng(0, 0));
+        Marker marker = googleMap.addMarker(options);   //TODO put the marker at the last known location
+        userMarkers.put(currentUser.getId(), marker);
     }
 
     /**
@@ -230,9 +308,10 @@ public class LocationActivity extends FragmentActivity implements OnMapReadyCall
             }
             else {
                 Log.i(TAG, "User last location is intact");
-                user.setLocation(userLocation);
-                updateUI(userLocation);
-                sendLocationUpdateRequest(userLocation);
+                currentUser.setLocation(userLocation);
+                updateUI(Arrays.asList(currentUser));
+
+                if (currentUser.isBroadcastingLocation()) sendLocationUpdateRequest(userLocation);
             }
         }
         else {
@@ -247,8 +326,7 @@ public class LocationActivity extends FragmentActivity implements OnMapReadyCall
         JSONObject body =  new JSONObject();
 
         try {
-            body.put("fullName", user.getFullName());
-            body.put("name", user.getFunName());
+            body.put("id", currentUser.getId());
 
             JSONObject loc = new JSONObject();
             loc.put("lat", location.getLatitude());
@@ -297,28 +375,44 @@ public class LocationActivity extends FragmentActivity implements OnMapReadyCall
     }
 
     /**
-     * Update UI by adding marking and animating the camera to focus on the new location specified
-     * @param location The new location to update the UI with
+     * Update UI by updating the marking and animating the camera to focus on the new location specified
+     *
+     * @param users The list of users with new locations to update
      */
-    private void updateUI(Location location) {
-        Toast.makeText(getApplicationContext(), location.getLatitude() + ", " + location.getLongitude(), Toast.LENGTH_SHORT).show();
+    boolean hasZoomed = false;
+    private void updateUI(List<User> users) {
+        if (googleMap != null) {
+            for (User user : users) {
+                String id = user.getId();
+                Location location = user.getLocation();
+                Marker marker = userMarkers.get(id);
 
-        double currentLatitude = location.getLatitude();
-        double currentLongitude = location.getLongitude();
-        LatLng latLng = new LatLng(currentLatitude, currentLongitude);
-        String markerTitle = getResources().getString(R.string.marker_found_title);
-        String markerSnippet = user.getFullName() + " (" + user.getFunName() + ")";
+                double currentLatitude = location.getLatitude();
+                double currentLongitude = location.getLongitude();
+                LatLng latLng = new LatLng(currentLatitude, currentLongitude);
 
-        MarkerOptions options = new MarkerOptions()
-                .title(markerTitle)
-                .snippet(markerSnippet)
-                .position(latLng);
-        googleMap.addMarker(options);
-        googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, CAMERA_ZOOM_LEVEL));
-    }
+                // add a new marker belonging to the user if it's not there before
+                if (marker == null) {
+                    String markerTitle = id;
+                    String markerSnippet = getResources().getString(R.string.marker_msg_placeholder);
+                    MarkerOptions options = new MarkerOptions()
+                            .title(markerTitle)
+                            .snippet(markerSnippet)
+                            .position(latLng);
+                    marker = googleMap.addMarker(options);
+                    userMarkers.put(id, marker);
+                }
+                else {
+                    marker.setPosition(latLng);
+                }
 
-    @Override
-    public void onMapReady(GoogleMap map) {
+                Toast.makeText(getApplicationContext(), currentLatitude + ", " + currentLongitude, Toast.LENGTH_SHORT).show();
 
+                if (true) {
+                    googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, CAMERA_ZOOM_LEVEL));
+                    hasZoomed = true;
+                }
+            }
+        }
     }
 }

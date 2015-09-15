@@ -40,10 +40,11 @@ public class ProfileActivity extends AppCompatActivity implements ActionBar.TabL
     private User user;
 
     /**
-     * This is supposed to be in the main activity not here
+     * TODO This is supposed to be in the main activity not here
      */
     private void fillDefaultUserInfo() {
-        user = new User(Const.TEST_USER_FULL_NAME, Const.TEST_USER_NAME, null);
+        user = new User(Const.TEST_USER_NAME, Const.TEST_USER_ID, null);
+        user.setBroadcastingLocation(true);
     }
 
     public User getUser() {
@@ -55,7 +56,7 @@ public class ProfileActivity extends AppCompatActivity implements ActionBar.TabL
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
-        // DEBUG test user
+        // TODO DEBUG test user. This is supposed to be in the main activity not here
         fillDefaultUserInfo();
 
         // Set up the action bar.

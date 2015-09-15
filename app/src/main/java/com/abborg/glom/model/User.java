@@ -1,8 +1,11 @@
 package com.abborg.glom.model;
 
+import android.graphics.Bitmap;
 import android.location.Location;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Base class for all users
@@ -11,32 +14,46 @@ import java.io.Serializable;
  */
 public class User implements Serializable {
 
-    private String fullName;
+    private String name;
 
-    private String funName;
+    private String id;
 
     private Location location;
 
-    public User(String fullName, String name, Location location) {
-        this.fullName = fullName;
-        this.funName = name;
+    private Bitmap avatar;
+
+    private List<Circle> circles;
+
+    private Circle currentCircle;
+
+    private boolean broadcastLocationEnabled;
+
+    private boolean discoverable;
+
+    public User(String name, String id, Location location) {
+        this.name = name;
+        this.id = id;
         this.location = location;
+        this.circles = new ArrayList<Circle>();
+        this.currentCircle = null;
+        this.broadcastLocationEnabled = false;
+        this.discoverable = false;
     }
 
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public String getFullName() {
-        return fullName;
+    public String getName() {
+        return name;
     }
 
-    public void setFunName(String name) {
-        this.funName = name;
+    public void setId(String id) {
+        this.id = id;
     }
 
-    public String getFunName() {
-        return funName;
+    public String getId() {
+        return id;
     }
 
     public void setLocation(Location location) {
@@ -46,4 +63,24 @@ public class User implements Serializable {
     public Location getLocation() {
         return location;
     }
+
+    public void setAvatar(Bitmap avatar) { this.avatar = avatar; }
+
+    public Bitmap getAvatar() { return this.avatar; }
+
+    public void setCurrentCircle(Circle circle) { this.currentCircle = circle; }
+
+    public Circle getCurrentCircle() { return currentCircle; }
+
+    public void addToCircles(Circle circle) { this.circles.add(circle); }
+
+    public List<Circle> getCircles() { return this.circles; }
+
+    public void setBroadcastingLocation(boolean enabled) { broadcastLocationEnabled = enabled; }
+
+    public boolean isBroadcastingLocation() { return broadcastLocationEnabled; }
+
+    public void setDiscoverable(boolean enabled) { discoverable = enabled; }
+
+    public boolean isDiscoverable() { return discoverable; }
 }
