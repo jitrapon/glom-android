@@ -112,7 +112,7 @@ public class LocationActivity extends FragmentActivity implements OnMapReadyCall
             @Override
             public void onReceive(Context context, Intent intent) {
                 if ( intent.getAction().equals(getResources().getString(R.string.gcm_location_update_intent_key)) ) {
-                    String json = intent.getStringExtra(getResources().getString(R.string.gcm_location_update_intent_extra));
+                    String json = intent.getStringExtra(getResources().getString(R.string.gcm_location_update_intent_extra_users));
 
                     try {
                         // update the location markers

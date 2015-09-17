@@ -43,7 +43,8 @@ public class BaseGcmListenerService extends GcmListenerService {
          *     - Update UI.
          */
         Intent locUpdateIntent = new Intent(getResources().getString(R.string.gcm_location_update_intent_key));
-        locUpdateIntent.putExtra(getResources().getString(R.string.gcm_location_update_intent_extra), data.getString("users"));
+        locUpdateIntent.putExtra(getResources().getString(R.string.gcm_location_update_intent_extra_users), data.getString("users"));
+        locUpdateIntent.putExtra(getResources().getString(R.string.gcm_location_update_intent_extra_circleId), data.getString("circleId"));
         LocalBroadcastManager.getInstance(this).sendBroadcast(locUpdateIntent);
 
         if (from.startsWith("/topics/")) {

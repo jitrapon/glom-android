@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
@@ -53,7 +52,6 @@ public class RegistrationIntentService extends IntentService {
                     GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
             // [END get_token]
             Log.i(TAG, "GCM Registration Token: " + token);
-            Toast.makeText(getApplicationContext(), "Token received: " + token, Toast.LENGTH_SHORT).show();
 
             // TODO: Implement this method to send any registration to your app's servers.
             sendRegistrationToServer(token);
@@ -108,7 +106,7 @@ public class RegistrationIntentService extends IntentService {
 
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Log.e(TAG, error.getMessage());
+                        if (error.getMessage() != null) Log.e(TAG, error.getMessage());
                     }
                 })
 

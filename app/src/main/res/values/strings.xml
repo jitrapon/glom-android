@@ -5,11 +5,16 @@
     <string name="preference_file_key">com.abborg.glom.preferences</string>
     <string name="server_address">http://www.google.com</string>
     <string name="server_port">80</string>
+    <string name="action_search">com.abborg.glom.action.search</string>
+    <string name="default_first_circle_title">My Circle</string>
+    <string name="action_drawer_open">com.abborg.glom.action.drawer.open</string>
+    <string name="action_drawer_close">com.abborg.glom.action.drawer.close</string>
 
     <!-- INTENT EXTRA KEYS -->
     <string name="gcm_senderId">1098468135284</string>
     <string name="gcm_location_update_intent_key">com.abborg.glom.location.update.map</string>
-    <string name="gcm_location_update_intent_extra">com.abborg.glom.location.update.users</string>
+    <string name="gcm_location_update_intent_extra_users">com.abborg.glom.location.update.users</string>
+    <string name="gcm_location_update_intent_extra_circleId">com.abborg.glom.location.update.circleId</string>
     <string name="main_user_intent_key">com.abborg.glom.user</string>
 
     <!-- Profile activity strings -->
@@ -29,4 +34,10 @@
     <string name="locate_me_btn_label">Locate</string>
     <string name="locate_me_btn_searching">Just a moment...</string>
     <string name="marker_msg_placeholder">Online</string>
+    <string name="title_activity_main">MainActivity</string>
+
+    <string name="hello_world">Hello world!</string>
+
+<!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

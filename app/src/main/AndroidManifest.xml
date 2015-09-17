@@ -3,13 +3,16 @@
     package="com.abborg.glom" >
 
     <uses-sdk android:minSdkVersion="8" />
+
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
 
-    <permission android:name="com.abborg.glom.permission.C2D_MESSAGE" android:protectionLevel="signature" />
-    <uses-permission android:name="com.abborg.glom.permission.C2D_MESSAGE" />
+    <permission
+        android:name="com.abborg.glom.permission.C2D_MESSAGE"
+        android:protectionLevel="signature" />
 
+    <uses-permission android:name="com.abborg.glom.permission.C2D_MESSAGE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
@@ -20,11 +23,14 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
+    <android:uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <android:uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/AppTheme" >
+        android:theme="@style/AppMaterialTheme" >
         <receiver
             android:name="com.google.android.gms.gcm.GcmReceiver"
             android:exported="true"
@@ -32,24 +38,29 @@
             <intent-filter>
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
                 <action android:name="com.google.android.c2dm.intent.REGISTRATION" />
+
                 <category android:name="com.abborg.glom" />
             </intent-filter>
         </receiver>
-        <service android:enabled="true" android:name="com.abborg.glom.service.RegistrationIntentService"></service>
+
         <service
-            android:name="com.abborg.glom.service.BaseGcmListenerService"
+            android:name=".service.RegistrationIntentService"
+            android:enabled="true" />
+        <service
+            android:name=".service.BaseGcmListenerService"
             android:exported="false" >
             <intent-filter>
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
             </intent-filter>
         </service>
         <service
-            android:name="com.abborg.glom.service.BaseInstanceIDListenerService"
-            android:exported="false">
+            android:name=".service.BaseInstanceIDListenerService"
+            android:exported="false" >
             <intent-filter>
-                <action android:name="com.google.android.gms.iid.InstanceID"/>
+                <action android:name="com.google.android.gms.iid.InstanceID" />
             </intent-filter>
         </service>
+
         <meta-data
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
@@ -58,11 +69,15 @@
             android:value="@string/google_maps_key" />
 
         <activity
-            android:name="com.abborg.glom.ui.LocationActivity"
+            android:name=".ui.LocationActivity"
             android:label="@string/app_name" >
         </activity>
         <activity
-            android:name="com.abborg.glom.ui.ProfileActivity"
+            android:name=".ui.ProfileActivity"
+            android:label="@string/app_name" >
+        </activity>
+        <activity
+            android:name=".ui.MainActivity"
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
