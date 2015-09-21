@@ -58,6 +58,22 @@ public class Circle {
     }
 
     /**
+     * Check if the specified user ID is in the specified circle ID
+     *
+     * @param id
+     * @param circle
+     * @return
+     */
+    public static boolean circleContainsUserId(String id, Circle circle) {
+        if (circle == null || id == null) return false;
+
+        for (User user : circle.getUsers()) {
+            if (user.getId().equals(id)) return true;
+        }
+        return false;
+    }
+
+    /**
      * Call this in DEBUG only to override the generated ID
      *
      * @param id

@@ -147,6 +147,7 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
 
     public Circle getCurrentCircle() { return currentCircle; }
 
+    //TODO has to load from SQLITE
     public List<Circle> getCircles() { return circles; }
 
     public Circle getCircleFromTitle(String title) {
@@ -209,8 +210,8 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
                             for (int i = 0; i < users.length(); i++) {
                                 JSONObject user = users.getJSONObject(i);
 
-                                // verify that the user is in THIS circle and the ID is valid
-                                if (circleContainsUserId(user.getString("id"), circle)) {
+                                // verify that the user is in a circle and the ID is valid
+                                if (Circle.circleContainsUserId(user.getString("id"), circle)) {
                                     JSONObject locationJson = user.getJSONObject("location");
                                     Location location = new Location("");
                                     location.setLatitude(locationJson.getDouble("lat"));
@@ -256,8 +257,8 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
                         }
                     }
                     else {
-                        Log.e(TAG, "Could not find circle (" + circleId + ") for this user!");
-                        Toast.makeText(context, "Could not find circle (" + circleId + ") for this user!", Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "Could not find circle (" + circleId + ") under this user!");
+                        Toast.makeText(context, "Could not find circle (" + circleId + ") under this user!", Toast.LENGTH_SHORT).show();
                     }
                 }
             }
@@ -272,9 +273,7 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
             gson = new Gson();
 
             // start IntentService to register this application with GCM
-            Intent intent = new Intent(this, RegistrationIntentService.class);
-            startService(intent);
-
+            startService(new Intent(this, RegistrationIntentService.class));
             startService(new Intent(this, BaseInstanceIDListenerService.class));
             startService(new Intent(this, BaseGcmListenerService.class));
         }
@@ -294,22 +293,6 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
             if (c.getId().equals(circleId)) return c;
         }
         return null;
-    }
-
-    /**
-     * Check if the specified user ID is in the specified circle ID
-     *
-     * @param id
-     * @param circle
-     * @return
-     */
-    private boolean circleContainsUserId(String id, Circle circle) {
-        if (circle == null || id == null) return false;
-
-        for (User user : circle.getUsers()) {
-            if (user.getId().equals(id)) return true;
-        }
-        return false;
     }
 
     @Override

@@ -37,6 +37,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -208,6 +209,9 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
             // initialize other markers in the circle
             List<User> users = ((MainActivity) getActivity()).getCurrentCircle().getUsers();
             for (User user : users) {
+                // we don't need to add another marker for ourselves
+                if ( user.getId().equals(currentUser.getId()) ) continue;
+
                 options = new MarkerOptions()
                         .title(user.getId())
                         .snippet(markerSnippet)
@@ -277,7 +281,16 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
 
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Log.e(TAG, error.getMessage());
+                        try {
+                            String responseBody = new String(error.networkResponse.data, "utf-8");
+                            JSONObject jsonObject = new JSONObject( responseBody );
+                        }
+                        catch (JSONException ex) {
+
+                        }
+                        catch (UnsupportedEncodingException ex){
+
+                        }
                     }
                 })
 
@@ -310,6 +323,8 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
     public void updateUI(List<User> users) {
         if (googleMap != null) {
             for (User user : users) {
+                //TODO ignore the current user location update from the request
+
                 String id = user.getId();
                 Location location = user.getLocation();
                 Marker marker = userMarkers.get(id);
@@ -319,6 +334,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
                 LatLng latLng = new LatLng(currentLatitude, currentLongitude);
 
                 // add a new marker belonging to the user if it's not there before
+                // TODO marker should show options of time-since-last-update, status message, nearby-place, time-to-destination (ongoing events)
                 if (marker == null) {
                     String markerTitle = id;
                     String markerSnippet = getResources().getString(R.string.marker_msg_placeholder);
