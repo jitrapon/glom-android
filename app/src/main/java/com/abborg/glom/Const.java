@@ -5,7 +5,7 @@ package com.abborg.glom;
  */
 public class Const {
 
-    public static final String HOST_ADDRESS = "http://requestb.in/w77k38w7";
+    public static final String HOST_ADDRESS = "http://putsreq.com/KJVQCdWbHg0xXf2aHWf1";
 
     public static final int HOST_PORT = 80;
 

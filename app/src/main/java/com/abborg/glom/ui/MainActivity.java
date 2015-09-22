@@ -30,6 +30,7 @@ import com.abborg.glom.model.User;
 import com.abborg.glom.service.BaseGcmListenerService;
 import com.abborg.glom.service.BaseInstanceIDListenerService;
 import com.abborg.glom.service.RegistrationIntentService;
+import com.abborg.glom.utils.CircleProvider;
 import com.abborg.glom.utils.Connection;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.gson.Gson;
@@ -38,7 +39,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements DrawerFragment.FragmentDrawerListener {
@@ -48,6 +51,8 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
     private TabLayout tabLayout;
 
     private ViewPager viewPager;
+
+    public CircleProvider circleProvider;
 
     private int[] tabIcons = {
             R.drawable.ic_tab_circle,
@@ -88,50 +93,37 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
         // create our new user
         user = createUser(Const.TEST_USER_NAME, Const.TEST_USER_ID, Const.TEST_USER_LAT, Const.TEST_USER_LONG,
                 Const.TEST_USER_BROADCAST_LOCATION, Const.TEST_USER_DISCOVERABLE);
-        User john1 = createUser("John Wicked", "johnyboy2002", 13.725965, 100.5425762, true, true);
-        User john2 = createUser("John Wicked", "johnyboy2002", 13.725965, 100.5425762, true, true);
-        User anna1 = createUser("Anna", "Lovely_Cupid_Ok", 35.4606, -76.2979782, true, true);
-        User anna2 = createUser("Anna", "Lovely_Cupid_Ok", 35.4606, -76.2979782, true, true);
-        User kevin1 = createUser("Kevin", "MrKimochi", 35.7090259, 139.7319925, true, true);
-        User kevin2 = createUser("Kevin", "MrKimochi", 35.7090259, 139.7319925, true, true);
-        User nad1 = createUser("Nad Sunadda", "fatcat18", 13.7148762, 100.5914199, true, true);
-        User nad2 = createUser("Nad Sunadda", "fatcat18", 13.7148762, 100.5914199, true, true);
-        User adam1 = createUser("Adam Levine", "adamlevine", 34.0522342, -118.2436849, true, true);
-        User somchai1 = createUser("Somchai The Womanizer", "badboy.gaylord", 13.7278956, 100.5241235, true, true);
-
-        // create our new circle, by default state, a user will have its default circle created
-        // automatically
-        //TODO only load current circle into memory
-        //TODO load other circle info from SQLITE
-        currentCircle = Circle.createCircle(getResources().getString(R.string.default_first_circle_title), user);
-        currentCircle.setId("default");
-        currentCircle.addUser(john1);
-        currentCircle.addUser(anna1);
-        currentCircle.addUser(kevin1);
-        currentCircle.addUser(nad1);
-
-        Circle testCircle1 = Circle.createCircle("My Love", user);
-        testCircle1.setId("my-love");
-        testCircle1.addUser(nad2);
-
-        Circle testCircle2 = Circle.createCircle("Coworkers", user);
-        testCircle2.setId("coworkers");
-        testCircle2.addUser(anna2);
-        testCircle2.addUser(kevin2);
-
-        Circle testCircle3 = Circle.createCircle("Others", user);
-        testCircle3.setId("others");
-        testCircle3.addUser(john2);
-        testCircle3.addUser(kevin2);
-        testCircle3.addUser(adam1);
-        testCircle3.addUser(somchai1);
 
         // update all list of this user's circles
-        circles = new ArrayList<Circle>();
-        circles.add(currentCircle);
-        circles.add(testCircle1);
-        circles.add(testCircle2);
-        circles.add(testCircle3);
+        try {
+            circleProvider = new CircleProvider(this, user);
+            circleProvider.open();
+
+            circleProvider.resetCircles();
+
+            // populate with sample circles
+            Circle circle1 = circleProvider.createCircle(getResources().getString(R.string.default_first_circle_title), user,
+                        new ArrayList<User>(Arrays.asList(
+                                new User("TestName1", "TestId1", new Location("")),
+                                new User("TestName2", "TestId2", new Location("")),
+                                new User("Sunadda", "fatcat18", new Location(""))
+                        ))
+                    );
+
+            Circle circle2 = circleProvider.createCircle("My Love", user,
+                    new ArrayList<User>(Arrays.asList(
+                            new User("Sunadda", "fatcat18", new Location(""))
+                    ))
+            );
+
+            circles = circleProvider.getCircles();
+
+            // set default circle to be the first one
+            currentCircle = circles.get(0);
+        }
+        catch (SQLException ex) {
+            Toast.makeText(this, "Error accessing database: " + ex.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     private User createUser(String name, String id, double latitude, double longitude,
@@ -316,6 +308,12 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
         intentFilter.addAction(getResources().getString(R.string.gcm_location_update_intent_key));
         broadcastManager.registerReceiver(broadcastReceiver, intentFilter);
 
+        try {
+            circleProvider.open();
+        }
+        catch (SQLException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
         super.onResume();
         if (!apiClient.isConnected()) apiClient.connect();
     }
@@ -324,6 +322,8 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
     protected void onPause() {
         LocalBroadcastManager broadcastManager = LocalBroadcastManager.getInstance(this);
         broadcastManager.unregisterReceiver(broadcastReceiver);
+
+        circleProvider.close();
         super.onPause();
         if (apiClient.isConnected()) {
             apiClient.disconnect();

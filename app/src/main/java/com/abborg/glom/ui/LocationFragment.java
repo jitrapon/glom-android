@@ -11,7 +11,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.FrameLayout;
-import android.widget.Toast;
 
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
@@ -37,7 +36,6 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -48,7 +46,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * A simple {@link Fragment} subclass.
  */
 public class LocationFragment extends SupportMapFragment implements OnMapReadyCallback,
-        LocationListener {
+        LocationListener  {
     
     /* Might be null if Google Play services APK is not available. */
     private GoogleMap googleMap;
@@ -269,28 +267,22 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
             Log.e(TAG, ex.getMessage());
         }
 
+        final double latitude = location.getLatitude();
+        final double longitude = location.getLongitude();
+
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, Const.HOST_ADDRESS, body,
                 new Response.Listener<JSONObject>() {
 
                     @Override
                     public void onResponse(JSONObject response) {
-                        Log.i(TAG, response.toString());
+                        RequestHandler.getInstance(getActivity()).handleResponse(getActivity(), response);
                     }
                 },
                 new Response.ErrorListener() {
 
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        try {
-                            String responseBody = new String(error.networkResponse.data, "utf-8");
-                            JSONObject jsonObject = new JSONObject( responseBody );
-                        }
-                        catch (JSONException ex) {
-
-                        }
-                        catch (UnsupportedEncodingException ex){
-
-                        }
+                        RequestHandler.getInstance(getActivity()).handleError(error);
                     }
                 })
 
@@ -349,9 +341,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
                     marker.setPosition(latLng);
                 }
 
-                Toast.makeText(getActivity(), currentLatitude + ", " + currentLongitude, Toast.LENGTH_SHORT).show();
-
-                if (true) {
+                if (!user.getId().equals(currentUser.getId())) {
                     googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, CAMERA_ZOOM_LEVEL));
                     hasZoomed = true;
                 }

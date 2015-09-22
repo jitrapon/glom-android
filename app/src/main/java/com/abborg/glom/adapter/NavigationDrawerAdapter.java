@@ -46,10 +46,7 @@ public class NavigationDrawerAdapter extends RecyclerView.Adapter<NavigationDraw
     public void onBindViewHolder(MyViewHolder holder, int position) {
         Circle current = data.get(position);
         int memberCount = current.getUsers().size();
-        if (memberCount > 1)
-            holder.title.setText(current.getTitle() + " (" + memberCount + ")");
-        else
-            holder.title.setText(current.getTitle());
+        holder.title.setText(current.getTitle() + " (" + memberCount + ")");
     }
 
     @Override

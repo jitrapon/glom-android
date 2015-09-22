@@ -42,19 +42,11 @@ public class Circle {
      * @return The created circle instance if the title is not created before
      */
     public static Circle createCircle(String title, User user) {
-        if (title == null) return null;
-
         String id = generateCircleId();
 
-        if (!titleAlreadyExists(title)) {
-            //TODO add to SQLITE and update server
-            ArrayList<User> users = new ArrayList<User>(Arrays.asList(user));
-            return new Circle(id, title, users);
-        }
-        else {
-            //TODO throws DuplicateCircleTitleException
-        }
-        return null;
+        //TODO add to SQLITE and update server
+        ArrayList<User> users = new ArrayList<User>(Arrays.asList(user));
+        return new Circle(id, title, users);
     }
 
     /**
@@ -99,6 +91,15 @@ public class Circle {
 
     public List<User> getUsers() { return users; }
 
+    public String getUserListString() {
+        StringBuilder userList = new StringBuilder();
+        for (User user : users) {
+            userList.append(user.getId());
+            userList.append(",");
+        }
+        return userList.length() > 0 ? userList.substring(0, userList.length() - 1) : "";
+    }
+
     public String getTitle() { return title; }
 
     public String getId() { return id; }
@@ -107,18 +108,23 @@ public class Circle {
 
     public void addUser(User user) { users.add(user); }
 
+    public void setUsers(List<User> users) {
+        this.users = users;
+    }
+
     public void addUsers(List<User> users) {
         ArrayList<User> combine = new ArrayList<User>();
         combine.addAll(this.users);
         combine.addAll(users);
+        this.users = combine;
     }
 
     private static String generateCircleId() {
         return String.valueOf(UUID.randomUUID());
     }
 
-    //TODO
-    public static boolean titleAlreadyExists(String title) {
-        return false;
+    @Override
+    public String toString() {
+        return title;
     }
 }

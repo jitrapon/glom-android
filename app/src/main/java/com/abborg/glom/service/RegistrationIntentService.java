@@ -87,6 +87,8 @@ public class RegistrationIntentService extends IntentService {
         // initialize the body
         JSONObject body =  new JSONObject();
 
+        final IntentService self = this;
+
         try {
             body.put("gcm_token", token);
         }
@@ -99,14 +101,14 @@ public class RegistrationIntentService extends IntentService {
 
                     @Override
                     public void onResponse(JSONObject response) {
-                        Log.i(TAG, response.toString());
+                        RequestHandler.getInstance(self).handleResponse(self, response);
                     }
                 },
                 new Response.ErrorListener() {
 
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        if (error.getMessage() != null) Log.e(TAG, error.getMessage());
+                        RequestHandler.getInstance(self).handleError(error);
                     }
                 })
 

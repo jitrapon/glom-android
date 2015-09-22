@@ -74,4 +74,9 @@ public class User implements Serializable {
     public void setDiscoverable(boolean enabled) { discoverable = enabled; }
 
     public boolean isDiscoverable() { return discoverable; }
+
+    @Override
+    public String toString() {
+        return id;
+    }
 }
