@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -30,6 +31,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
@@ -80,6 +82,9 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
 
     /* Google Map zoom level when a user's location has been identified */
     private static final float CAMERA_ZOOM_LEVEL = 16;
+
+    /* Google Map camera padding offset from the edges of the screen when set bounds in DP */
+    private static final float CAMERA_CENTER_PADDING = 35;
 
 
     public LocationFragment() {
@@ -196,13 +201,22 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
                 location.setLongitude(0);
             }
 
+            // marker's default snippet
             String markerSnippet = getResources().getString(R.string.marker_msg_placeholder);
+
+            // set bounds for centering the map around markers
+            LatLngBounds.Builder boundBuilder = new LatLngBounds.Builder();
+
+            // initialize current user's marker
             MarkerOptions options = new MarkerOptions()
                     .title(markerTitle)
                     .snippet(markerSnippet)
                     .position(new LatLng(location.getLatitude(), location.getLongitude()));
-            Marker marker = googleMap.addMarker(options);   //TODO put the marker at the last known location
+            Marker marker = googleMap.addMarker(options);
             userMarkers.put(currentUser.getId(), marker);
+
+            // update boundary
+            boundBuilder.include(marker.getPosition());
 
             // initialize other markers in the circle
             List<User> users = ((MainActivity) getActivity()).getCurrentCircle().getUsers();
@@ -210,14 +224,42 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
                 // we don't need to add another marker for ourselves
                 if ( user.getId().equals(currentUser.getId()) ) continue;
 
+                // add the marker
                 options = new MarkerOptions()
                         .title(user.getId())
                         .snippet(markerSnippet)
                         .position(new LatLng(user.getLocation().getLatitude(), user.getLocation().getLongitude()));
-                marker = googleMap.addMarker(options);   //TODO put the marker at the last known location
+                marker = googleMap.addMarker(options);
                 userMarkers.put(user.getId(), marker);
+
+                // update the boundary
+                boundBuilder.include(marker.getPosition());
+            }
+
+            // center the camera around the built boundary of markers
+            // if there is only one user in the circle, zoom instead
+            if (userMarkers.size() == 1) {
+                marker = userMarkers.get(currentUser.getId());
+                googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(marker.getPosition(), CAMERA_ZOOM_LEVEL));
+            }
+            else {
+                LatLngBounds bounds = boundBuilder.build();
+
+                googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, dpToPx(CAMERA_CENTER_PADDING)));
             }
         }
+    }
+
+    public int dpToPx(float dp) {
+        DisplayMetrics displayMetrics = getContext().getResources().getDisplayMetrics();
+        int px = Math.round(dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
+        return px;
+    }
+
+    public int pxToDp(int px) {
+        DisplayMetrics displayMetrics = getContext().getResources().getDisplayMetrics();
+        int dp = Math.round(px / (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
+        return dp;
     }
 
     /**
@@ -256,6 +298,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
 
         try {
             body.put("id", currentUser.getId());
+            body.put("circle", currentUser.getCurrentCircle().getId());
 
             JSONObject loc = new JSONObject();
             loc.put("lat", location.getLatitude());
@@ -311,9 +354,11 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
      *
      * @param users The list of users with new locations to update
      */
-    boolean hasZoomed = false;
     public void updateUI(List<User> users) {
         if (googleMap != null) {
+
+            LatLngBounds.Builder boundBuilder = new LatLngBounds.Builder();
+
             for (User user : users) {
                 //TODO ignore the current user location update from the request
 
@@ -341,10 +386,20 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
                     marker.setPosition(latLng);
                 }
 
-                if (!user.getId().equals(currentUser.getId())) {
-                    googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, CAMERA_ZOOM_LEVEL));
-                    hasZoomed = true;
-                }
+                boundBuilder.include(marker.getPosition());
+            }
+
+            // animate the camera to center around all markers
+            // if there is only one then zoom instead
+            Log.d(TAG, "USER MARKERS: " + userMarkers.size());
+            Marker userMarker = userMarkers.get(currentUser.getId());
+            if (userMarkers.size() == 1) {
+                googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(userMarker.getPosition(), CAMERA_ZOOM_LEVEL));
+            }
+            else {
+                boundBuilder.include(userMarker.getPosition());
+                LatLngBounds bounds = boundBuilder.build();
+                googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, dpToPx(CAMERA_CENTER_PADDING)));
             }
         }
     }

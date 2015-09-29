@@ -13,6 +13,8 @@ public class Const {
 
     public static final String REGISTRATION_COMPLETE = "registrationComplete";
 
+    public static final String DEFAULT_USER_AVATAR = "https://pgeveryday-ca.secure.footprint.net/LayoutAssets/Modules/Consumers/Profile/Avatar/DefaultAvatar-size-3.jpg";
+
     /**
      * TEST USER INFO
      * **/

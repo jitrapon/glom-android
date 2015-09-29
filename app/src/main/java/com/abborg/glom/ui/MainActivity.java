@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.database.SQLException;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.design.widget.TabLayout;
@@ -26,11 +27,11 @@ import android.widget.Toast;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.model.Circle;
+import com.abborg.glom.model.DataUpdater;
 import com.abborg.glom.model.User;
 import com.abborg.glom.service.BaseGcmListenerService;
 import com.abborg.glom.service.BaseInstanceIDListenerService;
 import com.abborg.glom.service.RegistrationIntentService;
-import com.abborg.glom.utils.CircleProvider;
 import com.abborg.glom.utils.Connection;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.gson.Gson;
@@ -39,7 +40,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -52,7 +52,7 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
 
     private ViewPager viewPager;
 
-    public CircleProvider circleProvider;
+    public DataUpdater dataUpdater;
 
     private int[] tabIcons = {
             R.drawable.ic_tab_circle,
@@ -96,27 +96,30 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
 
         // update all list of this user's circles
         try {
-            circleProvider = new CircleProvider(this, user);
-            circleProvider.open();
-
-            circleProvider.resetCircles();
+            dataUpdater = new DataUpdater(this, user);
+            dataUpdater.open();
+            dataUpdater.resetCircles();
 
             // populate with sample circles
-            Circle circle1 = circleProvider.createCircle(getResources().getString(R.string.default_first_circle_title), user,
+            Circle circle1 = dataUpdater.createCircle(getResources().getString(R.string.default_first_circle_title),
                         new ArrayList<User>(Arrays.asList(
-                                new User("TestName1", "TestId1", new Location("")),
-                                new User("TestName2", "TestId2", new Location("")),
-                                new User("Sunadda", "fatcat18", new Location(""))
+                                createUser("TestName1", "TestId1", 1.003, 103.0, false, false),
+                                createUser("TestName2", "TestId2", 1.15, 101.352, false, false),
+                                createUser("Sunadda", "fatcat18", 1.009, 103.24, false ,false)
                         ))
                     );
 
-            Circle circle2 = circleProvider.createCircle("My Love", user,
+            Circle circle2 = dataUpdater.createCircle("My Love",
                     new ArrayList<User>(Arrays.asList(
-                            new User("Sunadda", "fatcat18", new Location(""))
+                            createUser("Sunadda", "fatcat18", 1.0, 102.1441, false ,false)
                     ))
             );
 
-            circles = circleProvider.getCircles();
+            Circle circle3 = dataUpdater.createCircle("Small Room",
+                    new ArrayList<User>()
+            );
+
+            circles = dataUpdater.getCircles();
 
             // set default circle to be the first one
             currentCircle = circles.get(0);
@@ -210,17 +213,11 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
                                     location.setLongitude(locationJson.getDouble("long"));
                                     userList.add(new User(null, user.getString("id"), location));
 
-                                    //TODO update the user's location to SQLITE if not current circle
-                                    // otherwise update now
-                                    if (circle.getId().equals(currentCircle.getId())) {
-                                        for (User s : circle.getUsers()) {
-                                            if (s.getId().equals(user.getString("id"))) {
-                                                s.setLocation(location);
-                                            }
+                                    for (User s : circle.getUsers()) {
+                                        if (s.getId().equals(user.getString("id"))) {
+                                            s.setLocation(location);
+                                            dataUpdater.updateUserLocation(s, circle);
                                         }
-                                    }
-                                    else {
-
                                     }
 
                                     Log.i(TAG, "User ID: " + user.getString("id") + "\nLat: " + user.getJSONObject("location").getDouble("lat") + "\nLong: " +
@@ -309,7 +306,7 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
         broadcastManager.registerReceiver(broadcastReceiver, intentFilter);
 
         try {
-            circleProvider.open();
+            dataUpdater.open();
         }
         catch (SQLException ex) {
             Log.e(TAG, ex.getMessage());
@@ -323,7 +320,7 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
         LocalBroadcastManager broadcastManager = LocalBroadcastManager.getInstance(this);
         broadcastManager.unregisterReceiver(broadcastReceiver);
 
-        circleProvider.close();
+        dataUpdater.close();
         super.onPause();
         if (apiClient.isConnected()) {
             apiClient.disconnect();

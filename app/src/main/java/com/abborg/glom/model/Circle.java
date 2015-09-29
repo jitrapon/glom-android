@@ -113,10 +113,7 @@ public class Circle {
     }
 
     public void addUsers(List<User> users) {
-        ArrayList<User> combine = new ArrayList<User>();
-        combine.addAll(this.users);
-        combine.addAll(users);
-        this.users = combine;
+        this.users.addAll(users);
     }
 
     private static String generateCircleId() {

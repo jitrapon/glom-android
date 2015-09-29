@@ -76,7 +76,7 @@ public class RequestHandler {
         if (response != null) {
             try {
                 String message = response.getString("message");
-                Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+                if (message != null && context != null) Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
             }
             catch (JSONException ex) {
                 Toast.makeText(context,
