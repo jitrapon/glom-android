@@ -61,6 +61,8 @@
             </intent-filter>
         </service>
 
+        <meta-data android:name="com.abborg.glom.utils.GlideConfiguration"
+            android:value="GlideModule"/>
         <meta-data
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />

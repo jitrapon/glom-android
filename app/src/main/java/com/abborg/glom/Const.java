@@ -13,8 +13,6 @@ public class Const {
 
     public static final String REGISTRATION_COMPLETE = "registrationComplete";
 
-    public static final String DEFAULT_USER_AVATAR = "https://pgeveryday-ca.secure.footprint.net/LayoutAssets/Modules/Consumers/Profile/Avatar/DefaultAvatar-size-3.jpg";
-
     /**
      * TEST USER INFO
      * **/
@@ -30,5 +28,5 @@ public class Const {
 
     public static final boolean TEST_USER_DISCOVERABLE = true;
 
-
+    public static final String TEST_USER_AVATAR = "https://media.licdn.com/mpr/mpr/shrinknp_400_400/p/3/000/214/038/194b185.jpg";
 }

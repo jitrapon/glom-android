@@ -8,7 +8,6 @@ import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
 import android.util.Log;
 
-import com.abborg.glom.Const;
 import com.abborg.glom.utils.DBHelper;
 
 import java.util.ArrayList;
@@ -70,9 +69,9 @@ public class DataUpdater {
     /**
      * Creates a new circle, with the current user, and the specified users in it.
      *
-     * @param name
-     * @param users
-     * @return
+     * @param name The name or title of the circle to create with
+     * @param users The list of users to add at the time of creation along with current user
+     * @return The created circle
      */
     public Circle createCircle(String name, List<User> users) {
         Circle circle = Circle.createCircle(name, currentUser);
@@ -90,11 +89,13 @@ public class DataUpdater {
                     circle.getTitle() + ", userlist: " + circle.getUserListString());
 
             for (User user : circle.getUsers()) {
+                user.setCurrentCircle(circle);
+
                 // insert new users into USER table if unique (record is unique per user)
                 values.clear();
                 values.put(DBHelper.USER_COLUMN_ID, user.getId());
                 values.put(DBHelper.USER_COLUMN_NAME, user.getName());
-                values.put(DBHelper.USER_COLUMN_AVATAR_ID, Const.DEFAULT_USER_AVATAR);
+                values.put(DBHelper.USER_COLUMN_AVATAR_ID, user.getAvatar());
                 insertId = database.insert(DBHelper.TABLE_USERS, null, values);
                 Log.d(TAG, "Inserted user with _id: " +  insertId + ", id: " + user.getId() + " into " + DBHelper.TABLE_USERS);
 
@@ -189,11 +190,13 @@ public class DataUpdater {
         User user = new User(null, null, null);
         user.setId(cursor.getString(0));
         user.setName(cursor.getString(1));
+        user.setAvatar(cursor.getString(2));
 
         Location location = new Location("");
         location.setLatitude(cursor.getDouble(3));
         location.setLongitude(cursor.getDouble(4));
         user.setLocation(location);
+
 
         user.setCurrentCircle(circle);
         Log.d(TAG, "Query user for circle(" + circle.getId() + ") id: " + user.getId() + ", name: " + user.getName() + ", avatarId: " + cursor.getString(2)

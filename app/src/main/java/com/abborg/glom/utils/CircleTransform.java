@@ -1,18 +1,25 @@
 package com.abborg.glom.utils;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import com.squareup.picasso.Transformation;
+
+import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool;
+import com.bumptech.glide.load.resource.bitmap.BitmapTransformation;
 
 /**
  * Created by Boat on 17/9/58.
  */
-public class CircleTransform implements Transformation {
+public class CircleTransform extends BitmapTransformation {
+
+    public CircleTransform(Context context) {
+        super(context);
+    }
 
     @Override
-    public Bitmap transform(Bitmap source) {
+    public Bitmap transform(BitmapPool pool, Bitmap source, int outWidth, int outHeight) {
         int size = Math.min(source.getWidth(), source.getHeight());
 
         int x = (source.getWidth() - size) / 2;
@@ -40,7 +47,7 @@ public class CircleTransform implements Transformation {
     }
 
     @Override
-    public String key() {
-        return "circle";
+    public String getId() {
+        return "Glide_Circle_Transformation";
     }
 }

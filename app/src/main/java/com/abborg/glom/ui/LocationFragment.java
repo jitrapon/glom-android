@@ -5,7 +5,6 @@ import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,6 +15,7 @@ import android.widget.FrameLayout;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.model.User;
+import com.abborg.glom.utils.LayoutUtils;
 import com.abborg.glom.utils.RequestHandler;
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
@@ -60,7 +60,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
     private LocationRequest locationRequest;
 
     /* This context's tag */
-    public static final String TAG = "MAP";
+    public static final String TAG = "MAP_FRAGMENT";
 
     /* Stored shared preferences for this app */
     private SharedPreferences sharedPref;
@@ -94,9 +94,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
     @Override
     public void onCreate(Bundle savedBundleState) {
         super.onCreate(savedBundleState);
-
         userMarkers = new ConcurrentHashMap<>();
-
         currentUser = ((MainActivity) getActivity()).getUser();
     }
 
@@ -244,22 +242,10 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
             }
             else {
                 LatLngBounds bounds = boundBuilder.build();
-
-                googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, dpToPx(CAMERA_CENTER_PADDING)));
+                int padding = LayoutUtils.dpToPx(getContext(), CAMERA_CENTER_PADDING);
+                googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
             }
         }
-    }
-
-    public int dpToPx(float dp) {
-        DisplayMetrics displayMetrics = getContext().getResources().getDisplayMetrics();
-        int px = Math.round(dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
-        return px;
-    }
-
-    public int pxToDp(int px) {
-        DisplayMetrics displayMetrics = getContext().getResources().getDisplayMetrics();
-        int dp = Math.round(px / (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
-        return dp;
     }
 
     /**
@@ -399,7 +385,8 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
             else {
                 boundBuilder.include(userMarker.getPosition());
                 LatLngBounds bounds = boundBuilder.build();
-                googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, dpToPx(CAMERA_CENTER_PADDING)));
+                int padding = LayoutUtils.dpToPx(getContext(), CAMERA_CENTER_PADDING);
+                googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
             }
         }
     }

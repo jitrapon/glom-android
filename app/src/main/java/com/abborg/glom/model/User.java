@@ -1,6 +1,5 @@
 package com.abborg.glom.model;
 
-import android.graphics.Bitmap;
 import android.location.Location;
 
 import java.io.Serializable;
@@ -18,7 +17,7 @@ public class User implements Serializable {
 
     private Location location;
 
-    private Bitmap avatar;
+    private String avatar;
 
     private Circle currentCircle;
 
@@ -59,9 +58,9 @@ public class User implements Serializable {
         return location;
     }
 
-    public void setAvatar(Bitmap avatar) { this.avatar = avatar; }
+    public void setAvatar(String avatar) { this.avatar = avatar; }
 
-    public Bitmap getAvatar() { return this.avatar; }
+    public String getAvatar() { return this.avatar; }
 
     public void setCurrentCircle(Circle circle) { this.currentCircle = circle; }
 

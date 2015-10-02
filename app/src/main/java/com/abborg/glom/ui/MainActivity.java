@@ -91,7 +91,7 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
      */
     private void setAppDefaultState() {
         // create our new user
-        user = createUser(Const.TEST_USER_NAME, Const.TEST_USER_ID, Const.TEST_USER_LAT, Const.TEST_USER_LONG,
+        user = createUser(Const.TEST_USER_NAME, Const.TEST_USER_ID, Const.TEST_USER_AVATAR, Const.TEST_USER_LAT, Const.TEST_USER_LONG,
                 Const.TEST_USER_BROADCAST_LOCATION, Const.TEST_USER_DISCOVERABLE);
 
         // update all list of this user's circles
@@ -103,15 +103,31 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
             // populate with sample circles
             Circle circle1 = dataUpdater.createCircle(getResources().getString(R.string.default_first_circle_title),
                         new ArrayList<User>(Arrays.asList(
-                                createUser("TestName1", "TestId1", 1.003, 103.0, false, false),
-                                createUser("TestName2", "TestId2", 1.15, 101.352, false, false),
-                                createUser("Sunadda", "fatcat18", 1.009, 103.24, false ,false)
+                                createUser("Pro", "phubes", "https://lh3.googleusercontent.com/-6l-FS58CNYY/AAAAAAAAAAI/AAAAAAAAAI8/U-GeqasIr3E/photo.jpg", 1.003, 103.0, false, false),
+                                createUser("Mario", "mario", "http://mario.nintendo.com/img/mario_logo.png", 1.15, 101.352, false, false),
+                                createUser("bot1", "BotTester1", "http://www.adiumxtras.com/images/pictures/portal_2_turret_1_36512_8105_thumb_12583.png", 1.15123, 101.352, false, false),
+                                createUser("bot2", "BotTester2", "http://i1.theportalwiki.net/img/thumb/6/6b/Portal2_CompanionCube.png/180px-Portal2_CompanionCube.png", 1.15413, 100.352, false, false),
+                                createUser("bot3", "BotTester3", "http://www.globalrobots.com/uploads/images/Safety%20robot.jpg", 1.1565, 101.234, false, false),
+                                createUser("Scarlet", "scarlett_johansson", "http://www.biografiasyvidas.com/biografia/j/fotos/johansson_scarlett_2.jpg", 1.1531, 101.161, false, false),
+                                createUser("Lara", "crofty8080", "http://mujweb.cz/pavlicd/XNALara/face_smile_thumb.jpg", 1.15413, 101.362, false, false),
+                                createUser("Kim", "kimberlim", "http://1.bp.blogspot.com/-YD3tUFLWcHs/UN1E-NSi4II/AAAAAAAAAYI/wpzBlIhlqGU/s1600/IMG_3473.jpg", 1.15232, 101.712, false, false),
+                                createUser("RandomGirl", "wildgirl1991", "http://cdnstatic.visualizeus.com/thumbs/e0/d8/inspiration,faces,sunglasses,women,retrato,girl-e0d89711421170a6c57fa599653e58e5_h.jpg", 1.15513, 101.251, false, false),
+                                createUser("John", "johnyboy10", "http://a3.files.biography.com/image/upload/c_fill,cs_srgb,dpr_1.0,g_face,h_300,q_80,w_300/MTIwNjA4NjMzNzAzNzI4NjUy.jpg", 1.1521, 101.612, false, false),
+                                createUser("Jake", "jakeTheSnake", "http://www2.pictures.zimbio.com/gp/Jake+Gyllenhaal+Taylor+Swift+fling+28FkwSPy8pvl.jpg", 1.15134, 101.624, false, false),
+                                createUser("Robert", "RobertSan", "http://s3.stliq.com/c/l/6/60/33334214_robert-downey-jr-anti-eroe-di-avengers-age-of-ultron-4.jpg", 1.1524, 101.342, false, false),
+                                createUser("Taylor", "taylor_swift", "http://static.wixstatic.com/media/3a0a07_6fccabc0fb6a4e12b73db71a789aabb3.jpg_256", 1.15134, 101.614, false, false),
+                                createUser("Jessica", "jess_alba", "https://38.media.tumblr.com/avatar_4933209feef5_128.png", 1.1345, 101.715, false, false),
+                                createUser("TheRealDonaldThump", "therealdonald", "http://www.adiumxtras.com/images/pictures/portal_2_turret_1_36512_8105_thumb_12583.png", 1.1255, 102.455, false, false),
+                                createUser("Emma Watson", "emma_hermione", "https://31.media.tumblr.com/avatar_098de71d2e8e_128.png", 1.1621, 101.515, false, false),
+                                createUser("Harry Potter", "potter", "http://a2.mzstatic.com/us/r30/Purple/v4/a5/f3/95/a5f395b4-a34f-0feb-4494-e7f381517ae8/icon128-2x.png", 1.1751, 101.516, false, false),
+                                createUser("Capt. America", "steve_rogers", "https://static-s.aa-cdn.net/img/ios/808237503/0b3e7167358170f4d4a37eb592a76da7?v=1", 1.1612, 101.293, false, false),
+                                createUser("IronMan", "ironman20", "https://lh3.googleusercontent.com/-JP-wab1X11M/AAAAAAAAAAI/AAAAAAAAAAA/sPryRDMTipE/photo.jpg", 1.029, 103.236, false ,false)
                         ))
                     );
 
             Circle circle2 = dataUpdater.createCircle("My Love",
                     new ArrayList<User>(Arrays.asList(
-                            createUser("Sunadda", "fatcat18", 1.0, 102.1441, false ,false)
+                            createUser("Sunadda", "fatcat18", "http://images8.cpcache.com/image/17244178_155x155_pad.png", 1.0, 102.1441, false ,false)
                     ))
             );
 
@@ -129,12 +145,13 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
         }
     }
 
-    private User createUser(String name, String id, double latitude, double longitude,
+    private User createUser(String name, String id, String avatar, double latitude, double longitude,
                             boolean isBroadcastingLocation, boolean isDiscoverable) {
         Location location = new Location("");
         location.setLatitude(latitude);
         location.setLongitude(longitude);
         User user = new User(name, id, location);
+        user.setAvatar(avatar);
         user.setBroadcastingLocation(isBroadcastingLocation);
         user.setDiscoverable(isDiscoverable);
         return user;
@@ -412,7 +429,8 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
 
             // update the view
             updateView(selected);
-            Toast.makeText(this, "Select circle ID: " + selected.getId() + ", title: " + selected.getTitle(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Select circle ID: " + selected.getId() + ", title: " + selected.getTitle() +
+                    ", users: " + selected.getUsers().size(), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -422,7 +440,11 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
         getSupportActionBar().setTitle(currentCircle.getTitle() + " (" + currentCircle.getUsers().size() + ")");
 
         // only update the locations when the map is visible
-        LocationFragment map = (LocationFragment) adapter.getItem(1);
-        map.updateMap(true);    //TODO this needs to be retrieved from SQLite
+        LocationFragment mapFragment = (LocationFragment) adapter.getItem(1);
+        mapFragment.updateMap(true);    //TODO this needs to be retrieved from SQLite
+
+        // refresh the circle fragment
+        CircleFragment circleFragment = (CircleFragment) adapter.getItem(0);
+        circleFragment.update();
     }
 }

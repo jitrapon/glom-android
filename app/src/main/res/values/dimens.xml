@@ -8,4 +8,17 @@
     <dimen name="custom_tab_layout_height">72dp</dimen>
     <dimen name="fragment_margin_top">105dp</dimen>
     <dimen name="nav_drawer_width">260dp</dimen>
+    <dimen name="user_avatar_padding_bottom">18dp</dimen>
+    <dimen name="user_avatar_width">70dp</dimen>
+    <dimen name="user_avatar_height">70dp</dimen>
+    <dimen name="user_avatar_margin_top">5dp</dimen>
+    <dimen name="user_avatar_margin_bottom">5dp</dimen>
+    <dimen name="user_avatar_primary_textsize">15dp</dimen>
+    <dimen name="user_avatar_primary_margin_top">3dp</dimen>
+    <dimen name="user_avatar_primary_margin_bottom">1dp</dimen>
+    <dimen name="user_avatar_secondary_textsize">11dp</dimen>
+    <dimen name="user_avatar_secondary_margin_top">1dp</dimen>
+    <dimen name="user_avatar_secondary_margin_bottom">1dp</dimen>
+    <dimen name="user_avatar_primary_height">20dp</dimen>
+    <dimen name="user_avatar_secondary_height">20dp</dimen>
 </resources>
