@@ -1,6 +1,6 @@
 package com.abborg.glom.ui;
 
-import android.content.Context;
+import android.app.Activity;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -10,7 +10,10 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
+import android.widget.FrameLayout;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -23,6 +26,8 @@ import com.abborg.glom.model.User;
 import com.abborg.glom.utils.CircleTransform;
 import com.abborg.glom.utils.LayoutUtils;
 import com.bumptech.glide.Glide;
+import com.oguzdev.circularfloatingactionmenu.library.FloatingActionMenu;
+import com.oguzdev.circularfloatingactionmenu.library.SubActionButton;
 
 import java.util.List;
 
@@ -52,8 +57,18 @@ public class CircleFragment extends Fragment {
 
     private UserAvatarAdapter avatarAdapter;
 
+    FloatingActionMenu avatarActionMenu;
+
     // Required empty public constructor
     public CircleFragment() {}
+
+    Animation fadeInAnim;
+
+    Animation fadeOutAnim;
+
+    RelativeLayout overlayLayout;
+
+    ImageView menuOverlay;
 
     @Override
     public void setUserVisibleHint(boolean isVisibleToUser) {
@@ -88,8 +103,7 @@ public class CircleFragment extends Fragment {
                              Bundle savedInstanceState) {
         RelativeLayout rootView = (RelativeLayout) inflater.inflate(R.layout.fragment_circle, container, false);
 
-        // currently default to GridView
-        // initialize the user view
+        // initialize the USERLIST view
         GridView gridView = new GridView(getActivity());
 //        gridView.setId();
         gridView.setLayoutParams(new GridView.LayoutParams(
@@ -101,44 +115,304 @@ public class CircleFragment extends Fragment {
         gridView.setHorizontalSpacing(LayoutUtils.pxToDp(getContext(), 10));
         gridView.setStretchMode(GridView.STRETCH_COLUMN_WIDTH);
         gridView.setGravity(Gravity.CENTER);
-        gridView.setPadding(0, LayoutUtils.pxToDp(getContext(), (int)getResources().getDimension(R.dimen.user_avatar_padding_bottom)), 0, 0);
+        gridView.setPadding(0, LayoutUtils.pxToDp(getContext(), (int) getResources().getDimension(R.dimen.user_avatar_padding_bottom)), 0, 0);
 
         // set the adapter for this view
         avatarAdapter = new UserAvatarAdapter(getContext(), users);
         gridView.setAdapter(avatarAdapter);
 
+        // initialize the second relative layout for overlay and avatar menu
+        overlayLayout = new RelativeLayout(getActivity());
+        RelativeLayout.LayoutParams overlayLayoutParams = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.MATCH_PARENT,
+                RelativeLayout.LayoutParams.MATCH_PARENT);
+        overlayLayout.setLayoutParams(overlayLayoutParams);
+
+        // initialize the overlay imageview
+        menuOverlay = new ImageView(getActivity());
+        RelativeLayout.LayoutParams menuOverlayParams = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.MATCH_PARENT,
+                RelativeLayout.LayoutParams.MATCH_PARENT);
+        menuOverlay.setLayoutParams(menuOverlayParams);
+        menuOverlay.setBackgroundColor(getResources().getColor(R.color.menuOverlay));
+
+        // initialize the overlay avatar icon with radial menu
+        final ImageView avatarIcon = new ImageView(getActivity());
+        RelativeLayout.LayoutParams avatarIconParams = new RelativeLayout.LayoutParams(
+                getResources().getDimensionPixelSize(R.dimen.avatar_menu_size),
+                getResources().getDimensionPixelSize(R.dimen.avatar_menu_size));
+        avatarIconParams.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
+        avatarIcon.setLayoutParams(avatarIconParams);
+//        avatarIcon.setOnClickListener(new View.OnClickListener() {
+//
+//            @Override
+//            public void onClick(View v) {
+//                //TODO show user profile activity
+//                Log.d(TAG, "Clicked avatar icon");
+//            }
+//        });
+
+        // add fade-in / fade-out animation when visibilty changes
+        fadeInAnim = AnimationUtils.loadAnimation(getActivity(), android.R.anim.fade_in);
+        fadeOutAnim = AnimationUtils.loadAnimation(getActivity(), android.R.anim.fade_out);
+        fadeInAnim.setDuration(150);
+        fadeOutAnim.setDuration(150);
+
+        menuOverlay.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                hideMenuOverlay(true);
+            }
+        });
+
+        // add the overlay and avatar icon to the layout
+        overlayLayout.addView(menuOverlay, 0);
+        overlayLayout.addView(avatarIcon, 1);
+
+        // hide the layout for now until an avatar is clicked
+        overlayLayout.setVisibility(RelativeLayout.GONE);
+
+        int blueSubActionButtonSize = getResources().getDimensionPixelSize(R.dimen.blue_sub_action_button_size);
+        int blueSubActionButtonContentMargin = getResources().getDimensionPixelSize(R.dimen.blue_sub_action_button_content_margin);
+
+        final SubActionButton.Builder lCSubBuilder = new SubActionButton.Builder(getActivity());
+        lCSubBuilder.setBackgroundDrawable(getResources().getDrawable(R.drawable.button_action_blue_selector));
+
+        final FrameLayout.LayoutParams blueContentParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT);
+        blueContentParams.setMargins(blueSubActionButtonContentMargin,
+                blueSubActionButtonContentMargin,
+                blueSubActionButtonContentMargin,
+                blueSubActionButtonContentMargin);
+        lCSubBuilder.setLayoutParams(blueContentParams);
+
+        // Set custom layout params
+        FrameLayout.LayoutParams blueParams = new FrameLayout.LayoutParams(blueSubActionButtonSize, blueSubActionButtonSize);
+        lCSubBuilder.setLayoutParams(blueParams);
+
         // set callback for each avatar
-        // here we display the radial menu for user
+        // here we display the radial menu for user and show overlay
+        // show menu based on user permission
         gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                User selected = circle.getUsers().get(position);
+                User user = circle.getUsers().get(position);
 
-                // load the cached? avatar
-                Context context = getActivity();
-                ImageView avatarIcon = new ImageView(context);
-                Glide.with(context)
-                        .load(selected.getAvatar()).fitCenter()
-                        .transform(new CircleTransform(context))
-//                        .override((int) context.getResources().getDimension(R.dimen.user_avatar_width),
-//                                (int) context.getResources().getDimension(R.dimen.user_avatar_height))
+                showMenuOverlay(true);
+
+                // load the avatar picture
+                Glide.with(getActivity())
+                        .load(user.getAvatar()).fitCenter()
+                        .transform(new CircleTransform(getActivity()))
+                        .override((int) getActivity().getResources().getDimension(R.dimen.user_avatar_width),
+                                (int) getActivity().getResources().getDimension(R.dimen.user_avatar_height))
                         .placeholder(R.drawable.ic_profile)
                         .error(R.drawable.ic_profile)
                         .crossFade(1000)
                         .into(avatarIcon);
 
-                AvatarActionButton avatarActionButton = new AvatarActionButton.Builder(getActivity())
-                        .setContentView(avatarIcon)
-                        .build();
-
-                Toast.makeText(getActivity(), "Selected " + selected.getName() + ", " + selected.getId(), Toast.LENGTH_SHORT).show();
+                // load the menu based on user permission list
+                avatarActionMenu = setupAvatarOptionMenu(getActivity(), lCSubBuilder, blueContentParams, user, avatarIcon);
             }
         });
 
-        // add the user view to the root layout
-        rootView.addView(gridView);
+        // add the layouts
+        rootView.addView(gridView, 0);
+        rootView.addView(overlayLayout, 1);
 
         return rootView;
     }
 
+    private FloatingActionMenu setupAvatarOptionMenu(final Activity activity, SubActionButton.Builder builder,
+                                       FrameLayout.LayoutParams params, User user, ImageView avatarIcon) {
+        FloatingActionMenu.Builder menuBuilder =  new FloatingActionMenu.Builder(activity);
+        List<Integer> userMenuOptions = user.getUserPermission();
+        for (int option : userMenuOptions) {
+            SubActionButton actionButton = setIconFromPermission(activity, builder, params, user, option);
+            menuBuilder.addSubActionView(actionButton);
+        }
+
+        menuBuilder.setStateChangeListener(new FloatingActionMenu.MenuStateChangeListener() {
+            @Override
+            public void onMenuOpened(FloatingActionMenu floatingActionMenu) {
+                Log.d(TAG, "Menu is opened");
+            }
+
+            @Override
+            public void onMenuClosed(FloatingActionMenu floatingActionMenu) {
+                Log.d(TAG, "Menu is closed");
+            }
+        });
+
+        return menuBuilder.setRadius(getResources().getDimensionPixelSize(R.dimen.avatar_menu_radius_large))
+                .setStartAngle(0)
+                .setEndAngle(360)
+                .attachTo(avatarIcon)
+                .build();
+    }
+
+    private SubActionButton setIconFromPermission(final Activity activity, SubActionButton.Builder builder,
+                                            FrameLayout.LayoutParams params, final User user, int userPerm) {
+        ImageView icon = new ImageView(activity);
+        SubActionButton actionButton = null;
+
+        switch(userPerm) {
+            case User.MEDIA_IMAGE_RECEIVE:
+                icon.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_picture));
+                actionButton = builder.setContentView(icon, params).build();
+                actionButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Toast.makeText(activity, "Sending image is not supported yet", Toast.LENGTH_SHORT).show();
+                    }
+                });
+                break;
+            case User.MEDIA_AUDIO_RECEIVE:
+                icon.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_audio));
+                actionButton = builder.setContentView(icon, params).build();
+                actionButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Toast.makeText(activity, "Sending audio is not supported yet", Toast.LENGTH_SHORT).show();
+                    }
+                });
+                break;
+            case User.MEDIA_VIDEO_RECEIVE: icon.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_video));
+                actionButton = builder.setContentView(icon, params).build();
+                actionButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Toast.makeText(activity, "Sending video is not supported yet", Toast.LENGTH_SHORT).show();
+                    }
+                });
+                break;
+            case User.ALARM_RECEIVE: icon.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_alarm));
+                actionButton = builder.setContentView(icon, params).build();
+                actionButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Toast.makeText(activity, "Sending alarm is not supported yet", Toast.LENGTH_SHORT).show();
+                    }
+                });
+                break;
+            case User.NOTE_RECEIVE: icon.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_note));
+                actionButton = builder.setContentView(icon, params).build();
+                actionButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Toast.makeText(activity, "Sending note is not supported yet", Toast.LENGTH_SHORT).show();
+                    }
+                });
+                break;
+            case User.LOCATION_REQUEST_RECEIVE: icon.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_place));
+                actionButton = builder.setContentView(icon, params).build();
+                actionButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (user.getId().equals(currentUser.getId())) {
+                            //TODO broadcast location dialog setting interval and duration of updates
+                            toggleBroadcastingLocation(user);
+                        }
+                        else {
+                            hideMenuOverlay(true);
+                            Toast.makeText(activity, "Location request sent to " + user.getName(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+                break;
+            case User.SHOUT_RECEIVE: icon.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_important));
+                actionButton = builder.setContentView(icon, params).build();
+                actionButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Toast.makeText(activity, "Sending shout is not supported yet", Toast.LENGTH_SHORT).show();
+                    }
+                });
+                break;
+            case User.SECRET_MESSAGE: icon.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_text));
+                actionButton = builder.setContentView(icon, params).build();
+                actionButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Toast.makeText(activity, "Sending message is not supported yet", Toast.LENGTH_SHORT).show();
+                    }
+                });
+                break;
+            case User.SONG_SNIPPET_RECEIVE: icon.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_music));
+                actionButton = builder.setContentView(icon, params).build();
+                actionButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Toast.makeText(activity, "Sending song snippet is not supported yet", Toast.LENGTH_SHORT).show();
+                    }
+                });
+                break;
+            case User.POLL_RECEIVE: icon.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_poll));
+                actionButton = builder.setContentView(icon, params).build();
+                actionButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Toast.makeText(activity, "Asking is not supported yet", Toast.LENGTH_SHORT).show();
+                    }
+                });
+                break;
+            default: return null;
+        }
+
+        return actionButton;
+    }
+
+    private void showMenuOverlay(boolean animated) {
+        fadeInAnim.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                Log.d(TAG, "Opening avatar menu");
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+
+            }
+        });
+        overlayLayout.setVisibility(RelativeLayout.VISIBLE);
+        menuOverlay.startAnimation(fadeInAnim);
+    }
+
+    private void hideMenuOverlay(boolean animated) {
+        fadeOutAnim.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                Log.d(TAG, "Clicked outside of avatar icon");
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                overlayLayout.setVisibility(RelativeLayout.GONE);
+            }
+        });
+        menuOverlay.startAnimation(fadeOutAnim);
+        if (avatarActionMenu != null) avatarActionMenu.close(animated);
+    }
+
+    private boolean toggleBroadcastingLocation(User user) {
+        hideMenuOverlay(true);
+        if (!user.isBroadcastingLocation()) {
+            Toast.makeText(getActivity(), "Broadcasting location updates to " + circle.getTitle(), Toast.LENGTH_LONG).show();
+            return true;
+        }
+        else {
+            Toast.makeText(getActivity(), "Stopped broadcasting location updates to " + circle.getTitle(), Toast.LENGTH_LONG).show();
+            return false;
+        }
+    }
 }

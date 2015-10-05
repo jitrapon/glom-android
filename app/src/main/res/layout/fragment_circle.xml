@@ -5,4 +5,6 @@
     tools:context="com.abborg.glom.ui.CircleFragment"
     android:paddingTop="@dimen/fragment_margin_top">
 
+
+
 </RelativeLayout>

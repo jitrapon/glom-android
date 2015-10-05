@@ -197,6 +197,19 @@ public class DataUpdater {
         location.setLongitude(cursor.getDouble(4));
         user.setLocation(location);
 
+        //TODO set all user permission to receive everything
+        List<Integer> userPerm = new ArrayList<Integer>();
+        userPerm.add(User.MEDIA_IMAGE_RECEIVE);
+        userPerm.add(User.MEDIA_AUDIO_RECEIVE);
+        userPerm.add(User.MEDIA_VIDEO_RECEIVE);
+        userPerm.add(User.ALARM_RECEIVE);
+        userPerm.add(User.NOTE_RECEIVE);
+        userPerm.add(User.LOCATION_REQUEST_RECEIVE);
+        userPerm.add(User.SHOUT_RECEIVE);
+        userPerm.add(User.SECRET_MESSAGE);
+        userPerm.add(User.SONG_SNIPPET_RECEIVE);
+        userPerm.add(User.POLL_RECEIVE);
+        user.setUserPermission(userPerm);
 
         user.setCurrentCircle(circle);
         Log.d(TAG, "Query user for circle(" + circle.getId() + ") id: " + user.getId() + ", name: " + user.getName() + ", avatarId: " + cursor.getString(2)
