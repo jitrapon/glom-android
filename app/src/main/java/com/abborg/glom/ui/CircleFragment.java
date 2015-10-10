@@ -1,6 +1,7 @@
 package com.abborg.glom.ui;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -23,6 +24,7 @@ import com.abborg.glom.R;
 import com.abborg.glom.adapter.UserAvatarAdapter;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.User;
+import com.abborg.glom.service.CirclePushService;
 import com.abborg.glom.utils.CircleTransform;
 import com.abborg.glom.utils.LayoutUtils;
 import com.bumptech.glide.Glide;
@@ -313,7 +315,7 @@ public class CircleFragment extends Fragment {
                     public void onClick(View v) {
                         if (user.getId().equals(currentUser.getId())) {
                             //TODO broadcast location dialog setting interval and duration of updates
-                            toggleBroadcastingLocation(user);
+                            toggleBroadcastingLocation();
                         }
                         else {
                             hideMenuOverlay(true);
@@ -404,14 +406,33 @@ public class CircleFragment extends Fragment {
         if (avatarActionMenu != null) avatarActionMenu.close(animated);
     }
 
-    private boolean toggleBroadcastingLocation(User user) {
+    private boolean toggleBroadcastingLocation() {
         hideMenuOverlay(true);
-        if (!user.isBroadcastingLocation()) {
+
+        Intent intent = new Intent(getActivity(), CirclePushService.class);
+        intent.putExtra(getResources().getString(R.string.EXTRA_BROADCAST_LOCATION_USER_ID), currentUser.getId());
+        intent.putExtra(getResources().getString(R.string.EXTRA_BROADCAST_LOCATION_CIRCLE_ID), circle.getId());
+
+        if (!circle.isUserBroadcastingLocation()) {
             Toast.makeText(getActivity(), "Broadcasting location updates to " + circle.getTitle(), Toast.LENGTH_LONG).show();
+            circle.setBroadcastingLocation(true);
+//            dataUpdater.updateCircleLocationBroadcast(true); // TODO DataUpdater.updateCircleLocationBroadcast(true)
+
+            // start the push service, telling it to add the user's current circle to start broadcasting location to it
+            intent.setAction(getResources().getString(R.string.ACTION_CIRCLE_ENABLE_LOCATION_BROADCAST));
+            getActivity().startService(intent);
+
             return true;
         }
         else {
             Toast.makeText(getActivity(), "Stopped broadcasting location updates to " + circle.getTitle(), Toast.LENGTH_LONG).show();
+            circle.setBroadcastingLocation(false);
+//            dataUpdater.updateCircleLocationBroadcast(false); // TODO DataUpdater.updateCircleLocationBroadcast(true)
+
+            // informs the push service to remove the user's current circle to stop broadcasting location to it
+            intent.setAction(getResources().getString(R.string.ACTION_CIRCLE_DISABLE_LOCATION_BROADCAST));
+            getActivity().startService(intent);
+
             return false;
         }
     }

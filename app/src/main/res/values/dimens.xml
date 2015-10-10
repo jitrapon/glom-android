@@ -28,4 +28,8 @@
     <dimen name="avatar_menu_radius_medium">72dp</dimen>
     <dimen name="blue_sub_action_button_size">58dp</dimen>
     <dimen name="blue_sub_action_button_content_margin">16dp</dimen>
+
+    <dimen name="marker_avatar_width">35dp</dimen>
+    <dimen name="marker_avatar_height">35dp</dimen>
+    <dimen name="marker_margin">3dp</dimen>
 </resources>

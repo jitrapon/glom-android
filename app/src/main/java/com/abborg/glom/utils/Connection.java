@@ -1,6 +1,6 @@
 package com.abborg.glom.utils;
 
-import android.app.Activity;
+import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -41,28 +41,28 @@ public class Connection implements ConnectionCallbacks, OnConnectionFailedListen
     /**
      * Call this method to get reference to a singleton instance of this apiClient
      *
-     * @param activity
+     * @param context
      * @return
      */
-    public static Connection getInstance(Activity activity) {
+    public static Connection getInstance(Context context) {
         if (instance == null) {
-            instance = new Connection(activity);
+            instance = new Connection(context);
         }
 
         return instance;
     }
 
     //TODO verify in onCreate and onResume in the main activity
-    public boolean verifyGooglePlayServices(Activity activity) {
-        int resultCode = apiAvailability.isGooglePlayServicesAvailable(activity);
+    public boolean verifyGooglePlayServices(Context context) {
+        int resultCode = apiAvailability.isGooglePlayServicesAvailable(context);
         if (resultCode != ConnectionResult.SUCCESS) {
-            if (apiAvailability.isUserResolvableError(resultCode)) {
-                apiAvailability.getErrorDialog(activity, resultCode, PLAY_SERVICES_RESOLUTION_REQUEST)
-                        .show();
-            } else {
-                Log.i(TAG, "This device is not supported.");
-                activity.finish();
-            }
+//            if (apiAvailability.isUserResolvableError(resultCode)) {
+//                apiAvailability.getErrorDialog(activity, resultCode, PLAY_SERVICES_RESOLUTION_REQUEST)
+//                        .show();
+//            } else {
+//                Log.i(TAG, "This device is not supported.");
+//                activity.finish();
+//            }
             return false;
         }
 
@@ -73,9 +73,9 @@ public class Connection implements ConnectionCallbacks, OnConnectionFailedListen
         return apiClient;
     }
 
-    private Connection(Activity activity) {
+    private Connection(Context context) {
         apiClient = new GoogleApiClient
-                .Builder(activity)
+                .Builder(context)
                 .addApi(LocationServices.API)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)

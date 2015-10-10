@@ -17,7 +17,7 @@ import android.widget.Toast;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.model.User;
-import com.abborg.glom.service.BaseGcmListenerService;
+import com.abborg.glom.service.MessageListenerService;
 import com.abborg.glom.service.BaseInstanceIDListenerService;
 import com.abborg.glom.service.RegistrationIntentService;
 import com.abborg.glom.utils.Connection;
@@ -111,8 +111,8 @@ public class LocationActivity extends FragmentActivity implements OnMapReadyCall
         broadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                if ( intent.getAction().equals(getResources().getString(R.string.gcm_location_update_intent_key)) ) {
-                    String json = intent.getStringExtra(getResources().getString(R.string.gcm_location_update_intent_extra_users));
+                if ( intent.getAction().equals(getResources().getString(R.string.ACTION_RECEIVE_LOCATION)) ) {
+                    String json = intent.getStringExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_USERS));
 
                     try {
                         // update the location markers
@@ -146,7 +146,7 @@ public class LocationActivity extends FragmentActivity implements OnMapReadyCall
         };
 
         // retrieve the shared preferences
-        sharedPref = this.getSharedPreferences(getString(R.string.preference_file_key), Context.MODE_PRIVATE);
+        sharedPref = this.getSharedPreferences(getString(R.string.PREFERENCE_FILE), Context.MODE_PRIVATE);
 
         // create and initialize the Google Play Location service
         locationRequest = LocationRequest.create();
@@ -176,7 +176,7 @@ public class LocationActivity extends FragmentActivity implements OnMapReadyCall
             startService(intent);
 
             startService(new Intent(this, BaseInstanceIDListenerService.class));
-            startService(new Intent(this, BaseGcmListenerService.class));
+            startService(new Intent(this, MessageListenerService.class));
         }
         else {
             finish();
@@ -201,7 +201,7 @@ public class LocationActivity extends FragmentActivity implements OnMapReadyCall
     protected void onResume() {
         LocalBroadcastManager broadcastManager = LocalBroadcastManager.getInstance(this);
         IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(getResources().getString(R.string.gcm_location_update_intent_key));
+        intentFilter.addAction(getResources().getString(R.string.ACTION_RECEIVE_LOCATION));
         broadcastManager.registerReceiver(broadcastReceiver, intentFilter);
 
         super.onResume();
@@ -225,7 +225,7 @@ public class LocationActivity extends FragmentActivity implements OnMapReadyCall
         if (location != null) {
             currentUser.setLocation(location);
             updateUI(Arrays.asList(currentUser));
-            if (currentUser.isBroadcastingLocation()) sendLocationUpdateRequest(location);
+            if (currentUser.getCurrentCircle().isUserBroadcastingLocation()) sendLocationUpdateRequest(location);
         }
     }
 
@@ -238,7 +238,7 @@ public class LocationActivity extends FragmentActivity implements OnMapReadyCall
         gson = new Gson();
 
         // retrieve the current user
-        currentUser = (User)getIntent().getExtras().getSerializable( getString(R.string.main_user_intent_key) );
+        currentUser = (User)getIntent().getExtras().getSerializable( getString(R.string.EXTRA_CURRENT_USER) );
 
         // initialize all list of users
         userMarkers = new ConcurrentHashMap<>();
@@ -305,13 +305,12 @@ public class LocationActivity extends FragmentActivity implements OnMapReadyCall
                 Log.i(TAG, "Requesting new user location with interval of " + interval);
                 if (interval > 0) locationRequest.setInterval(interval);
                 LocationServices.FusedLocationApi.requestLocationUpdates(apiClient, locationRequest, this);
-            }
-            else {
+            } else {
                 Log.i(TAG, "User last location is intact");
                 currentUser.setLocation(userLocation);
                 updateUI(Arrays.asList(currentUser));
 
-                if (currentUser.isBroadcastingLocation()) sendLocationUpdateRequest(userLocation);
+                if (currentUser.getCurrentCircle().isUserBroadcastingLocation()) sendLocationUpdateRequest(userLocation);
             }
         }
         else {

@@ -29,11 +29,9 @@ import com.abborg.glom.R;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.DataUpdater;
 import com.abborg.glom.model.User;
-import com.abborg.glom.service.BaseGcmListenerService;
 import com.abborg.glom.service.BaseInstanceIDListenerService;
+import com.abborg.glom.service.MessageListenerService;
 import com.abborg.glom.service.RegistrationIntentService;
-import com.abborg.glom.utils.Connection;
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.gson.Gson;
 
 import org.json.JSONArray;
@@ -76,9 +74,6 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
 
     private SharedPreferences sharedPref;
 
-    /* Google Play API client */
-    private GoogleApiClient apiClient;
-
     /* GSON java-to-JSON converter */
     private Gson gson;
 
@@ -105,34 +100,21 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
                         new ArrayList<User>(Arrays.asList(
                                 createUser("Pro", "phubes", "https://lh3.googleusercontent.com/-6l-FS58CNYY/AAAAAAAAAAI/AAAAAAAAAI8/U-GeqasIr3E/photo.jpg", 1.003, 103.0, false, false),
                                 createUser("Mario", "mario", "http://mario.nintendo.com/img/mario_logo.png", 1.15, 101.352, false, false),
-                                createUser("bot1", "BotTester1", "http://www.adiumxtras.com/images/pictures/portal_2_turret_1_36512_8105_thumb_12583.png", 1.15123, 101.352, false, false),
-                                createUser("bot2", "BotTester2", "http://i1.theportalwiki.net/img/thumb/6/6b/Portal2_CompanionCube.png/180px-Portal2_CompanionCube.png", 1.15413, 100.352, false, false),
-                                createUser("bot3", "BotTester3", "http://www.globalrobots.com/uploads/images/Safety%20robot.jpg", 1.1565, 101.234, false, false),
                                 createUser("Scarlet", "scarlett_johansson", "http://www.biografiasyvidas.com/biografia/j/fotos/johansson_scarlett_2.jpg", 1.1531, 101.161, false, false),
-                                createUser("Lara", "crofty8080", "http://mujweb.cz/pavlicd/XNALara/face_smile_thumb.jpg", 1.15413, 101.362, false, false),
-                                createUser("Kim", "kimberlim", "http://1.bp.blogspot.com/-YD3tUFLWcHs/UN1E-NSi4II/AAAAAAAAAYI/wpzBlIhlqGU/s1600/IMG_3473.jpg", 1.15232, 101.712, false, false),
-                                createUser("RandomGirl", "wildgirl1991", "http://cdnstatic.visualizeus.com/thumbs/e0/d8/inspiration,faces,sunglasses,women,retrato,girl-e0d89711421170a6c57fa599653e58e5_h.jpg", 1.15513, 101.251, false, false),
-                                createUser("John", "johnyboy10", "http://a3.files.biography.com/image/upload/c_fill,cs_srgb,dpr_1.0,g_face,h_300,q_80,w_300/MTIwNjA4NjMzNzAzNzI4NjUy.jpg", 1.1521, 101.612, false, false),
-                                createUser("Jake", "jakeTheSnake", "http://www2.pictures.zimbio.com/gp/Jake+Gyllenhaal+Taylor+Swift+fling+28FkwSPy8pvl.jpg", 1.15134, 101.624, false, false),
-                                createUser("Robert", "RobertSan", "http://s3.stliq.com/c/l/6/60/33334214_robert-downey-jr-anti-eroe-di-avengers-age-of-ultron-4.jpg", 1.1524, 101.342, false, false),
                                 createUser("Taylor", "taylor_swift", "http://static.wixstatic.com/media/3a0a07_6fccabc0fb6a4e12b73db71a789aabb3.jpg_256", 1.15134, 101.614, false, false),
                                 createUser("Jessica", "jess_alba", "https://38.media.tumblr.com/avatar_4933209feef5_128.png", 1.1345, 101.715, false, false),
-                                createUser("TheRealDonaldThump", "therealdonald", "http://www.adiumxtras.com/images/pictures/portal_2_turret_1_36512_8105_thumb_12583.png", 1.1255, 102.455, false, false),
-                                createUser("Emma Watson", "emma_hermione", "https://31.media.tumblr.com/avatar_098de71d2e8e_128.png", 1.1621, 101.515, false, false),
-                                createUser("Harry Potter", "potter", "http://a2.mzstatic.com/us/r30/Purple/v4/a5/f3/95/a5f395b4-a34f-0feb-4494-e7f381517ae8/icon128-2x.png", 1.1751, 101.516, false, false),
-                                createUser("Capt. America", "steve_rogers", "https://static-s.aa-cdn.net/img/ios/808237503/0b3e7167358170f4d4a37eb592a76da7?v=1", 1.1612, 101.293, false, false),
-                                createUser("IronMan", "ironman20", "https://lh3.googleusercontent.com/-JP-wab1X11M/AAAAAAAAAAI/AAAAAAAAAAA/sPryRDMTipE/photo.jpg", 1.029, 103.236, false ,false)
-                        ))
+                                createUser("Emma Watson", "emma_hermione", "https://31.media.tumblr.com/avatar_098de71d2e8e_128.png", 1.1621, 101.515, false, false)
+                        )), "my-circle"
                     );
 
             Circle circle2 = dataUpdater.createCircle("My Love",
                     new ArrayList<User>(Arrays.asList(
                             createUser("Sunadda", "fatcat18", "http://images8.cpcache.com/image/17244178_155x155_pad.png", 1.0, 102.1441, false ,false)
-                    ))
+                    )), "my-love"
             );
 
             Circle circle3 = dataUpdater.createCircle("Small Room",
-                    new ArrayList<User>()
+                    new ArrayList<User>(), "small-room"
             );
 
             circles = dataUpdater.getCircles();
@@ -152,14 +134,11 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
         location.setLongitude(longitude);
         User user = new User(name, id, location);
         user.setAvatar(avatar);
-        user.setBroadcastingLocation(isBroadcastingLocation);
-        user.setDiscoverable(isDiscoverable);
         return user;
     }
 
     public Circle getCurrentCircle() { return currentCircle; }
 
-    //TODO has to load from SQLITE
     public List<Circle> getCircles() { return circles; }
 
     public Circle getCircleFromTitle(String title) {
@@ -208,9 +187,11 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
         broadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                if ( intent.getAction().equals(getResources().getString(R.string.gcm_location_update_intent_key)) ) {
-                    String userJson = intent.getStringExtra(getResources().getString(R.string.gcm_location_update_intent_extra_users));
-                    String circleId = intent.getStringExtra(getResources().getString(R.string.gcm_location_update_intent_extra_circleId));
+
+                // location updates from MessageListenerService
+                if ( intent.getAction().equals(getResources().getString(R.string.ACTION_RECEIVE_LOCATION)) ) {
+                    String userJson = intent.getStringExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_USERS));
+                    String circleId = intent.getStringExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_CIRCLE_ID));
                     Circle circle = findCircle(circleId);
 
                     if (circle != null) {
@@ -251,7 +232,7 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
                                 // only update the location markers when the map is visible and this is the current circle
                                 LocationFragment map = (LocationFragment) adapter.getItem(1);
                                 if (map.isFragmentVisible && circle.getId().equals(currentCircle.getId())) {
-                                    map.updateUI(userList);
+                                    map.updateUserMarkers(userList);
                                 }
 
                                 Toast.makeText(context, userList.get(0).getId() + ": " + userList.get(0).getLocation().getLatitude()
@@ -267,25 +248,32 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
                         Toast.makeText(context, "Could not find circle (" + circleId + ") under this user!", Toast.LENGTH_SHORT).show();
                     }
                 }
+
+                // location updates from CirclePushService
+                else if (intent.getAction().equals(getResources().getString(R.string.ACTION_USER_LOCATION_UPDATE))) {
+                    Location location = intent.getParcelableExtra(getResources().getString(R.string.EXTRA_USER_LOCATION_UPDATE));
+                    user.setLocation(location); //TODO others might not see your location like you do
+
+                    // only update the location markers when the map is visible
+                    LocationFragment map = (LocationFragment) adapter.getItem(1);
+                    if (map.isFragmentVisible) {
+                        map.updateUserMarkers(Arrays.asList(user));
+                    }
+                }
             }
         };
 
         // retrieve the shared preferences
-        sharedPref = getSharedPreferences(getString(R.string.preference_file_key), Context.MODE_PRIVATE);
+        sharedPref = getSharedPreferences(getString(R.string.PREFERENCE_FILE), Context.MODE_PRIVATE);
 
-        if ( Connection.getInstance(this).verifyGooglePlayServices(this) ) {
-            apiClient = Connection.getInstance(this).getApiClient();
+        gson = new Gson();
 
-            gson = new Gson();
-
-            // start IntentService to register this application with GCM
-            startService(new Intent(this, RegistrationIntentService.class));
-            startService(new Intent(this, BaseInstanceIDListenerService.class));
-            startService(new Intent(this, BaseGcmListenerService.class));
-        }
-        else {
-            finish();
-        }
+        // start IntentService to register this application with GCM
+        Intent intent = new Intent(this, RegistrationIntentService.class);
+        intent.putExtra(getResources().getString(R.string.EXTRA_SEND_TOKEN_USER_ID), user.getId());
+        startService(intent);
+        startService(new Intent(this, BaseInstanceIDListenerService.class));
+        startService(new Intent(this, MessageListenerService.class));
     }
 
     /**
@@ -304,22 +292,19 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
     @Override
     protected void onStart() {
         super.onStart();
-        if (!apiClient.isConnected()) apiClient.connect();
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        if(apiClient.isConnected()) {
-            apiClient.disconnect();
-        }
     }
 
     @Override
     protected void onResume() {
         LocalBroadcastManager broadcastManager = LocalBroadcastManager.getInstance(this);
         IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(getResources().getString(R.string.gcm_location_update_intent_key));
+        intentFilter.addAction(getResources().getString(R.string.ACTION_RECEIVE_LOCATION));
+        intentFilter.addAction(getResources().getString(R.string.ACTION_USER_LOCATION_UPDATE));
         broadcastManager.registerReceiver(broadcastReceiver, intentFilter);
 
         try {
@@ -329,7 +314,6 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
             Log.e(TAG, ex.getMessage());
         }
         super.onResume();
-        if (!apiClient.isConnected()) apiClient.connect();
     }
 
     @Override
@@ -339,13 +323,6 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
 
         dataUpdater.close();
         super.onPause();
-        if (apiClient.isConnected()) {
-            apiClient.disconnect();
-        }
-    }
-
-    public GoogleApiClient getApiClient() {
-        return apiClient;
     }
 
     private void setupTabIcons() {
@@ -409,7 +386,13 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
+        if (id == R.id.action_search) {
+            return true;
+        }
+        else if (id == R.id.action_chat) {
+            return true;
+        }
+        else if (id == R.id.action_settings) {
             return true;
         }
 

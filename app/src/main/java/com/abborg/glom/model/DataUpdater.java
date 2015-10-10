@@ -66,15 +66,19 @@ public class DataUpdater {
         }
     }
 
+    //TODO update db when user broadcasts location in a circle
+
     /**
      * Creates a new circle, with the current user, and the specified users in it.
      *
      * @param name The name or title of the circle to create with
      * @param users The list of users to add at the time of creation along with current user
+     * @param id The id of this circle. Leave null to randomly generate one
      * @return The created circle
      */
-    public Circle createCircle(String name, List<User> users) {
+    public Circle createCircle(String name, List<User> users, String id) {
         Circle circle = Circle.createCircle(name, currentUser);
+        if (id != null) circle.setId(id);
         circle.addUsers(users);
 
         database.beginTransaction();

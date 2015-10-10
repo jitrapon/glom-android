@@ -1,14 +1,13 @@
 <resources>
     <!-- App-wide strings -->
     <string name="app_name">Glom</string>
-    <string name="action_settings">Settings</string>
-    <string name="preference_file_key">com.abborg.glom.preferences</string>
+    <string name="PREFERENCE_FILE">com.abborg.glom.preferences</string>
     <string name="server_address">http://www.google.com</string>
     <string name="server_port">80</string>
-    <string name="action_search">com.abborg.glom.action.search</string>
     <string name="default_first_circle_title">My Circle</string>
-    <string name="action_drawer_open">com.abborg.glom.action.drawer.open</string>
-    <string name="action_drawer_close">com.abborg.glom.action.drawer.close</string>
+    <string name="menu_item_search">Search</string>
+    <string name="menu_item_chat">Chat</string>
+    <string name="menu_item_settings">Settings</string>
 
     <!-- Error messages -->
     <string name="error_network_timeout">The request has timed out, please try again later</string>
@@ -20,10 +19,19 @@
 
     <!-- INTENT EXTRA KEYS -->
     <string name="gcm_senderId">1098468135284</string>
-    <string name="gcm_location_update_intent_key">com.abborg.glom.location.update.map</string>
-    <string name="gcm_location_update_intent_extra_users">com.abborg.glom.location.update.users</string>
-    <string name="gcm_location_update_intent_extra_circleId">com.abborg.glom.location.update.circleId</string>
-    <string name="main_user_intent_key">com.abborg.glom.user</string>
+    <string name="ACTION_OPEN_DRAWER">com.abborg.glom.action.DRAWER_OPEN</string>
+    <string name="ACTION_CLOSE_DRAWER">com.abborg.glom.action.DRAWER_CLOSE</string>
+    <string name="ACTION_RECEIVE_LOCATION">com.abborg.glom.action.LOCATION_RECEIVE</string>
+    <string name="EXTRA_RECEIVE_LOCATION_USERS">com.abborg.glom.extra.LOCATION_RECEIVE_USERS</string>
+    <string name="EXTRA_RECEIVE_LOCATION_CIRCLE_ID">com.abborg.glom.extra.LOCATION_RECEIVE_CIRCLEID</string>
+    <string name="EXTRA_CURRENT_USER">com.abborg.glom.extra.CURRENT_USER</string>
+    <string name="ACTION_CIRCLE_ENABLE_LOCATION_BROADCAST">com.abborg.glom.action.CIRCLE_ENABLE_LOCATION_BROADCAST</string>
+    <string name="ACTION_CIRCLE_DISABLE_LOCATION_BROADCAST">com.abborg.glom.action.CIRCLE_DISABLE_LOCATION_BROADCAST</string>
+    <string name="EXTRA_BROADCAST_LOCATION_USER_ID">com.abborg.glom.extra.BROADCAST_LOCATION_USERID</string>
+    <string name="EXTRA_BROADCAST_LOCATION_CIRCLE_ID">com.abborg.glom.extra.BROADCAST_LOCATION_CIRCLEID</string>
+    <string name="ACTION_USER_LOCATION_UPDATE">com.abborg.glom.action.USER_LOCATION_UPDATE</string>
+    <string name="EXTRA_USER_LOCATION_UPDATE">com.abborg.glom.extra.USER_LOCATION_UPDATE</string>
+    <string name="EXTRA_SEND_TOKEN_USER_ID">com.abborg.glom.extra.SEND_TOKEN_USERID</string>
 
     <!-- Profile activity strings -->
     <string name="profile_activity_label">My Profile</string>
@@ -36,10 +44,10 @@
     <string name="open_map_btn">Open Map</string>
     <string name="user_status_placeholder">This is a text status!</string>
 
-    <!-- Location activity strings -->
+    <!-- Location fragment strings -->
     <string name="location_activity_label">My Location</string>
     <string name="location_activity_title">Location</string>
-    <string name="locate_me_btn_label">Locate</string>
+    <string name="zoom_to_fit_btn_label">Fit</string>
     <string name="locate_me_btn_searching">Just a moment...</string>
     <string name="marker_msg_placeholder">Online</string>
     <string name="title_activity_main">MainActivity</string>

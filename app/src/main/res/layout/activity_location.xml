@@ -15,7 +15,7 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/locate_me_btn_label"
+        android:text="@string/zoom_to_fit_btn_label"
         android:id="@+id/locate_me_btn"
         android:layout_gravity="center_horizontal|top"
         android:layout_alignParentTop="true"

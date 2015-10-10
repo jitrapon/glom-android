@@ -34,13 +34,16 @@ public class RegistrationIntentService extends IntentService {
     private static final String TAG = "RegIntentService";
     private static final String[] TOPICS = {"global"};
 
+    private String userId;
+
     public RegistrationIntentService() {
         super(TAG);
     }
 
     @Override
     protected void onHandleIntent(Intent intent) {
-        SharedPreferences sharedPreferences = this.getSharedPreferences(getString(R.string.preference_file_key), Context.MODE_PRIVATE);
+        SharedPreferences sharedPreferences = this.getSharedPreferences(getString(R.string.PREFERENCE_FILE), Context.MODE_PRIVATE);
+        userId = intent.getStringExtra(getResources().getString(R.string.EXTRA_SEND_TOKEN_USER_ID));
 
         try {
             // [START register_for_gcm]
@@ -54,7 +57,7 @@ public class RegistrationIntentService extends IntentService {
             Log.i(TAG, "GCM Registration Token: " + token);
 
             // TODO: Implement this method to send any registration to your app's servers.
-            sendRegistrationToServer(token);
+            sendRegistrationToServer(token, userId);
 
             // Subscribe to topic channels
             subscribeTopics(token);
@@ -83,7 +86,7 @@ public class RegistrationIntentService extends IntentService {
      *
      * @param token The new token.
      */
-    private void sendRegistrationToServer(String token) {
+    private void sendRegistrationToServer(String token, String userId) {
         // initialize the body
         JSONObject body =  new JSONObject();
 
@@ -91,6 +94,7 @@ public class RegistrationIntentService extends IntentService {
 
         try {
             body.put("gcm_token", token);
+            body.put("user_id", userId);
         }
         catch (JSONException ex) {
             Log.e(TAG, ex.getMessage());

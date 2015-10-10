@@ -2,44 +2,38 @@ package com.abborg.glom.ui;
 
 
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
 
-import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.model.User;
+import com.abborg.glom.utils.CircleTransform;
 import com.abborg.glom.utils.LayoutUtils;
-import com.abborg.glom.utils.RequestHandler;
-import com.android.volley.AuthFailureError;
-import com.android.volley.Request;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.animation.GlideAnimation;
+import com.bumptech.glide.request.target.SimpleTarget;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,17 +41,10 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class LocationFragment extends SupportMapFragment implements OnMapReadyCallback,
-        LocationListener  {
+public class LocationFragment extends SupportMapFragment implements OnMapReadyCallback {
     
     /* Might be null if Google Play services APK is not available. */
     private GoogleMap googleMap;
-
-    /* Current user's location */
-    private Location userLocation;
-
-    /* The location request that will be sent to retrieve location */
-    private LocationRequest locationRequest;
 
     /* This context's tag */
     public static final String TAG = "MAP_FRAGMENT";
@@ -71,14 +58,15 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
     /* Map of all the accepted users' locations for easily updating their markers */
     private Map<String, Marker> userMarkers;
 
+    /* Whether or not this fragment is visible */
     public boolean isFragmentVisible;
+
+    /* The custom user marker view constructed from the custom layour */
+    private View userMarkerView;
 
     /*******************************************************************
      * CONSTANTS
      *******************************************************************/
-
-    /* Polling interval of the location request to update the location */
-    public static final long LOCATION_REQUEST_INTERVAL = 1500;
 
     /* Google Map zoom level when a user's location has been identified */
     private static final float CAMERA_ZOOM_LEVEL = 16;
@@ -111,19 +99,31 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
 //        int marginTopDp = (int) TypedValue.applyDimension(
 //                TypedValue.COMPLEX_UNIT_DIP, getResources().getDimension(R.dimen.fragment_margin_top), getResources()
 //                        .getDisplayMetrics());
-        mapView.setPadding(0, (int)getResources().getDimension(R.dimen.fragment_margin_top), 0, 0);
+        mapView.setPadding(0, (int) getResources().getDimension(R.dimen.fragment_margin_top), 0, 0);
 
-        // add locate button
-        Button locateBtn = (Button) overlay.findViewById(R.id.locate_btn);
-        locateBtn.setOnClickListener(new View.OnClickListener() {
+        // zoom-to-fit button
+        Button zoomToFitBtn = (Button) overlay.findViewById(R.id.zoom_to_fit_btn);
+        zoomToFitBtn.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                getUserLocation(false, LOCATION_REQUEST_INTERVAL);
+                LatLngBounds.Builder boundBuilder = new LatLngBounds.Builder();
+                for (Marker marker : userMarkers.values()) {
+                    boundBuilder.include(marker.getPosition());
+                }
+                LatLngBounds bounds = boundBuilder.build();
+                int padding = LayoutUtils.dpToPx(getContext(), CAMERA_CENTER_PADDING);
+                googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
             }
         });
 
         mapView.addView(overlay);
 
+        userMarkerView = inflater.inflate(R.layout.user_marker, null);
+
         return mapView;
+    }
+
+    private void setUpClusterer() {
+
     }
 
     @Override
@@ -152,16 +152,6 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
     }
 
     @Override
-    public void onLocationChanged(Location location) {
-        Log.i(TAG, "Location has changed.");
-        if (location != null) {
-            currentUser.setLocation(location);
-            updateUI(Arrays.asList(currentUser));
-            if (currentUser.isBroadcastingLocation()) sendLocationUpdateRequest(location);
-        }
-    }
-
-    @Override
     public void setUserVisibleHint(boolean isVisibleToUser) {
         super.setUserVisibleHint(isVisibleToUser);
         if (isVisibleToUser) {
@@ -175,15 +165,17 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
     }
 
     private void setUpMap() {
-        locationRequest = LocationRequest.create();
-        locationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
-
-        googleMap.setMyLocationEnabled(true);
+        googleMap.setMyLocationEnabled(false);
         googleMap.getUiSettings().setMyLocationButtonEnabled(false);
 
         updateMap(false);
     }
 
+    /**
+     * Updates the map by clearing all markers
+     *
+     * @param clear
+     */
     public void updateMap(boolean clear) {
         // initialize the default user's marker from sqlite
         if (googleMap != null) {
@@ -209,8 +201,10 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
             MarkerOptions options = new MarkerOptions()
                     .title(markerTitle)
                     .snippet(markerSnippet)
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_blue))
                     .position(new LatLng(location.getLatitude(), location.getLongitude()));
             Marker marker = googleMap.addMarker(options);
+            setUserMarkerIconAvatar(currentUser.getAvatar(), marker);
             userMarkers.put(currentUser.getId(), marker);
 
             // update boundary
@@ -226,8 +220,10 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
                 options = new MarkerOptions()
                         .title(user.getId())
                         .snippet(markerSnippet)
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_blue))
                         .position(new LatLng(user.getLocation().getLatitude(), user.getLocation().getLongitude()));
                 marker = googleMap.addMarker(options);
+                setUserMarkerIconAvatar(user.getAvatar(), marker);
                 userMarkers.put(user.getId(), marker);
 
                 // update the boundary
@@ -249,98 +245,50 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
     }
 
     /**
-     * Retrieves user's current location based on interval, intent, or last known location
-     * @param lastLocation if true, use the last known location
-     * @param interval The interval in milliseconds to poll for location updates, specify 0 to make a single request
+     * Loads the user avatar into the marker
+     *
+     * @param avatar
+     * @param marker
      */
-    private void getUserLocation(boolean lastLocation, long interval) {
-        GoogleApiClient apiClient = ((MainActivity) getActivity()).getApiClient();
-
-        if (lastLocation) {
-            userLocation = LocationServices.FusedLocationApi.getLastLocation(apiClient);
-            if (userLocation == null) {
-                Log.i(TAG, "Requesting new user location with interval of " + interval);
-                if (interval > 0) locationRequest.setInterval(interval);
-                LocationServices.FusedLocationApi.requestLocationUpdates(apiClient, locationRequest, this);
-            }
-            else {
-                Log.i(TAG, "User last location is intact");
-                currentUser.setLocation(userLocation);
-                updateUI(Arrays.asList(currentUser));
-
-                if (currentUser.isBroadcastingLocation()) sendLocationUpdateRequest(userLocation);
-            }
-        }
-        else {
-            Log.i(TAG, "Requesting new user location with interval of " + interval);
-            if (interval > 0) locationRequest.setInterval(interval);
-            LocationServices.FusedLocationApi.requestLocationUpdates(apiClient, locationRequest, this);
-        }
+    private void setUserMarkerIconAvatar(String avatar, final Marker marker) {
+        Glide.with(getContext())
+            .load(avatar).asBitmap().fitCenter()
+            .transform(new CircleTransform(getActivity()))
+            .into(new SimpleTarget<Bitmap>(getResources().getDimensionPixelSize(R.dimen.marker_avatar_width),
+                    getResources().getDimensionPixelSize(R.dimen.marker_avatar_height)) {
+                public void onResourceReady(Bitmap bitmap, GlideAnimation animation) {
+                    ImageView userMarkerAvatar = (ImageView) userMarkerView.findViewById(R.id.markerAvatar);
+                    userMarkerAvatar.setImageBitmap(bitmap);
+                    Bitmap userMarker = createDrawableFromView(userMarkerView);
+                    marker.setIcon(BitmapDescriptorFactory.fromBitmap(userMarker));
+                }
+            });
     }
 
-    private void sendLocationUpdateRequest(Location location) {
-        // initialize the body
-        JSONObject body =  new JSONObject();
+    private Bitmap createDrawableFromView(View view) {
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getActivity().getWindowManager().getDefaultDisplay()
+                .getMetrics(displayMetrics);
+        view.setLayoutParams(new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,
+                RelativeLayout.LayoutParams.WRAP_CONTENT));
+        view.measure(displayMetrics.widthPixels, displayMetrics.heightPixels);
+        view.layout(0, 0, displayMetrics.widthPixels,
+                displayMetrics.heightPixels);
+        view.buildDrawingCache();
+        Bitmap bitmap = Bitmap.createBitmap(view.getMeasuredWidth(),
+                view.getMeasuredHeight(), Bitmap.Config.ARGB_8888);
 
-        try {
-            body.put("id", currentUser.getId());
-            body.put("circle", currentUser.getCurrentCircle().getId());
-
-            JSONObject loc = new JSONObject();
-            loc.put("lat", location.getLatitude());
-            loc.put("long", location.getLongitude());
-
-            body.put("location", loc);
-        }
-        catch (JSONException ex) {
-            Log.e(TAG, ex.getMessage());
-        }
-
-        final double latitude = location.getLatitude();
-        final double longitude = location.getLongitude();
-
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, Const.HOST_ADDRESS, body,
-                new Response.Listener<JSONObject>() {
-
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        RequestHandler.getInstance(getActivity()).handleResponse(getActivity(), response);
-                    }
-                },
-                new Response.ErrorListener() {
-
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        RequestHandler.getInstance(getActivity()).handleError(error);
-                    }
-                })
-
-        {
-            @Override
-            public Map<String, String> getHeaders() throws AuthFailureError {
-                HashMap<String, String> headers = new HashMap<String, String>();
-                headers.put("AUTHORIZATION", "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789");
-                return headers;
-            }
-
-//            @Override
-//            protected Map<String, String> getParams() {
-//                Map<String, String> params = new HashMap<String, String>();
-//                params.put("email", "rm@test.com.br");
-//                params.put("senha", "aaa");
-//                return params;
-//            }
-        };
-
-        RequestHandler.getInstance(getActivity()).addToRequestQueue(request);
+        Canvas canvas = new Canvas(bitmap);
+        view.draw(canvas);
+        return bitmap;
     }
 
     /**
-     * Update UI by updating the marking and animating the camera to focus on the new location specified
+     * Updates the markers position with the user info. Call this when map has already been set up
      *
      * @param users The list of users with new locations to update
      */
-    public void updateUI(List<User> users) {
+    public void updateUserMarkers(List<User> users) {
         if (googleMap != null) {
 
             LatLngBounds.Builder boundBuilder = new LatLngBounds.Builder();
@@ -364,8 +312,10 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
                     MarkerOptions options = new MarkerOptions()
                             .title(markerTitle)
                             .snippet(markerSnippet)
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_blue))
                             .position(latLng);
                     marker = googleMap.addMarker(options);
+                    setUserMarkerIconAvatar(user.getAvatar(), marker);
                     userMarkers.put(id, marker);
                 }
                 else {

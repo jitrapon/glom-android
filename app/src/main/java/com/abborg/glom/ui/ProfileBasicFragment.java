@@ -81,7 +81,7 @@ public class ProfileBasicFragment extends Fragment implements View.OnClickListen
 
         Toast.makeText(getActivity().getApplicationContext(), "Showing map...", Toast.LENGTH_SHORT).show();
         Intent intent = new Intent(this.getActivity().getApplicationContext(), LocationActivity.class);
-        intent.putExtra(getString(R.string.main_user_intent_key), user);
+        intent.putExtra(getString(R.string.EXTRA_CURRENT_USER), user);
         startActivity(intent);
     }
 
@@ -94,7 +94,7 @@ public class ProfileBasicFragment extends Fragment implements View.OnClickListen
 
                 Toast.makeText(getActivity().getApplicationContext(), "Showing map...", Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent(this.getActivity().getApplicationContext(), LocationActivity.class);
-                intent.putExtra(getString(R.string.main_user_intent_key), user);
+                intent.putExtra(getString(R.string.EXTRA_CURRENT_USER), user);
                 startActivity(intent);
                 break;
         }

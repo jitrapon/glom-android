@@ -12,13 +12,13 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.abborg.glom.R;
-import com.abborg.glom.ui.LocationActivity;
+import com.abborg.glom.ui.MainActivity;
 import com.google.android.gms.gcm.GcmListenerService;
 
 /**
  * Created by Boat on 13/9/58.
  */
-public class BaseGcmListenerService extends GcmListenerService {
+public class MessageListenerService extends GcmListenerService {
 
     private static final String TAG = "GcmListenerService";
 
@@ -42,9 +42,9 @@ public class BaseGcmListenerService extends GcmListenerService {
          *     - Store message in local database.
          *     - Update UI.
          */
-        Intent locUpdateIntent = new Intent(getResources().getString(R.string.gcm_location_update_intent_key));
-        locUpdateIntent.putExtra(getResources().getString(R.string.gcm_location_update_intent_extra_users), data.getString("users"));
-        locUpdateIntent.putExtra(getResources().getString(R.string.gcm_location_update_intent_extra_circleId), data.getString("circleId"));
+        Intent locUpdateIntent = new Intent(getResources().getString(R.string.ACTION_RECEIVE_LOCATION));
+        locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_USERS), data.getString("users"));
+        locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_CIRCLE_ID), data.getString("circleId"));
         LocalBroadcastManager.getInstance(this).sendBroadcast(locUpdateIntent);
 
         if (from.startsWith("/topics/")) {
@@ -57,26 +57,27 @@ public class BaseGcmListenerService extends GcmListenerService {
          * In some cases it may be useful to show a notification indicating to the user
          * that a message was received.
          */
-//        sendNotification(message);
+        sendNotification(message);
         // [END_EXCLUDE]
     }
     // [END receive_message]
 
     /**
      * Create and show a simple notification containing the received GCM message.
+     * TODO Send notification with different intents
      *
      * @param message GCM message received.
      */
     private void sendNotification(String message) {
-        Intent intent = new Intent(this, LocationActivity.class);
+        Intent intent = new Intent(this, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0 /* Request code */, intent,
                 PendingIntent.FLAG_ONE_SHOT);
 
         Uri defaultSoundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
-//                .setSmallIcon(R.drawable.ic_stat_ic_notification)
-                .setContentTitle("GCM Message")
+                .setSmallIcon(R.drawable.ic_action_alarm)
+                .setContentTitle("Message from GlomServer")
                 .setContentText(message)
                 .setAutoCancel(true)
                 .setSound(defaultSoundUri)

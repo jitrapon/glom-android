@@ -23,8 +23,8 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
-    <android:uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    <android:uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     <application
         android:allowBackup="true"
@@ -44,10 +44,13 @@
         </receiver>
 
         <service
+            android:name=".service.CirclePushService" >
+        </service>
+        <service
             android:name=".service.RegistrationIntentService"
             android:enabled="true" />
         <service
-            android:name=".service.BaseGcmListenerService"
+            android:name=".service.MessageListenerService"
             android:exported="false" >
             <intent-filter>
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />

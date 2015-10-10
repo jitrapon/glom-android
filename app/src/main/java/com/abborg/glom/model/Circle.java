@@ -1,5 +1,8 @@
 package com.abborg.glom.model;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -10,8 +13,10 @@ import java.util.UUID;
  *
  * A circle is a unit of room of users.
  * This class is also responsible for each row in navigation drawer menu of circles
+ *
+ * Note that Parcel does not work yet (circular reference as issued in https://github.com/johncarl81/parceler/issues/66)
  */
-public class Circle {
+public class Circle implements Parcelable {
 
     /**
      * List of user in this circle
@@ -33,6 +38,16 @@ public class Circle {
      */
     private boolean showNotify;
 
+    /**
+     * Whether or not the current user is broadcasting location in this circle
+     */
+    private boolean userIsBroadcastingLocation;
+
+    /**
+     * Whether or not the current user is discoverable in this circle
+     */
+    private boolean userIsDiscoverable;
+
 
     /**
      * Create a new circle with this user in it
@@ -48,6 +63,47 @@ public class Circle {
         ArrayList<User> users = new ArrayList<User>(Arrays.asList(user));
         return new Circle(id, title, users);
     }
+
+    public Circle(Parcel parcel) {
+        readFromParcel(parcel);
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeTypedList(users);
+        dest.writeString(title);
+        dest.writeString(id);
+        dest.writeByte((byte) (showNotify ? 1 : 0));
+        dest.writeByte((byte) (userIsBroadcastingLocation ? 1 : 0));
+        dest.writeByte((byte) (userIsDiscoverable ? 1 : 0));
+    }
+
+    private void readFromParcel(Parcel in) {
+        // needs to be in the same order as when they are written
+        users = new ArrayList<>();
+        in.readTypedList(users, User.CREATOR);
+        title = in.readString();
+        id = in.readString();
+        showNotify = in.readByte() != 0;
+        userIsBroadcastingLocation = in.readByte() != 0;
+        userIsDiscoverable = in.readByte() != 0;
+    }
+
+    public static final Parcelable.Creator CREATOR =
+            new Parcelable.Creator() {
+                public Circle createFromParcel(Parcel in) {
+                    return new Circle(in);
+                }
+
+                public Circle[] newArray(int size) {
+                    return new Circle[size];
+                }
+            };
 
     /**
      * Check if the specified user ID is in the specified circle ID
@@ -79,6 +135,8 @@ public class Circle {
         this.title = title;
         this.users = users;
         this.showNotify = false;
+        this.userIsBroadcastingLocation = false;
+        this.userIsDiscoverable = false;
     }
 
     public boolean isShowNotify() {
@@ -118,6 +176,14 @@ public class Circle {
 
     private static String generateCircleId() {
         return String.valueOf(UUID.randomUUID());
+    }
+
+    public void setBroadcastingLocation(boolean enabled) {
+        userIsBroadcastingLocation = enabled;
+    }
+
+    public boolean isUserBroadcastingLocation() {
+        return userIsBroadcastingLocation;
     }
 
     @Override

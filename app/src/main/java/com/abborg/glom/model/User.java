@@ -1,17 +1,19 @@
 package com.abborg.glom.model;
 
 import android.location.Location;
+import android.os.Parcel;
+import android.os.Parcelable;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Base class for all users
+ * Note that Parcel does not work yet (circular reference as issued in https://github.com/johncarl81/parceler/issues/66)
  *
  * Created by Boat on 8/9/58.
  */
-public class User implements Serializable {
+public class User implements Parcelable {
 
     private String name;
 
@@ -22,10 +24,6 @@ public class User implements Serializable {
     private String avatar;
 
     private Circle currentCircle;
-
-    private boolean broadcastLocationEnabled;
-
-    private boolean discoverable;
 
     private List<Integer> userPerm;
 
@@ -54,10 +52,49 @@ public class User implements Serializable {
         this.id = id;
         this.location = location;
         this.currentCircle = null;
-        this.broadcastLocationEnabled = false;
-        this.discoverable = false;
         userPerm = new ArrayList<Integer>();
     }
+
+    public User(Parcel parcel) {
+        readFromParcel(parcel);
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(name);
+        dest.writeString(id);
+        location.writeToParcel(dest, flags);
+        dest.writeString(avatar);
+        dest.writeParcelable(currentCircle, flags);
+        dest.writeList(userPerm);
+    }
+
+    private void readFromParcel(Parcel in) {
+        // needs to be in the same order as when they are written
+        name = in.readString();
+        id = in.readString();
+        location = Location.CREATOR.createFromParcel(in);
+        avatar = in.readString();
+        currentCircle = in.readParcelable(Circle.class.getClassLoader());
+        userPerm = new ArrayList<>();
+        in.readList(userPerm, Integer.class.getClassLoader());
+    }
+
+    public static final Parcelable.Creator CREATOR =
+        new Parcelable.Creator() {
+            public User createFromParcel(Parcel in) {
+                return new User(in);
+            }
+
+            public User[] newArray(int size) {
+                return new User[size];
+            }
+        };
 
     public void setName(String name) {
         this.name = name;
@@ -90,14 +127,6 @@ public class User implements Serializable {
     public void setCurrentCircle(Circle circle) { this.currentCircle = circle; }
 
     public Circle getCurrentCircle() { return currentCircle; }
-
-    public void setBroadcastingLocation(boolean enabled) { broadcastLocationEnabled = enabled; }
-
-    public boolean isBroadcastingLocation() { return broadcastLocationEnabled; }
-
-    public void setDiscoverable(boolean enabled) { discoverable = enabled; }
-
-    public boolean isDiscoverable() { return discoverable; }
 
     public void setUserPermission(List<Integer> userPerm) {
         this.userPerm = userPerm;
