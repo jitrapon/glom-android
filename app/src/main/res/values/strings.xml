@@ -4,7 +4,8 @@
     <string name="PREFERENCE_FILE">com.abborg.glom.preferences</string>
     <string name="server_address">http://www.google.com</string>
     <string name="server_port">80</string>
-    <string name="default_first_circle_title">My Circle</string>
+    <string name="friends_circle_title">Friends</string>
+    <string name="friends_circle_id">friends</string>
     <string name="menu_item_search">Search</string>
     <string name="menu_item_chat">Chat</string>
     <string name="menu_item_settings">Settings</string>
@@ -51,6 +52,19 @@
     <string name="locate_me_btn_searching">Just a moment...</string>
     <string name="marker_msg_placeholder">Online</string>
     <string name="title_activity_main">MainActivity</string>
+
+    <!-- Event cards -->
+    <string name="card_host_name_placeholder">Undefined</string>
+    <string name="card_host_post_time_placeholder">Some time ago</string>
+    <string name="card_event_name_placeholder">Untitled</string>
+    <string name="card_event_venue_placeholder">Undefined</string>
+    <string name="card_event_note_placeholder">Event note is undefined</string>
+    <string name="card_post_create_event">created an event</string>
+    <string name="card_post_cancel_event">cancelled an event</string>
+    <string name="time_unit_second">secs</string>
+    <string name="time_unit_minute">mins</string>
+    <string name="time_unit_hour">hrs</string>
+    <string name="time_unit_day">days</string>
 
     <string name="hello_world">Hello world!</string>
 

@@ -32,4 +32,20 @@
     <dimen name="marker_avatar_width">35dp</dimen>
     <dimen name="marker_avatar_height">35dp</dimen>
     <dimen name="marker_margin">3dp</dimen>
+
+    <dimen name="event_card_padding">8dp</dimen>
+    <dimen name="event_card_corner_radius">4dp</dimen>
+    <dimen name="event_card_margin">5dp</dimen>
+    <dimen name="event_card_content_padding">10dp</dimen>
+    <dimen name="event_card_avatar_size">40dp</dimen>
+    <dimen name="event_card_avatar_margin">16dp</dimen>
+    <dimen name="event_card_username_padding_top">20dp</dimen>
+    <dimen name="event_card_primary_text_size">24sp</dimen>
+    <dimen name="event_card_supporting_text_size">14sp</dimen>
+    <dimen name="event_card_post_time_padding_bottom">20dp</dimen>
+    <dimen name="event_card_primary_text_padding_top">24dp</dimen>
+    <dimen name="event_card_event_info_padding">16dp</dimen>
+    <dimen name="event_card_primary_text_padding_bottom">12dp</dimen>
+    <dimen name="event_card_action_padding">8dp</dimen>
+    <dimen name="event_card_info_height">150dp</dimen>
 </resources>

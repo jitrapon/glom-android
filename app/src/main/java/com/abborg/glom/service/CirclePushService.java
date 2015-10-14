@@ -82,7 +82,7 @@ public class CirclePushService extends Service implements LocationListener,
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
-        Toast.makeText(this, this.getClass().getName() + " starting", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, TAG + " starting", Toast.LENGTH_SHORT).show();
         Log.d(TAG, "Service starting");
 
         handleCommand(intent);

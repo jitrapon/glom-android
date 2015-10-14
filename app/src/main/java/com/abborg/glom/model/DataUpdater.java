@@ -10,6 +10,10 @@ import android.util.Log;
 
 import com.abborg.glom.utils.DBHelper;
 
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,6 +62,7 @@ public class DataUpdater {
             database.execSQL("DELETE FROM " + DBHelper.TABLE_CIRCLES);
             database.execSQL("DELETE FROM " + DBHelper.TABLE_USERS);
             database.execSQL("DELETE FROM " + DBHelper.TABLE_USER_CIRCLE);
+            database.execSQL("DELETE FROM " + DBHelper.TABLE_EVENTS);
 
             database.setTransactionSuccessful();
         }
@@ -256,5 +261,93 @@ public class DataUpdater {
                 DBHelper.USERCIRCLE_COLUMN_USER_ID + "='" + user.getId() + "' AND " +
                         DBHelper.USERCIRCLE_COLUMN_CIRCLE_ID + "='" + circle.getId() + "'", null);
         Log.d(TAG, "Updated " + rowAffected + " row(s) in " + DBHelper.TABLE_USER_CIRCLE);
+    }
+
+    /**
+     * Create a new event under an optionally specified circle
+     */
+    public Event createEvent(String name, Circle circle, List<User> hosts, DateTime time, String place, Location location,
+                             int discoverType, List<User> invitees, boolean showHosts,
+                             boolean showInvitees, boolean showAttendees, String note) {
+        Event event = Event.createEvent(name, circle, hosts, time, place, location, discoverType, invitees, showHosts,  showInvitees,
+                showAttendees, note);
+
+        database.beginTransaction();
+
+        try {
+            ContentValues values = new ContentValues();
+            values.put(DBHelper.EVENT_COLUMN_ID, event.getId());
+            if (circle != null) values.put(DBHelper.EVENT_COLUMN_CIRCLE_ID, circle.getId());
+            values.put(DBHelper.EVENT_COLUMN_NAME, event.getName());
+            values.put(DBHelper.EVENT_COLUMN_DATETIME, event.getDateTime().getMillis());
+            values.put(DBHelper.EVENT_COLUMN_PLACE, event.getPlace());
+            if (event.getLocation() != null) {
+                values.put(DBHelper.EVENT_COLUMN_LATITUDE, event.getLocation().getLatitude());
+                values.put(DBHelper.EVENT_COLUMN_LONGITUDE, event.getLocation().getLongitude());
+            }
+            values.put(DBHelper.EVENT_COLUMN_NOTE, event.getNote());
+            long insertId = database.insert(DBHelper.TABLE_EVENTS, null, values);
+            Log.d(TAG, "Inserted event with _id: " + insertId + ", id: " + event.getId() + ", name: " +
+                    event.getName() + ", time: " + event.getDateTime() + ", place: " + event.getPlace());
+
+            database.setTransactionSuccessful();
+        }
+        catch (SQLException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
+        finally {
+            database.endTransaction();
+        }
+
+        //TODO send update to server of the created event
+
+        return event;
+    }
+
+    /**
+     * Retrieves list of events within this circle that are cached
+     *
+     * @param circle
+     * @return
+     */
+    public List<Event> getCircleEvents(Circle circle) {
+        //TODO send request to server
+
+        List<Event> events = new ArrayList<>();
+
+        DateTimeFormatter formatter = DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss");
+        DateTime postTime = formatter.parseDateTime("14/10/2015 17:00:00");
+
+        String query = "SELECT * FROM " + DBHelper.TABLE_EVENTS + " WHERE " +
+                DBHelper.TABLE_EVENTS + "." + DBHelper.EVENT_COLUMN_CIRCLE_ID + "='" + circle.getId() + "'";
+        Cursor cursor = database.rawQuery(query, null);
+
+        cursor.moveToFirst();
+        while (!cursor.isAfterLast()) {
+            Event event = serializeEvent(cursor, circle);
+
+            //TODO retrieve last action and action timestamp from server
+            //TODO for now hardcode this
+            event.setLastAction(new FeedAction(FeedAction.CREATE_EVENT, currentUser, postTime));
+
+            events.add(event);
+            cursor.moveToNext();
+        }
+        cursor.close();
+
+        return events;
+    }
+
+    private Event serializeEvent(Cursor cursor, Circle circle) {
+        String id = cursor.getString(0);
+        String name = cursor.getString(2);
+        DateTime time = new DateTime(cursor.getLong(3));
+        String place = cursor.getString(4);
+        Location location = new Location("");
+        location.setLatitude(cursor.getDouble(5));
+        location.setLongitude(cursor.getDouble(6));
+        String note = cursor.getString(7);
+
+        return Event.createEvent(id, circle, name, time, place, location, note);
     }
 }

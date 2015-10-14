@@ -28,12 +28,18 @@ import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.DataUpdater;
+import com.abborg.glom.model.Event;
 import com.abborg.glom.model.User;
 import com.abborg.glom.service.BaseInstanceIDListenerService;
 import com.abborg.glom.service.MessageListenerService;
 import com.abborg.glom.service.RegistrationIntentService;
 import com.google.gson.Gson;
 
+import net.danlew.android.joda.JodaTimeAndroid;
+
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -86,8 +92,7 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
      */
     private void setAppDefaultState() {
         // create our new user
-        user = createUser(Const.TEST_USER_NAME, Const.TEST_USER_ID, Const.TEST_USER_AVATAR, Const.TEST_USER_LAT, Const.TEST_USER_LONG,
-                Const.TEST_USER_BROADCAST_LOCATION, Const.TEST_USER_DISCOVERABLE);
+        user = createUser(Const.TEST_USER_NAME, Const.TEST_USER_ID, Const.TEST_USER_AVATAR, Const.TEST_USER_LAT, Const.TEST_USER_LONG);
 
         // update all list of this user's circles
         try {
@@ -95,26 +100,47 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
             dataUpdater.open();
             dataUpdater.resetCircles();
 
-            // populate with sample circles
-            Circle circle1 = dataUpdater.createCircle(getResources().getString(R.string.default_first_circle_title),
-                        new ArrayList<User>(Arrays.asList(
-                                createUser("Pro", "phubes", "https://lh3.googleusercontent.com/-6l-FS58CNYY/AAAAAAAAAAI/AAAAAAAAAI8/U-GeqasIr3E/photo.jpg", 1.003, 103.0, false, false),
-                                createUser("Mario", "mario", "http://mario.nintendo.com/img/mario_logo.png", 1.15, 101.352, false, false),
-                                createUser("Scarlet", "scarlett_johansson", "http://www.biografiasyvidas.com/biografia/j/fotos/johansson_scarlett_2.jpg", 1.1531, 101.161, false, false),
-                                createUser("Taylor", "taylor_swift", "http://static.wixstatic.com/media/3a0a07_6fccabc0fb6a4e12b73db71a789aabb3.jpg_256", 1.15134, 101.614, false, false),
-                                createUser("Jessica", "jess_alba", "https://38.media.tumblr.com/avatar_4933209feef5_128.png", 1.1345, 101.715, false, false),
-                                createUser("Emma Watson", "emma_hermione", "https://31.media.tumblr.com/avatar_098de71d2e8e_128.png", 1.1621, 101.515, false, false)
-                        )), "my-circle"
+            // populate the default circle
+            // default circle contains all unique users that the current user has
+            Circle friendCircle = dataUpdater.createCircle(getResources().getString(R.string.friends_circle_title),
+                    new ArrayList<>(Arrays.asList(
+                            createUser("Cat", "pusheen", "http://data.whicdn.com/images/139778481/superthumb.jpg", 1.003, 103.0),
+                            createUser("Sunadda", "fatcat18", "http://images8.cpcache.com/image/17244178_155x155_pad.png", 1.0, 102.1441)
+                    )), getResources().getString(R.string.friends_circle_id)
+            );
+
+            // create event for this circle
+            DateTimeFormatter formatter = DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss");
+            DateTime eventTime = formatter.parseDateTime("25/03/2016 15:30:52");
+            String place = "ChIJB5FY5M2e4jARo48nbVRhgAo";
+            Location location = null;
+            dataUpdater.createEvent("Meetup", friendCircle,
+                    new ArrayList<>(Arrays.asList(user)), eventTime, place, location, Event.IN_CIRCLE,
+                    new ArrayList<User>(), true, true, true, null
                     );
 
-            Circle circle2 = dataUpdater.createCircle("My Love",
+            eventTime = formatter.parseDateTime("31/12/2015 22:00:00");
+            place = "ChIJq-I3V62f4jAR8QRewT7N3to";
+            location = null;
+            dataUpdater.createEvent("This is a party", friendCircle,
+                    new ArrayList<>(Arrays.asList(user)), eventTime, place, location, Event.IN_CIRCLE,
+                    new ArrayList<User>(), true, true, true, "Test new event party message to everyone here..."
+            );
+
+            // another circle
+            Circle circle1 = dataUpdater.createCircle("My Love",
                     new ArrayList<User>(Arrays.asList(
-                            createUser("Sunadda", "fatcat18", "http://images8.cpcache.com/image/17244178_155x155_pad.png", 1.0, 102.1441, false ,false)
+                            createUser("Sunadda", "fatcat18", "http://images8.cpcache.com/image/17244178_155x155_pad.png", 1.0, 102.1441)
                     )), "my-love"
             );
 
-            Circle circle3 = dataUpdater.createCircle("Small Room",
-                    new ArrayList<User>(), "small-room"
+            // create event for this circle
+            eventTime = formatter.parseDateTime("18/10/2015 09:00:00");
+            place = null;
+            location = null;
+            dataUpdater.createEvent("Nad's birthday", circle1,
+                    new ArrayList<>(Arrays.asList(user)), eventTime, place, location, Event.IN_CIRCLE,
+                    new ArrayList<User>(), true, true, true, null
             );
 
             circles = dataUpdater.getCircles();
@@ -127,8 +153,7 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
         }
     }
 
-    private User createUser(String name, String id, String avatar, double latitude, double longitude,
-                            boolean isBroadcastingLocation, boolean isDiscoverable) {
+    private User createUser(String name, String id, String avatar, double latitude, double longitude) {
         Location location = new Location("");
         location.setLatitude(latitude);
         location.setLongitude(longitude);
@@ -158,6 +183,10 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // It's important to initialize the ResourceZoneInfoProvider; otherwise
+        // joda-time-android will not work.
+        JodaTimeAndroid.init(this);
 
         setAppDefaultState();
 
@@ -429,5 +458,9 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
         // refresh the circle fragment
         CircleFragment circleFragment = (CircleFragment) adapter.getItem(0);
         circleFragment.update();
+
+        // refresh the event lists
+        EventFragment eventFragment = (EventFragment) adapter.getItem(2);
+        eventFragment.update();
     }
 }

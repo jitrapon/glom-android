@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:cardView="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center_horizontal"
+    android:padding="@dimen/event_card_padding">
+
+    <android.support.v7.widget.CardView
+        android:id="@+id/cardView"
+        android:layout_gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/event_card_margin"
+        cardView:cardCornerRadius="@dimen/event_card_corner_radius"
+        cardView:cardUseCompatPadding="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <RelativeLayout
+                android:id="@+id/cardUserInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:id="@+id/cardUserAvatar"
+                    android:layout_width="@dimen/event_card_avatar_size"
+                    android:layout_height="@dimen/event_card_avatar_size"
+                    android:layout_alignParentLeft="true"
+                    android:layout_margin="@dimen/event_card_avatar_margin"
+                    android:layout_centerVertical="true" />
+
+                <TextView
+                    android:id="@+id/cardUserName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toRightOf="@+id/cardUserAvatar"
+                    android:paddingTop="@dimen/event_card_username_padding_top"
+                    android:textSize="@dimen/event_card_supporting_text_size"
+                    android:textColor="@color/cardPrimaryText"
+                    android:text="@string/card_host_name_placeholder"/>
+
+                <TextView
+                    android:id="@+id/cardUserPostTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/cardUserName"
+                    android:layout_toRightOf="@+id/cardUserAvatar"
+                    android:paddingBottom="@dimen/event_card_post_time_padding_bottom"
+                    android:text="@string/card_host_post_time_placeholder"
+                    android:textSize="@dimen/event_card_supporting_text_size"/>
+
+            </RelativeLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/lineDivider"/>
+
+            <RelativeLayout
+                android:id="@+id/cardEventInfo"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/event_card_info_height">
+
+                <TextView
+                    android:id="@+id/cardEventName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingLeft="@dimen/event_card_event_info_padding"
+                    android:paddingRight="@dimen/event_card_event_info_padding"
+                    android:paddingTop="@dimen/event_card_primary_text_padding_top"
+                    android:paddingBottom="@dimen/event_card_primary_text_padding_bottom"
+                    android:textSize="@dimen/event_card_primary_text_size"
+                    android:textColor="@color/cardPrimaryText"
+                    android:text="@string/card_event_name_placeholder"/>
+
+                <TextView
+                    android:id="@+id/cardEventVenue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/cardEventName"
+                    android:paddingLeft="@dimen/event_card_event_info_padding"
+                    android:paddingRight="@dimen/event_card_event_info_padding"
+                    android:paddingBottom="@dimen/event_card_event_info_padding"
+                    android:textSize="@dimen/event_card_supporting_text_size"
+                    android:text="@string/card_event_venue_placeholder"/>
+
+                <TextView
+                    android:id="@+id/cardEventNote"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/cardEventVenue"
+                    android:paddingLeft="@dimen/event_card_event_info_padding"
+                    android:paddingRight="@dimen/event_card_event_info_padding"
+                    android:paddingBottom="@dimen/event_card_event_info_padding"
+                    android:textSize="@dimen/event_card_supporting_text_size"
+                    android:textColor="@android:color/secondary_text_light"
+                    android:text="@string/card_event_note_placeholder"/>
+
+            </RelativeLayout>
+            <RelativeLayout
+                android:id="@+id/cardActions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <Button
+                    android:id="@+id/cardButton1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/event_card_action_padding"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:textColor="@android:color/secondary_text_light"
+                    android:text="ACTION 1"/>
+
+                <Button
+                    android:id="@+id/cardButton2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/event_card_action_padding"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:layout_toRightOf="@+id/cardButton1"
+                    android:textColor="@android:color/secondary_text_light"
+                    android:text="ACTION 2"/>
+
+            </RelativeLayout>
+
+
+        </LinearLayout>
+
+    </android.support.v7.widget.CardView>
+
+</LinearLayout>

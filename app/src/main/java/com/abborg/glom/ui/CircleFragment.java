@@ -88,6 +88,7 @@ public class CircleFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         currentUser = ((MainActivity) getActivity()).getUser();
         circle = ((MainActivity) getActivity()).getCurrentCircle();
         users = circle.getUsers();

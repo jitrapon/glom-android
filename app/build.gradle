@@ -38,5 +38,6 @@ dependencies {
     compile 'com.oguzdev:CircularFloatingActionMenu:1.0.2'
     compile 'com.google.maps.android:android-maps-utils:0.3+'
     compile 'com.android.support:cardview-v7:23.0.+'
+    compile 'net.danlew:android.joda:2.8.2'
     compile project(':volley')
 }
