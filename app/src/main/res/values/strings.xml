@@ -65,6 +65,11 @@
     <string name="time_unit_minute">mins</string>
     <string name="time_unit_hour">hrs</string>
     <string name="time_unit_day">days</string>
+    <string name="time_unit_year">years</string>
+    <string name="time_unit_month">months</string>
+    <string name="time_unit_week">weeks</string>
+    <string name="time_unit_and_seperator">and</string>
+    <string name="card_event_datetime_format">MM/dd/yyyy, h:mm aa</string>
 
     <string name="hello_world">Hello world!</string>
 

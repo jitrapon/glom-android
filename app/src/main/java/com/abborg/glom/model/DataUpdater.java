@@ -279,11 +279,17 @@ public class DataUpdater {
             values.put(DBHelper.EVENT_COLUMN_ID, event.getId());
             if (circle != null) values.put(DBHelper.EVENT_COLUMN_CIRCLE_ID, circle.getId());
             values.put(DBHelper.EVENT_COLUMN_NAME, event.getName());
-            values.put(DBHelper.EVENT_COLUMN_DATETIME, event.getDateTime().getMillis());
+            if (event.getDateTime() != null) {
+                values.put(DBHelper.EVENT_COLUMN_DATETIME, event.getDateTime().getMillis());
+            }
             values.put(DBHelper.EVENT_COLUMN_PLACE, event.getPlace());
             if (event.getLocation() != null) {
                 values.put(DBHelper.EVENT_COLUMN_LATITUDE, event.getLocation().getLatitude());
                 values.put(DBHelper.EVENT_COLUMN_LONGITUDE, event.getLocation().getLongitude());
+            }
+            else {
+                values.put(DBHelper.EVENT_COLUMN_LATITUDE, -1.0);
+                values.put(DBHelper.EVENT_COLUMN_LONGITUDE, -1.0);
             }
             values.put(DBHelper.EVENT_COLUMN_NOTE, event.getNote());
             long insertId = database.insert(DBHelper.TABLE_EVENTS, null, values);
@@ -341,11 +347,16 @@ public class DataUpdater {
     private Event serializeEvent(Cursor cursor, Circle circle) {
         String id = cursor.getString(0);
         String name = cursor.getString(2);
-        DateTime time = new DateTime(cursor.getLong(3));
+        DateTime time = null;
+        if (cursor.getLong(3) != 0)
+           time = new DateTime(cursor.getLong(3));
         String place = cursor.getString(4);
-        Location location = new Location("");
-        location.setLatitude(cursor.getDouble(5));
-        location.setLongitude(cursor.getDouble(6));
+        Location location = null;
+        if (cursor.getDouble(5) != -1.0 && cursor.getDouble(6) != -1.0) {
+            location = new Location("");
+            location.setLatitude(cursor.getDouble(5));
+            location.setLongitude(cursor.getDouble(6));
+        }
         String note = cursor.getString(7);
 
         return Event.createEvent(id, circle, name, time, place, location, note);

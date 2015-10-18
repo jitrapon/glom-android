@@ -109,7 +109,7 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
                     )), getResources().getString(R.string.friends_circle_id)
             );
 
-            // create event for this circle
+            // create event 1 for friends
             DateTimeFormatter formatter = DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss");
             DateTime eventTime = formatter.parseDateTime("25/03/2016 15:30:52");
             String place = "ChIJB5FY5M2e4jARo48nbVRhgAo";
@@ -119,7 +119,8 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
                     new ArrayList<User>(), true, true, true, null
                     );
 
-            eventTime = formatter.parseDateTime("31/12/2015 22:00:00");
+            // create event 2 for friends
+            eventTime = null;
             place = "ChIJq-I3V62f4jAR8QRewT7N3to";
             location = null;
             dataUpdater.createEvent("This is a party", friendCircle,
@@ -134,7 +135,7 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
                     )), "my-love"
             );
 
-            // create event for this circle
+            // create event 1 for my-love
             eventTime = formatter.parseDateTime("18/10/2015 09:00:00");
             place = null;
             location = null;
@@ -142,6 +143,15 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
                     new ArrayList<>(Arrays.asList(user)), eventTime, place, location, Event.IN_CIRCLE,
                     new ArrayList<User>(), true, true, true, null
             );
+
+            eventTime = null;
+            place = null;
+            location = new Location("");
+            location.setLatitude(13.732756);
+            location.setLongitude(100.643101);
+            dataUpdater.createEvent("Event with exact coordinate", circle1,
+                    new ArrayList<>(Arrays.asList(user)), eventTime, place, location, Event.IN_CIRCLE,
+                    new ArrayList<User>(), true, true, true, "Thus it was not rare to find, on the Sunday, the tallboy on its feet by the fire, and the dressing table on its head by the bed, and the night-stool on its face by the door, and the washand-stand on its back by the window; and, on the Monday, the tallboy on its back by the bed, and the dressing table on its face by the door, and the night-stool on its back by the window and the washand-stand on its feet by the fire; and on the Tuesday…");
 
             circles = dataUpdater.getCircles();
 

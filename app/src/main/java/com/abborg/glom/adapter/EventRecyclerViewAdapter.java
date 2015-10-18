@@ -17,6 +17,9 @@ import com.bumptech.glide.Glide;
 
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
+import org.joda.time.Period;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import java.util.List;
 
@@ -132,13 +135,52 @@ public class EventRecyclerViewAdapter
         }
 
         // update event info
+        // always show time if available
+        // if place is specified, show place, otherwise show coordinates
         holder.eventName.setText(event.getName());
-        if (event.getLocation() != null) {
-            holder.eventVenue.setText(event.getDateTime() + "\n" + event.getLocation().getLatitude() + ", " +
-                    event.getLocation().getLongitude());
+        String time = "";
+        String duration = "";
+        if (event.getDateTime() != null) {
+            DateTimeFormatter formatter = DateTimeFormat.forPattern(context.getResources().getString(R.string.card_event_datetime_format));
+            DateTime now = new DateTime();
+            Period period = new Period(now, event.getDateTime());
+            if (period.getYears() >= 1)
+                duration = period.getYears() + " " + context.getResources().getString(R.string.time_unit_year) + " " +
+                        context.getResources().getString(R.string.time_unit_and_seperator) + " " +
+                        period.getMonths() + " " + context.getResources().getString(R.string.time_unit_month);
+            else if (period.getMonths() >= 1)
+                duration = period.getMonths() + " " + context.getResources().getString(R.string.time_unit_month) + " " +
+                        context.getResources().getString(R.string.time_unit_and_seperator) + " " +
+                        period.getDays() + " " + context.getResources().getString(R.string.time_unit_day);
+            else if (period.getWeeks() >= 1)
+                duration = period.getWeeks() + " " + context.getResources().getString(R.string.time_unit_week) + " " +
+                        context.getResources().getString(R.string.time_unit_and_seperator) + " " +
+                        period.getDays() + " " + context.getResources().getString(R.string.time_unit_day);
+            else if (period.getDays() >= 1)
+                duration = period.getDays() + " " + context.getResources().getString(R.string.time_unit_day) + " " +
+                        context.getResources().getString(R.string.time_unit_and_seperator) + " " +
+                        period.getHours() + " " + context.getResources().getString(R.string.time_unit_hour);
+            else if (period.getHours() >= 1)
+                duration = period.getHours() + " " + context.getResources().getString(R.string.time_unit_hour) + " " +
+                        context.getResources().getString(R.string.time_unit_and_seperator) + " " +
+                        period.getMinutes() + " " + context.getResources().getString(R.string.time_unit_minute);
+            else duration = period.getMinutes() + " " + context.getResources().getString(R.string.time_unit_minute);
+
+            time = formatter.print(event.getDateTime()) + " (" + duration + ")\n";
+        }
+
+        if (event.getPlace() != null) {
+            //TODO get place name from Google API
+            holder.eventVenue.setText(time + event.getPlace());
         }
         else {
-            holder.eventVenue.setText("" + event.getDateTime());
+            if (event.getLocation() != null) {
+                holder.eventVenue.setText(time + event.getLocation().getLatitude() + ", " +
+                        event.getLocation().getLongitude());
+            }
+            else {
+                holder.eventVenue.setText(time);
+            }
         }
         holder.eventNote.setText(event.getNote());
     }

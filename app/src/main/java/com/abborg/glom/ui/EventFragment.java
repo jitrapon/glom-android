@@ -1,6 +1,8 @@
 package com.abborg.glom.ui;
 
 
+import android.app.Activity;
+import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
@@ -45,6 +47,8 @@ public class EventFragment extends Fragment {
 
     /* The list of events in this circle */
     private List<Event> events;
+
+    private MainActivity activity;
 
     public EventFragment() {
         // Required empty public constructor
@@ -99,9 +103,17 @@ public class EventFragment extends Fragment {
         return events;
     }
 
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        activity = context instanceof Activity ? (MainActivity) context : null;
+    }
+
     public void update() {
-        circle = ((MainActivity) getActivity()).getCurrentCircle();
-        events = dataUpdater.getCircleEvents(circle);
-        adapter.update(events);
+        if (activity != null) {
+            circle = activity.getCurrentCircle();
+            events = dataUpdater.getCircleEvents(circle);
+            adapter.update(events);
+        }
     }
 }
