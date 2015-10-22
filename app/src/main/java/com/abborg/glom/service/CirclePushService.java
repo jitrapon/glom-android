@@ -225,6 +225,9 @@ public class CirclePushService extends Service implements LocationListener,
                     apiClient.disconnect();
                     Log.d(TAG, "No more circle to broadcast. Location services disconnected");
                 }
+
+                // end the service
+                stopSelf();
             }
             else {
                 if (!apiClient.isConnected()) apiClient.connect();
@@ -279,7 +282,8 @@ public class CirclePushService extends Service implements LocationListener,
      */
     @Override
     public void onDestroy() {
-        Toast.makeText(this, this.getClass().getName() + " done", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, TAG + " done", Toast.LENGTH_SHORT).show();
+        if (apiClient.isConnected()) apiClient.disconnect();
         Log.d(TAG, "Service done");
     }
 

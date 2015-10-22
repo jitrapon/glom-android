@@ -48,6 +48,11 @@ public class Circle implements Parcelable {
      */
     private boolean userIsDiscoverable;
 
+    /**
+     * List of saved events in this circle
+     */
+    private List<Event> events;
+
 
     /**
      * Create a new circle with this user in it
@@ -137,6 +142,7 @@ public class Circle implements Parcelable {
         this.showNotify = false;
         this.userIsBroadcastingLocation = false;
         this.userIsDiscoverable = false;
+        this.events = new ArrayList<>();
     }
 
     public boolean isShowNotify() {
@@ -184,6 +190,16 @@ public class Circle implements Parcelable {
 
     public boolean isUserBroadcastingLocation() {
         return userIsBroadcastingLocation;
+    }
+
+    public List<Event> getEvents() { return events; }
+
+    public void addEvent(Event event) {
+        events.add(event);
+    }
+
+    public void setEvents(List<Event> events) {
+        this.events = events;
     }
 
     @Override

@@ -18,6 +18,8 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
 import com.abborg.glom.R;
+import com.abborg.glom.model.Circle;
+import com.abborg.glom.model.Event;
 import com.abborg.glom.model.User;
 import com.abborg.glom.utils.CircleTransform;
 import com.abborg.glom.utils.LayoutUtils;
@@ -33,6 +35,9 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import java.util.List;
 import java.util.Map;
@@ -57,6 +62,9 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
 
     /* Map of all the accepted users' locations for easily updating their markers */
     private Map<String, Marker> userMarkers;
+
+    /* Map of all the events in the circle */
+    private Map<String, Marker> eventMarkers;
 
     /* Whether or not this fragment is visible */
     public boolean isFragmentVisible;
@@ -83,6 +91,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
     public void onCreate(Bundle savedBundleState) {
         super.onCreate(savedBundleState);
         userMarkers = new ConcurrentHashMap<>();
+        eventMarkers = new ConcurrentHashMap<>();
         currentUser = ((MainActivity) getActivity()).getUser();
     }
 
@@ -181,6 +190,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         if (googleMap != null) {
             if (clear) {
                 userMarkers.clear();
+                eventMarkers.clear();
                 googleMap.clear();
             }
 
@@ -211,7 +221,8 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
             boundBuilder.include(marker.getPosition());
 
             // initialize other markers in the circle
-            List<User> users = ((MainActivity) getActivity()).getCurrentCircle().getUsers();
+            Circle circle = ((MainActivity) getActivity()).getCurrentCircle();
+            List<User> users = circle.getUsers();
             for (User user : users) {
                 // we don't need to add another marker for ourselves
                 if ( user.getId().equals(currentUser.getId()) ) continue;
@@ -228,6 +239,37 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
 
                 // update the boundary
                 boundBuilder.include(marker.getPosition());
+            }
+
+            // initialize events position markers TODO
+            List<Event> events = circle.getEvents();
+            DateTimeFormatter formatter = DateTimeFormat.forPattern(getContext().getResources().getString(R.string.card_event_datetime_format));
+            for (Event event : events) {
+
+                // only show events with location info or place info
+                if (event.getLocation() != null || event.getPlace() != null) {
+                    LatLng eventLocation = new LatLng(1, 103);
+                    StringBuffer dateLocation = new StringBuffer();
+                    if (event.getDateTime() != null) {
+                        dateLocation.append(formatter.print(event.getDateTime()) + "\n");
+                    }
+                    if (event.getPlace() != null) {
+                        dateLocation.append(event.getPlace());
+                    }
+                    else {
+                        eventLocation = new LatLng(event.getLocation().getLatitude(), event.getLocation().getLongitude());
+                    }
+
+                    // add the marker for event
+                    options = new MarkerOptions()
+                            .title(event.getName())
+                            .snippet(dateLocation.toString())
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_red))
+                            .position(eventLocation);
+
+                    marker = googleMap.addMarker(options);
+                    eventMarkers.put(event.getId(), marker);
+                }
             }
 
             // center the camera around the built boundary of markers

@@ -90,13 +90,13 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
     /**
      * TODO set default state for DEMO purposes
      */
-    private void setAppDefaultState() {
+    private void loadDefaultCircleInfo() {
         // create our new user
         user = createUser(Const.TEST_USER_NAME, Const.TEST_USER_ID, Const.TEST_USER_AVATAR, Const.TEST_USER_LAT, Const.TEST_USER_LONG);
 
         // update all list of this user's circles
         try {
-            dataUpdater = new DataUpdater(this, user);
+            dataUpdater = new DataUpdater(getApplicationContext(), user);
             dataUpdater.open();
             dataUpdater.resetCircles();
 
@@ -155,8 +155,8 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
 
             circles = dataUpdater.getCircles();
 
-            // set default circle to be the first one
-            currentCircle = circles.get(0);
+            // set default circle to be the second one
+            currentCircle = circles.get(1);
         }
         catch (SQLException ex) {
             Toast.makeText(this, "Error accessing database: " + ex.getMessage(), Toast.LENGTH_LONG).show();
@@ -198,7 +198,7 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
         // joda-time-android will not work.
         JodaTimeAndroid.init(this);
 
-        setAppDefaultState();
+        loadDefaultCircleInfo();
 
         setContentView(R.layout.activity_main);
 
@@ -457,7 +457,7 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
     }
 
     private void updateView(Circle circle) {
-        this.currentCircle = circle;
+        currentCircle = circle;
 
         getSupportActionBar().setTitle(currentCircle.getTitle() + " (" + currentCircle.getUsers().size() + ")");
 

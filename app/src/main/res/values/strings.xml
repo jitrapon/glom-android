@@ -69,6 +69,7 @@
     <string name="time_unit_month">months</string>
     <string name="time_unit_week">weeks</string>
     <string name="time_unit_and_seperator">and</string>
+    <string name="time_suffix_ago">ago</string>
     <string name="card_event_datetime_format">MM/dd/yyyy, h:mm aa</string>
 
     <string name="hello_world">Hello world!</string>

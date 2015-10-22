@@ -21,6 +21,9 @@ import java.util.List;
  * Class that wraps around model to perform CRUD operations on database and 
  * make necessary network operations
  *
+ * Most operation functions in this class will call runOnUiThread() to ease off operations
+ * off the main thread for optimization
+ *
  * Created by Boat on 22/9/58.
  */
 public class DataUpdater {
@@ -42,19 +45,36 @@ public class DataUpdater {
     private String[] userCircleColumns = { DBHelper.USERCIRCLE_COLUMN_USER_ID, DBHelper.USERCIRCLE_COLUMN_CIRCLE_ID,
             DBHelper.USERCIRCLE_COLUMN_LATITUDE, DBHelper.USERCIRCLE_COLUMN_LONGITUDE };
 
+    /**
+     * Creates a new instance of the DataUpdater
+     *
+     * @param context
+     * @param currentUser
+     */
     public DataUpdater(Context context, User currentUser) {
         this.currentUser = currentUser;
         dbHelper = new DBHelper(context);
     }
 
+    /**
+     * Call this method to start performing operations to the database
+     *
+     * @throws SQLException
+     */
     public void open() throws SQLException {
         database = dbHelper.getWritableDatabase();
     }
 
+    /**
+     * Close operation on the database
+     */
     public void close() {
         dbHelper.close();
     }
 
+    /**
+     * Deletes all record from all table in order to start fresh. The method does re-create the table however
+     */
     public void resetCircles() {
         try {
             database.beginTransaction();
@@ -243,13 +263,19 @@ public class DataUpdater {
         return circles;
     }
 
+    public Circle getCircleByName(String name) {
+        return null;
+    }
+
     private Circle serializeCircle(Cursor cursor) {
         Circle circle = Circle.createCircle(null, currentUser);
         circle.setId(cursor.getString(0));
         circle.setTitle(cursor.getString(1));
 
         List<User> users = getUsersInCircle(circle);
+        List<Event> events = getCircleEvents(circle);
         circle.setUsers(users);
+        circle.setEvents(events);
         return circle;
     }
 
@@ -271,6 +297,8 @@ public class DataUpdater {
                              boolean showInvitees, boolean showAttendees, String note) {
         Event event = Event.createEvent(name, circle, hosts, time, place, location, discoverType, invitees, showHosts,  showInvitees,
                 showAttendees, note);
+
+        circle.addEvent(event);
 
         database.beginTransaction();
 

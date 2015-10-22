@@ -48,4 +48,5 @@
     <dimen name="event_card_primary_text_padding_bottom">12dp</dimen>
     <dimen name="event_card_action_padding">8dp</dimen>
     <dimen name="event_card_info_height">150dp</dimen>
+    <dimen name="event_card_powered_by_google_margin">18dp</dimen>
 </resources>
