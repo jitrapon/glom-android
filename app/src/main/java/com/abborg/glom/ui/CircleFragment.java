@@ -1,8 +1,8 @@
 package com.abborg.glom.ui;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -20,14 +20,17 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import com.abborg.glom.AppState;
 import com.abborg.glom.R;
 import com.abborg.glom.adapter.UserAvatarAdapter;
-import com.abborg.glom.model.Circle;
+import com.abborg.glom.model.DataUpdater;
 import com.abborg.glom.model.User;
 import com.abborg.glom.service.CirclePushService;
 import com.abborg.glom.utils.CircleTransform;
 import com.abborg.glom.utils.LayoutUtils;
 import com.bumptech.glide.Glide;
+import com.flipboard.bottomsheet.BottomSheetLayout;
+import com.nhaarman.listviewanimations.appearance.simple.ScaleInAnimationAdapter;
 import com.oguzdev.circularfloatingactionmenu.library.FloatingActionMenu;
 import com.oguzdev.circularfloatingactionmenu.library.SubActionButton;
 
@@ -42,15 +45,6 @@ import java.util.List;
 public class CircleFragment extends Fragment {
 
     private static final String TAG = "CIRCLE_FRAGMENT";
-
-    /* Stored shared preferences for this app */
-    private SharedPreferences sharedPref;
-
-    /* This profile's user */
-    private User currentUser;
-
-    /* This active circle */
-    private Circle circle;
 
     private List<User> users;
 
@@ -72,6 +66,12 @@ public class CircleFragment extends Fragment {
 
     ImageView menuOverlay;
 
+    private AppState appState;
+
+    private GridView gridView;
+
+    private Activity activity;
+
     @Override
     public void setUserVisibleHint(boolean isVisibleToUser) {
         super.setUserVisibleHint(isVisibleToUser);
@@ -89,14 +89,13 @@ public class CircleFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        currentUser = ((MainActivity) getActivity()).getUser();
-        circle = ((MainActivity) getActivity()).getCurrentCircle();
-        users = circle.getUsers();
+        appState = AppState.getInstance(getContext());
+
+        users = appState.getCurrentCircle().getUsers();
     }
 
     public void update() {
-        circle = ((MainActivity) getActivity()).getCurrentCircle();
-        users = circle.getUsers();
+        users = appState.getCurrentCircle().getUsers();
         avatarAdapter.update(users);
     }
 
@@ -107,7 +106,7 @@ public class CircleFragment extends Fragment {
         RelativeLayout rootView = (RelativeLayout) inflater.inflate(R.layout.fragment_circle, container, false);
 
         // initialize the USERLIST view
-        GridView gridView = new GridView(getActivity());
+        gridView = new GridView(getActivity());
 //        gridView.setId();
         gridView.setLayoutParams(new GridView.LayoutParams(
                 GridView.LayoutParams.MATCH_PARENT, GridView.LayoutParams.WRAP_CONTENT));
@@ -122,7 +121,9 @@ public class CircleFragment extends Fragment {
 
         // set the adapter for this view
         avatarAdapter = new UserAvatarAdapter(getContext(), users);
-        gridView.setAdapter(avatarAdapter);
+        ScaleInAnimationAdapter animationAdapter = new ScaleInAnimationAdapter(avatarAdapter);
+        animationAdapter.setAbsListView(gridView);
+        gridView.setAdapter(animationAdapter);
 
         // initialize the second relative layout for overlay and avatar menu
         overlayLayout = new RelativeLayout(getActivity());
@@ -201,7 +202,7 @@ public class CircleFragment extends Fragment {
 
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                User user = circle.getUsers().get(position);
+                User user = appState.getCurrentCircle().getUsers().get(position);
 
                 showMenuOverlay(true);
 
@@ -314,9 +315,10 @@ public class CircleFragment extends Fragment {
                 actionButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        if (user.getId().equals(currentUser.getId())) {
+                        if (user.getId().equals(appState.getUser().getId())) {
                             //TODO broadcast location dialog setting interval and duration of updates
-                            toggleBroadcastingLocation();
+                            hideMenuOverlay(true);
+                            showBroadcastLocationMenuOptions();
                         }
                         else {
                             hideMenuOverlay(true);
@@ -407,34 +409,116 @@ public class CircleFragment extends Fragment {
         if (avatarActionMenu != null) avatarActionMenu.close(animated);
     }
 
-    private boolean toggleBroadcastingLocation() {
-        hideMenuOverlay(true);
+    private void showBroadcastLocationMenuOptions() {
+        if (activity != null && activity instanceof MainActivity) {
+            final BottomSheetLayout bottomSheet = ((MainActivity) activity).getBottomSheet();
+            final View bottomSheetLayout = ((MainActivity) activity).getBroadcastLocationSheetLayout();
+            bottomSheet.showWithSheetView(bottomSheetLayout);
+//            float peekTranslation = bottomSheetLayout.findViewById(R.id.toggleBroadcastLocationSwitch).getHeight();
+//            bottomSheet.setPeekSheetTranslation(peekTranslation);
+//            bottomSheet.peekSheet();
+        }
+    }
 
+    public boolean toggleBroadcastingLocation() {
         Intent intent = new Intent(getActivity(), CirclePushService.class);
-        intent.putExtra(getResources().getString(R.string.EXTRA_BROADCAST_LOCATION_USER_ID), currentUser.getId());
-        intent.putExtra(getResources().getString(R.string.EXTRA_BROADCAST_LOCATION_CIRCLE_ID), circle.getId());
+        intent.putExtra(getResources().getString(R.string.EXTRA_BROADCAST_LOCATION_USER_ID), appState.getUser().getId());
+        intent.putExtra(getResources().getString(R.string.EXTRA_BROADCAST_LOCATION_CIRCLE_ID), appState.getCurrentCircle().getId());
 
-        if (!circle.isUserBroadcastingLocation()) {
-            Toast.makeText(getActivity(), "Broadcasting location updates to " + circle.getTitle(), Toast.LENGTH_LONG).show();
-            circle.setBroadcastingLocation(true);
-//            dataUpdater.updateCircleLocationBroadcast(true); // TODO DataUpdater.updateCircleLocationBroadcast(true)
+        DataUpdater dataUpdater = appState.getDataUpdater();
+
+        if (!appState.getCurrentCircle().isUserBroadcastingLocation()) {
+            // update DB telling it that this circle is broadcasting
+            Toast.makeText(getActivity(), "Broadcasting location updates to " + appState.getCurrentCircle().getTitle(), Toast.LENGTH_LONG).show();
+            appState.getCurrentCircle().setBroadcastingLocation(true);
+
+            // update DB about broadcast location change to this circle
+            dataUpdater.updateCircleLocationBroadcast(appState.getCurrentCircle(), true);
 
             // start the push service, telling it to add the user's current circle to start broadcasting location to it
             intent.setAction(getResources().getString(R.string.ACTION_CIRCLE_ENABLE_LOCATION_BROADCAST));
             getActivity().startService(intent);
 
+            // update icon avatar of the current user and in the map
+            setAvatarBroadcastingAnimation(true);
+
+            // notify map fragment about the broadcast enabling
+            if (activity != null && activity instanceof MainActivity) {
+                LocationFragment mapFragment = ((MainActivity) activity).getMapFragment();
+                setOnBroadcastLocationListener(true, mapFragment);
+            }
+
             return true;
         }
         else {
-            Toast.makeText(getActivity(), "Stopped broadcasting location updates to " + circle.getTitle(), Toast.LENGTH_LONG).show();
-            circle.setBroadcastingLocation(false);
-//            dataUpdater.updateCircleLocationBroadcast(false); // TODO DataUpdater.updateCircleLocationBroadcast(true)
+            // update DB telling it that this circle is no longer broadcasting
+            Toast.makeText(getActivity(), "Stopped broadcasting location updates to " + appState.getCurrentCircle().getTitle(), Toast.LENGTH_LONG).show();
+            appState.getCurrentCircle().setBroadcastingLocation(false);
+
+            // update DB about broadcast location change to this cirlce
+            dataUpdater.updateCircleLocationBroadcast(appState.getCurrentCircle(), false);
 
             // informs the push service to remove the user's current circle to stop broadcasting location to it
             intent.setAction(getResources().getString(R.string.ACTION_CIRCLE_DISABLE_LOCATION_BROADCAST));
             getActivity().startService(intent);
 
+            // update icon avatar of the user and in the map
+            setAvatarBroadcastingAnimation(false);
+
+            // notify map fragment about the broadcast disabling
+            if (activity != null && activity instanceof MainActivity) {
+                LocationFragment mapFragment = ((MainActivity) activity).getMapFragment();
+                setOnBroadcastLocationListener(false, mapFragment);
+            }
+
             return false;
+        }
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+
+        if (context instanceof Activity){
+            activity = (Activity) context;
+        }
+    }
+
+    private void setOnBroadcastLocationListener(boolean enabled, OnBroadcastLocationListener listener) {
+        if (listener != null) {
+            if (enabled)
+                listener.onBroadcastLocationEnabled();
+            else
+                listener.onBroadcastLocationDisabled();
+        }
+    }
+
+    public interface OnBroadcastLocationListener {
+        void onBroadcastLocationEnabled();
+
+        void onBroadcastLocationDisabled();
+    }
+
+    private void setAvatarBroadcastingAnimation(boolean isBroadcasting) {
+        int avatarIndex = 0;
+        for (User user : users) {
+            if (user.getId().equals(AppState.getInstance(getContext()).getUser().getId())) {
+                View avatar = getAvatarByPosition(avatarIndex);
+                avatarAdapter.setUserIsBroadcastingLocation(avatar, isBroadcasting);
+            }
+            avatarIndex++;
+        }
+    }
+
+    private View getAvatarByPosition(int pos) {
+        final int firstListItemPosition = gridView.getFirstVisiblePosition();
+        final int lastListItemPosition = firstListItemPosition + gridView.getChildCount() - 1;
+
+        if (pos < firstListItemPosition || pos > lastListItemPosition ) {
+            return gridView.getAdapter().getView(pos, null, gridView);
+        } else {
+            final int childIndex = pos - firstListItemPosition;
+            return gridView.getChildAt(childIndex);
         }
     }
 }

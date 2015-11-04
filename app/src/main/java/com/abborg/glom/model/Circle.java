@@ -65,7 +65,7 @@ public class Circle implements Parcelable {
         String id = generateCircleId();
 
         //TODO add to SQLITE and update server
-        ArrayList<User> users = new ArrayList<User>(Arrays.asList(user));
+        ArrayList<User> users = new ArrayList<>(Arrays.asList(user));
         return new Circle(id, title, users);
     }
 
@@ -109,22 +109,6 @@ public class Circle implements Parcelable {
                     return new Circle[size];
                 }
             };
-
-    /**
-     * Check if the specified user ID is in the specified circle ID
-     *
-     * @param id
-     * @param circle
-     * @return
-     */
-    public static boolean circleContainsUserId(String id, Circle circle) {
-        if (circle == null || id == null) return false;
-
-        for (User user : circle.getUsers()) {
-            if (user.getId().equals(id)) return true;
-        }
-        return false;
-    }
 
     /**
      * Call this in DEBUG only to override the generated ID

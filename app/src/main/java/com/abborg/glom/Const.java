@@ -29,4 +29,13 @@ public class Const {
     public static final boolean TEST_USER_DISCOVERABLE = true;
 
     public static final String TEST_USER_AVATAR = "https://media.licdn.com/mpr/mpr/shrinknp_400_400/p/3/000/214/038/194b185.jpg";
+
+    /**
+     * NOTIFICATIONS ID
+     */
+    public static final int NOTIFY_LOCATION_UPDATE = 0;
+
+    public static final int NOTIFY_BROADCAST_LOCATION = 1;
+
+
 }

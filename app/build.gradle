@@ -25,6 +25,10 @@ android {
     sourceSets { main { res.srcDirs = ['src/main/res', 'src/main/res/values-v21'] } }
 }
 
+repositories {
+    mavenCentral()
+}
+
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'com.android.support:appcompat-v7:23.0.1'
@@ -39,5 +43,11 @@ dependencies {
     compile 'com.google.maps.android:android-maps-utils:0.3+'
     compile 'com.android.support:cardview-v7:23.0.+'
     compile 'net.danlew:android.joda:2.8.2'
+    compile 'com.nhaarman.listviewanimations:lib-core:3.1.0@aar'
+    compile 'com.nhaarman.listviewanimations:lib-manipulation:3.1.0@aar'
+    compile 'com.nhaarman.listviewanimations:lib-core-slh:3.1.0@aar'
+    compile 'com.nineoldandroids:library:2.4.0'
+    compile 'com.flipboard:bottomsheet-core:1.4.3'
+    compile 'com.flipboard:bottomsheet-commons:1.4.3' // optional
     compile project(':volley')
 }

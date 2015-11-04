@@ -1,22 +1,34 @@
 package com.abborg.glom.ui;
 
 
-import android.content.SharedPreferences;
+import android.animation.Animator;
+import android.animation.IntEvaluator;
+import android.animation.ValueAnimator;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 
+import com.abborg.glom.AppState;
 import com.abborg.glom.R;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.Event;
@@ -26,11 +38,20 @@ import com.abborg.glom.utils.LayoutUtils;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.location.places.Place;
+import com.google.android.gms.location.places.PlaceBuffer;
+import com.google.android.gms.location.places.PlaceLikelihoodBuffer;
+import com.google.android.gms.location.places.Places;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
@@ -39,6 +60,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,19 +68,13 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class LocationFragment extends SupportMapFragment implements OnMapReadyCallback {
+public class LocationFragment extends SupportMapFragment implements OnMapReadyCallback, CircleFragment.OnBroadcastLocationListener {
     
     /* Might be null if Google Play services APK is not available. */
     private GoogleMap googleMap;
 
     /* This context's tag */
     public static final String TAG = "MAP_FRAGMENT";
-
-    /* Stored shared preferences for this app */
-    private SharedPreferences sharedPref;
-
-    /* This profile's user */
-    private User currentUser;
 
     /* Map of all the accepted users' locations for easily updating their markers */
     private Map<String, Marker> userMarkers;
@@ -72,15 +88,38 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
     /* The custom user marker view constructed from the custom layour */
     private View userMarkerView;
 
+    private AppState appState;
+
+    /* List of event markers that need to be updated */
+    private List<Event> staleEvents;
+
+    /* Datetime formatter for displaying formatted time in the info window */
+    private DateTimeFormatter formatter;
+
+    /* The current visible radius of the map, which is updated on every camera change */
+    private float visibleMapRadius;
+
+    /* The circle displayed to show the current user is broadcasting */
+    private com.google.android.gms.maps.model.Circle broadcastCircle;
+
+    /* Holds a temporary zoom level to detect zoom level change */
+    private float zoomLevel = -1.0f;
+
+    /* Broadcast circle animator */
+    private ValueAnimator animator;
+
     /*******************************************************************
      * CONSTANTS
      *******************************************************************/
 
     /* Google Map zoom level when a user's location has been identified */
-    private static final float CAMERA_ZOOM_LEVEL = 16;
+    private static final float CAMERA_ZOOM_LEVEL = 12;
 
     /* Google Map camera padding offset from the edges of the screen when set bounds in DP */
     private static final float CAMERA_CENTER_PADDING = 35;
+
+    /* Ratio of broadcasting-location circle to the visible map */
+    private static final float CIRCLE_TO_MAP_RATIO = 0.6f;
 
 
     public LocationFragment() {
@@ -92,7 +131,9 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         super.onCreate(savedBundleState);
         userMarkers = new ConcurrentHashMap<>();
         eventMarkers = new ConcurrentHashMap<>();
-        currentUser = ((MainActivity) getActivity()).getUser();
+        staleEvents = new ArrayList<>();
+        appState = AppState.getInstance(getContext());
+        formatter = DateTimeFormat.forPattern(getContext().getResources().getString(R.string.card_event_datetime_format));
     }
 
     @Override
@@ -166,18 +207,148 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         if (isVisibleToUser) {
             isFragmentVisible = true;
             Log.i(TAG, "Map is now visible to user");
+
+            // TODO depending on settings, start CirclePushService to start tracking user location without broadcasting
+
+            updateMarkersInfo();
         }
         else {
             isFragmentVisible = false;
+            // TODO depending on settings, stop CirclePushService
             Log.i(TAG, "Map is now INVISIBLE to user");
         }
     }
 
+    /**
+     * Called when the map is ready after initialization
+     */
     private void setUpMap() {
         googleMap.setMyLocationEnabled(false);
         googleMap.getUiSettings().setMyLocationButtonEnabled(false);
+        googleMap.setBuildingsEnabled(true);
+        googleMap.setIndoorEnabled(true);
+
+        // set up custom info window style
+        googleMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
+
+            @Override
+            public View getInfoWindow(Marker arg0) {
+                return null;
+            }
+
+            @Override
+            public View getInfoContents(Marker marker) {
+                Context context = getContext().getApplicationContext();
+
+                LinearLayout info = new LinearLayout(context);
+                info.setOrientation(LinearLayout.VERTICAL);
+
+                TextView title = new TextView(context);
+                title.setTextColor(Color.BLACK);
+                title.setGravity(Gravity.CENTER);
+                title.setTypeface(null, Typeface.BOLD);
+                title.setText(marker.getTitle());
+
+                TextView snippet = new TextView(context);
+                snippet.setTextColor(Color.GRAY);
+                snippet.setText(marker.getSnippet());
+
+                info.addView(title);
+                info.addView(snippet);
+
+                return info;
+            }
+        });
+
+        // on event window info click
+        googleMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
+
+            @Override
+            public void onInfoWindowClick(Marker marker) {
+                for (String eventId : eventMarkers.keySet()) {
+                    if (eventMarkers.get(eventId).getId().equals(marker.getId())) {
+                        Toast.makeText(getContext().getApplicationContext(), "Clicked on event " + eventId, Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+            }
+        });
+
+        // initialize the visible map radius
+        visibleMapRadius = getVisibleMapRadius(googleMap);
+
+        // set up camera change event listener
+        googleMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
+            @Override
+            public void onCameraChange(CameraPosition cameraPosition) {
+                if (zoomLevel != cameraPosition.zoom) {
+                    visibleMapRadius = getVisibleMapRadius(googleMap);
+                    Log.d(TAG, "Visible map radius is approximately " + visibleMapRadius + " meters");
+                }
+                zoomLevel = cameraPosition.zoom;
+            }
+        });
 
         updateMap(false);
+    }
+
+    @Override
+    public void onBroadcastLocationEnabled() {
+        if (animator != null) animator.start();
+    }
+
+    @Override
+    public void onBroadcastLocationDisabled() {
+        if (animator != null && animator.isRunning()) {
+            animator.end();
+        }
+    }
+
+    /**
+     * Calculates the visible map's radius and returns it in meters
+     *
+     * @return The approximate radius of the visible map in meters
+     */
+    private float getVisibleMapRadius(GoogleMap googleMap) {
+        LatLngBounds mapBounds = googleMap.getProjection().getVisibleRegion().latLngBounds;
+
+        Location center = new Location("center");
+        center.setLatitude(mapBounds.getCenter().latitude);
+        center.setLongitude(mapBounds.getCenter().longitude);
+
+        Location centerLeft = new Location("center");
+        centerLeft.setLatitude(center.getLatitude());
+        centerLeft.setLongitude(mapBounds.southwest.longitude);
+
+        return center.distanceTo(centerLeft);
+    }
+
+    private void updateMarkersInfo() {
+        // update list of stale event markers
+        if (!staleEvents.isEmpty()) {
+            final Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    for (Event event : staleEvents) {
+                        updateEventMarkers(event);
+                    }
+                }
+            }, 100);
+        }
+
+        // update list of user markers if set to show places nearby
+        if (true) {
+            final Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    for (Marker marker : userMarkers.values()) {
+                        setMarkerSnippet(marker);
+                    }
+                }
+            }, 100);
+        }
     }
 
     /**
@@ -194,88 +365,140 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
                 googleMap.clear();
             }
 
-            String markerTitle = currentUser.getId();
-            Location location = currentUser.getLocation();
-            if (location == null) {
-                location.setLatitude(0);
-                location.setLongitude(0);
-            }
-
-            // marker's default snippet
-            String markerSnippet = getResources().getString(R.string.marker_msg_placeholder);
-
             // set bounds for centering the map around markers
             LatLngBounds.Builder boundBuilder = new LatLngBounds.Builder();
 
-            // initialize current user's marker
-            MarkerOptions options = new MarkerOptions()
-                    .title(markerTitle)
-                    .snippet(markerSnippet)
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_blue))
-                    .position(new LatLng(location.getLatitude(), location.getLongitude()));
-            Marker marker = googleMap.addMarker(options);
-            setUserMarkerIconAvatar(currentUser.getAvatar(), marker);
-            userMarkers.put(currentUser.getId(), marker);
-
-            // update boundary
-            boundBuilder.include(marker.getPosition());
+            MarkerOptions options = null;
+            Marker marker = null;
 
             // initialize other markers in the circle
-            Circle circle = ((MainActivity) getActivity()).getCurrentCircle();
-            List<User> users = circle.getUsers();
-            for (User user : users) {
-                // we don't need to add another marker for ourselves
-                if ( user.getId().equals(currentUser.getId()) ) continue;
+            Circle circle = appState.getCurrentCircle();
+            for (User user : circle.getUsers()) {
 
-                // add the marker
-                options = new MarkerOptions()
-                        .title(user.getId())
-                        .snippet(markerSnippet)
-                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_blue))
-                        .position(new LatLng(user.getLocation().getLatitude(), user.getLocation().getLongitude()));
-                marker = googleMap.addMarker(options);
-                setUserMarkerIconAvatar(user.getAvatar(), marker);
+                // for current user
+                if ( user.getId().equals(appState.getUser().getId()) ) {
+                    options = new MarkerOptions()
+                            .title(user.getId())
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_red))
+                            .position(new LatLng(user.getLocation().getLatitude(), user.getLocation().getLongitude()));
+                    marker = googleMap.addMarker(options);
+                    setUserMarkerIconAvatar(appState.getUser().getAvatar(), marker, "red");
+                    marker.showInfoWindow();
+
+                    // if the user is currently broadcasting location, animate circle around the marker
+                    CircleOptions circleOptions = new CircleOptions()
+                            .center(marker.getPosition())
+                            .radius(CIRCLE_TO_MAP_RATIO * visibleMapRadius)           // radius in meters
+                            .fillColor(Color.TRANSPARENT)  // 55 represents percentage of transparency. For 100% transparency, specify 00.
+                                    // For 0% transparency ( ie, opaque ) , specify ff
+                                    // The remaining 6 characters(00ff00) specify the fill color
+                            .strokeColor(0x55000000)
+                            .strokeWidth(5);
+                    broadcastCircle = googleMap.addCircle(circleOptions);
+
+                    // add animation to the circle
+                    animator = new ValueAnimator();
+//                    animator.setRepeatCount(ValueAnimator.INFINITE);
+//                    animator.setRepeatMode(ValueAnimator.RESTART);
+                    animator.setIntValues(0, Math.round(CIRCLE_TO_MAP_RATIO * visibleMapRadius));  // minimum and maximum radius of circle to animate
+                    animator.setDuration(2000);
+                    animator.setStartDelay(1000);
+                    animator.setFrameDelay(30);
+                    animator.setEvaluator(new IntEvaluator());
+                    animator.setInterpolator(new AccelerateDecelerateInterpolator());
+                    animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                        @Override
+                        public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                            int animatedValue = (Integer) valueAnimator.getAnimatedValue();
+                            broadcastCircle.setRadius(animatedValue);
+                        }
+                    });
+                    animator.addListener(new Animator.AnimatorListener() {
+
+                        @Override
+                        public void onAnimationStart(Animator animation) {
+                            Log.d(TAG, "Animation STARTED");
+                        }
+
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            if (appState.getCurrentCircle().isUserBroadcastingLocation()) {
+                                animator.setIntValues(0, Math.round(CIRCLE_TO_MAP_RATIO * visibleMapRadius));
+                                animator.setStartDelay(1000);
+                                animator.start();
+                            }
+                            Log.d(TAG, "Animation ENDED");
+                        }
+
+                        @Override
+                        public void onAnimationCancel(Animator animation) {
+                            Log.d(TAG, "Animation CANCELED");
+                        }
+
+                        @Override
+                        public void onAnimationRepeat(Animator animation) {
+                            Log.d(TAG, "Animation REPEATED");
+                        }
+                    });
+
+                    if (appState.getCurrentCircle().isUserBroadcastingLocation()) {
+                        animator.start();
+                    }
+                    else {
+                        if (animator.isRunning()) animator.end();
+                    }
+                }
+
+                // for other users
+                else {
+                    options = new MarkerOptions()
+                            .title(user.getId())
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_blue))
+                            .position(new LatLng(user.getLocation().getLatitude(), user.getLocation().getLongitude()));
+                    marker = googleMap.addMarker(options);
+                    setUserMarkerIconAvatar(user.getAvatar(), marker, "blue");
+                }
                 userMarkers.put(user.getId(), marker);
 
-                // update the boundary
+                    // update the boundary
                 boundBuilder.include(marker.getPosition());
             }
 
             // initialize events position markers TODO
             List<Event> events = circle.getEvents();
-            DateTimeFormatter formatter = DateTimeFormat.forPattern(getContext().getResources().getString(R.string.card_event_datetime_format));
             for (Event event : events) {
+
+                options = new MarkerOptions()
+                        .title(event.getName())
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_meetup))
+                        .position(new LatLng(0, 0));
+                Marker eventMarker = googleMap.addMarker(options);
 
                 // only show events with location info or place info
                 if (event.getLocation() != null || event.getPlace() != null) {
-                    LatLng eventLocation = new LatLng(1, 103);
                     StringBuffer dateLocation = new StringBuffer();
                     if (event.getDateTime() != null) {
                         dateLocation.append(formatter.print(event.getDateTime()) + "\n");
                     }
                     if (event.getPlace() != null) {
                         dateLocation.append(event.getPlace());
+
+                        staleEvents.add(event);
                     }
                     else {
-                        eventLocation = new LatLng(event.getLocation().getLatitude(), event.getLocation().getLongitude());
+                        LatLng eventLocation = new LatLng(event.getLocation().getLatitude(), event.getLocation().getLongitude());
+                        eventMarker.setPosition(eventLocation);
                     }
 
-                    // add the marker for event
-                    options = new MarkerOptions()
-                            .title(event.getName())
-                            .snippet(dateLocation.toString())
-                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_red))
-                            .position(eventLocation);
-
-                    marker = googleMap.addMarker(options);
-                    eventMarkers.put(event.getId(), marker);
+                    eventMarker.setSnippet(dateLocation.toString());
+                    eventMarkers.put(event.getId(), eventMarker);
                 }
             }
 
             // center the camera around the built boundary of markers
             // if there is only one user in the circle, zoom instead
             if (userMarkers.size() == 1) {
-                marker = userMarkers.get(currentUser.getId());
+                marker = userMarkers.get(appState.getUser().getId());
                 googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(marker.getPosition(), CAMERA_ZOOM_LEVEL));
             }
             else {
@@ -283,6 +506,52 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
                 int padding = LayoutUtils.dpToPx(getContext(), CAMERA_CENTER_PADDING);
                 googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
             }
+
+            updateMarkersInfo();
+        }
+    }
+
+    private void updateEventMarkers(final Event event) {
+        // connect to Google's PlaceAPI to update the location
+        GoogleApiClient apiClient = AppState.getInstance(getContext()).getGoogleApiClient();
+        if (apiClient != null && apiClient.isConnected()) {
+            PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(apiClient, event.getPlace());
+            placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {
+
+                @Override
+                public void onResult(PlaceBuffer places) {
+                    if (!places.getStatus().isSuccess()) {
+                        Log.e(TAG, "Update place marker did not complete. Error: " + places.getStatus().toString());
+                        places.release();
+                        return;
+                    }
+
+                    // display the first place in the list
+                    final Place place = places.get(0);
+                    Marker marker = eventMarkers.get(event.getId());
+                    if (marker != null && place != null) {
+                        marker.setPosition(place.getLatLng());
+                        StringBuffer dateLocation = new StringBuffer();
+                        if (event.getDateTime() != null) {
+                            dateLocation.append(formatter.print(event.getDateTime()) + "\n");
+                        }
+                        dateLocation.append(place.getName());
+                        marker.setSnippet(dateLocation.toString());
+
+                        int updatedEventIndex = staleEvents.indexOf(event);
+                        if (updatedEventIndex >= 0 && updatedEventIndex < staleEvents.size())
+                            staleEvents.remove(updatedEventIndex);
+
+                        Log.d(TAG, "Place marker query succeeded for " + place.getName());
+                        Toast.makeText(getActivity(), "Event markers updated", Toast.LENGTH_SHORT).show();
+                    }
+
+                    places.release();
+                }
+            });
+        }
+        else {
+            Log.e(TAG, "Google API client is not connected, error retrieving place info");
         }
     }
 
@@ -292,19 +561,34 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
      * @param avatar
      * @param marker
      */
-    private void setUserMarkerIconAvatar(String avatar, final Marker marker) {
+    private void setUserMarkerIconAvatar(String avatar, final Marker marker, final String color) {
         Glide.with(getContext())
             .load(avatar).asBitmap().fitCenter()
             .transform(new CircleTransform(getActivity()))
-            .into(new SimpleTarget<Bitmap>(getResources().getDimensionPixelSize(R.dimen.marker_avatar_width),
-                    getResources().getDimensionPixelSize(R.dimen.marker_avatar_height)) {
-                public void onResourceReady(Bitmap bitmap, GlideAnimation animation) {
-                    ImageView userMarkerAvatar = (ImageView) userMarkerView.findViewById(R.id.markerAvatar);
-                    userMarkerAvatar.setImageBitmap(bitmap);
-                    Bitmap userMarker = createDrawableFromView(userMarkerView);
-                    marker.setIcon(BitmapDescriptorFactory.fromBitmap(userMarker));
-                }
-            });
+                .into(new SimpleTarget<Bitmap>(getResources().getDimensionPixelSize(R.dimen.marker_avatar_width),
+                        getResources().getDimensionPixelSize(R.dimen.marker_avatar_height)) {
+                    public void onResourceReady(Bitmap bitmap, GlideAnimation animation) {
+                        ImageView userMarkerBasePin = (ImageView) userMarkerView.findViewById(R.id.markerBasePin);
+                        if (color.equals("blue")) {
+                            userMarkerBasePin.setImageDrawable(getContext().getResources().getDrawable(R.drawable.ic_marker_blue));
+                        } else if (color.equals("green")) {
+                            userMarkerBasePin.setImageDrawable(getContext().getResources().getDrawable(R.drawable.ic_marker_green));
+                        } else if (color.equals("grey")) {
+                            userMarkerBasePin.setImageDrawable(getContext().getResources().getDrawable(R.drawable.ic_marker_grey));
+                        } else if (color.equals("orange")) {
+                            userMarkerBasePin.setImageDrawable(getContext().getResources().getDrawable(R.drawable.ic_marker_orange));
+                        } else if (color.equals("purple")) {
+                            userMarkerBasePin.setImageDrawable(getContext().getResources().getDrawable(R.drawable.ic_marker_purple));
+                        } else if (color.equals("red")) {
+                            userMarkerBasePin.setImageDrawable(getContext().getResources().getDrawable(R.drawable.ic_marker_red));
+                        }
+
+                        ImageView userMarkerAvatar = (ImageView) userMarkerView.findViewById(R.id.markerAvatar);
+                        userMarkerAvatar.setImageBitmap(bitmap);
+                        Bitmap userMarker = createDrawableFromView(userMarkerView);
+                        marker.setIcon(BitmapDescriptorFactory.fromBitmap(userMarker));
+                    }
+                });
     }
 
     private Bitmap createDrawableFromView(View view) {
@@ -325,6 +609,75 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         return bitmap;
     }
 
+    private void setMarkerSnippet(final Marker marker) {
+        // TODO marker snippet shows options of time-since-last-update, status message, nearby-place, time-to-destination (ongoing events)
+        // show nearby-place for this user
+        if (true) {
+            if (userMarkers.get(appState.getUser().getId()).getId().equals(marker.getId())) {
+                GoogleApiClient apiClient = AppState.getInstance(getContext()).getGoogleApiClient();
+                if (apiClient != null && apiClient.isConnected()) {
+                    PendingResult<PlaceLikelihoodBuffer> placeResult = Places.PlaceDetectionApi.getCurrentPlace(apiClient, null);
+                    placeResult.setResultCallback(new ResultCallback<PlaceLikelihoodBuffer>() {
+
+                        @Override
+                        public void onResult(PlaceLikelihoodBuffer places) {
+                            if (!places.getStatus().isSuccess()) {
+                                Log.e(TAG, "Update user marker place did not complete. Error: " + places.getStatus().toString());
+                                places.release();
+                                return;
+                            }
+
+                            // display the first place in the list
+                            final Place place = places.get(0).getPlace();
+                            marker.setSnippet(place.getName() + "");
+
+                            Log.d(TAG, "User place marker query succeeded for " + place.getName());
+
+                            places.release();
+                        }
+                    });
+                }
+            }
+            else {
+                marker.setSnippet(marker.getPosition().latitude + ", " + marker.getPosition().longitude);
+            }
+        }
+
+        // show user status
+        //TODO
+        else if (false) {
+            // find the user
+            User markerUser = null;
+            for (User user : appState.getCurrentCircle().getUsers()) {
+                if (userMarkers.get(user.getId()).getId().equals(marker.getId()))
+                   markerUser = user;
+            }
+
+            if (markerUser != null) {
+                marker.setSnippet("What's up?");
+            }
+        }
+
+        // show user's distance to destination
+        //TODO
+        else if (true) {
+
+        }
+
+        // show user's time to destination
+        //TODO
+        else if (true) {
+
+        }
+
+        // show time since last update
+        else {
+
+        }
+    }
+
+
+
     /**
      * Updates the markers position with the user info. Call this when map has already been set up
      *
@@ -332,8 +685,6 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
      */
     public void updateUserMarkers(List<User> users) {
         if (googleMap != null) {
-
-            LatLngBounds.Builder boundBuilder = new LatLngBounds.Builder();
 
             for (User user : users) {
                 //TODO ignore the current user location update from the request
@@ -346,41 +697,38 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
                 double currentLongitude = location.getLongitude();
                 LatLng latLng = new LatLng(currentLatitude, currentLongitude);
 
+                // update broadcast circle location if this is the current user
+                if (id.equals(appState.getUser().getId()) && broadcastCircle != null) {
+                    broadcastCircle.setCenter(latLng);
+                }
+
                 // add a new marker belonging to the user if it's not there before
-                // TODO marker should show options of time-since-last-update, status message, nearby-place, time-to-destination (ongoing events)
                 if (marker == null) {
                     String markerTitle = id;
-                    String markerSnippet = getResources().getString(R.string.marker_msg_placeholder);
+
                     MarkerOptions options = new MarkerOptions()
                             .title(markerTitle)
-                            .snippet(markerSnippet)
                             .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_blue))
                             .position(latLng);
                     marker = googleMap.addMarker(options);
-                    setUserMarkerIconAvatar(user.getAvatar(), marker);
+                    setUserMarkerIconAvatar(user.getAvatar(), marker, "blue");
+                    marker.showInfoWindow();
                     userMarkers.put(id, marker);
+                    setMarkerSnippet(marker);
                 }
                 else {
                     marker.setPosition(latLng);
+                    marker.showInfoWindow();
                 }
-
-                boundBuilder.include(marker.getPosition());
             }
 
             // animate the camera to center around all markers
             // if there is only one then zoom instead
-            Log.d(TAG, "USER MARKERS: " + userMarkers.size());
-            Marker userMarker = userMarkers.get(currentUser.getId());
+            Log.d(TAG, "Total user markers in the map is " + userMarkers.size());
+            Marker userMarker = userMarkers.get(appState.getUser().getId());
             if (userMarkers.size() == 1) {
                 googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(userMarker.getPosition(), CAMERA_ZOOM_LEVEL));
             }
-            else {
-                boundBuilder.include(userMarker.getPosition());
-                LatLngBounds bounds = boundBuilder.build();
-                int padding = LayoutUtils.dpToPx(getContext(), CAMERA_CENTER_PADDING);
-                googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
-            }
         }
     }
-
 }

@@ -14,9 +14,10 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.abborg.glom.AppState;
 import com.abborg.glom.R;
 import com.abborg.glom.adapter.NavigationDrawerAdapter;
-import com.abborg.glom.model.Circle;
+import com.abborg.glom.model.CircleInfo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,25 +39,25 @@ public class DrawerFragment extends Fragment {
 
     private View containerView;
 
-    private static List<Circle> circles;
+    private static List<CircleInfo> circles;
 
     private FragmentDrawerListener drawerListener;
 
     public DrawerFragment() {
-        // Required empty public constructor
+
     }
 
     public void setDrawerListener(FragmentDrawerListener listener) {
         this.drawerListener = listener;
     }
 
-    public static List<Circle> getData() {
-        List<Circle> data = new ArrayList<>();
+    public static List<CircleInfo> getData() {
+        List<CircleInfo> data = new ArrayList<>();
 
 
         //TODO retrieve Circle list from SQLite or server
         //preparing navigation drawer items
-        for (Circle c : circles) {
+        for (CircleInfo c : circles) {
             data.add(c);
         }
 
@@ -66,7 +67,7 @@ public class DrawerFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        circles = ((MainActivity) getActivity()).getCircles();  //TODO
+        circles = AppState.getInstance(getContext()).getCircleInfo();
 
         // Inflating view layout
         View layout = inflater.inflate(R.layout.fragment_navigation_drawer, container, false);

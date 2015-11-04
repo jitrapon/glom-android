@@ -27,6 +27,8 @@ public class User implements Parcelable {
 
     private List<Integer> userPerm;
 
+    private String status;
+
     public static final int MEDIA_IMAGE_RECEIVE = 1;
 
     public static final int MEDIA_AUDIO_RECEIVE = 2;
@@ -52,7 +54,8 @@ public class User implements Parcelable {
         this.id = id;
         this.location = location;
         this.currentCircle = null;
-        userPerm = new ArrayList<Integer>();
+        userPerm = new ArrayList<>();
+        this.status = null;
     }
 
     public User(Parcel parcel) {
@@ -72,6 +75,7 @@ public class User implements Parcelable {
         dest.writeString(avatar);
         dest.writeParcelable(currentCircle, flags);
         dest.writeList(userPerm);
+        dest.writeString(status);
     }
 
     private void readFromParcel(Parcel in) {
@@ -83,6 +87,7 @@ public class User implements Parcelable {
         currentCircle = in.readParcelable(Circle.class.getClassLoader());
         userPerm = new ArrayList<>();
         in.readList(userPerm, Integer.class.getClassLoader());
+        status = in.readString();
     }
 
     public static final Parcelable.Creator CREATOR =
@@ -135,6 +140,10 @@ public class User implements Parcelable {
     public List<Integer> getUserPermission() {
         return userPerm;
     }
+
+    public void setStatus(String status) { this.status = status; }
+
+    public String getStatus() { return status; }
 
     @Override
     public String toString() {

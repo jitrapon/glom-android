@@ -8,7 +8,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.abborg.glom.R;
-import com.abborg.glom.model.Circle;
+import com.abborg.glom.model.CircleInfo;
 
 import java.util.Collections;
 import java.util.List;
@@ -18,13 +18,13 @@ import java.util.List;
  */
 public class NavigationDrawerAdapter extends RecyclerView.Adapter<NavigationDrawerAdapter.MyViewHolder> {
 
-    List<Circle> data = Collections.emptyList();
+    List<CircleInfo> data = Collections.emptyList();
 
     private LayoutInflater inflater;
 
     private Context context;
 
-    public NavigationDrawerAdapter(Context context, List<Circle> data) {
+    public NavigationDrawerAdapter(Context context, List<CircleInfo> data) {
         this.context = context;
         inflater = LayoutInflater.from(context);
         this.data = data;
@@ -44,9 +44,9 @@ public class NavigationDrawerAdapter extends RecyclerView.Adapter<NavigationDraw
 
     @Override
     public void onBindViewHolder(MyViewHolder holder, int position) {
-        Circle current = data.get(position);
-        int memberCount = current.getUsers().size();
-        holder.title.setText(current.getTitle() + " (" + memberCount + ")");
+        CircleInfo current = data.get(position);
+        int memberCount = current.numUsers;
+        holder.title.setText(current.title + " (" + memberCount + ")");
     }
 
     @Override

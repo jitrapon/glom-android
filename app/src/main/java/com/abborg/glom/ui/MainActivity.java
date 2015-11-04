@@ -1,10 +1,11 @@
 package com.abborg.glom.ui;
 
+import android.app.ActivityManager;
+import android.app.ActivityManager.RunningServiceInfo;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.database.SQLException;
 import android.location.Location;
 import android.os.Bundle;
@@ -16,39 +17,38 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.SwitchCompat;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.CompoundButton;
 import android.widget.TextView;
+import android.widget.TimePicker;
 import android.widget.Toast;
 
-import com.abborg.glom.Const;
+import com.abborg.glom.AppState;
 import com.abborg.glom.R;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.DataUpdater;
-import com.abborg.glom.model.Event;
 import com.abborg.glom.model.User;
 import com.abborg.glom.service.BaseInstanceIDListenerService;
 import com.abborg.glom.service.MessageListenerService;
 import com.abborg.glom.service.RegistrationIntentService;
+import com.flipboard.bottomsheet.BottomSheetLayout;
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.gson.Gson;
 
 import net.danlew.android.joda.JodaTimeAndroid;
-
-import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements DrawerFragment.FragmentDrawerListener {
+public class MainActivity extends AppCompatActivity
+        implements DrawerFragment.FragmentDrawerListener {
 
     private Toolbar toolbar;
 
@@ -65,20 +65,11 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
             R.drawable.ic_tab_discover
     };
 
-    /* This profile's user */
-    private User user;
-
-    /* The currently active circle */
-    private Circle currentCircle;
-
-    /* The active list of circles */
-    private List<Circle> circles;
+    private AppState appState;
 
     private BroadcastReceiver broadcastReceiver;
 
     private static final String TAG = "GLOM-HOME-ACTIVITY";
-
-    private SharedPreferences sharedPref;
 
     /* GSON java-to-JSON converter */
     private Gson gson;
@@ -87,107 +78,20 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
 
     private DrawerFragment drawerFragment;
 
+    private BottomSheetLayout bottomSheet;
+
+    private View broadcastLocationSheetLayout;
+
+    private SwitchCompat broadcastLocationToggle;
+
     /**
      * TODO set default state for DEMO purposes
      */
     private void loadDefaultCircleInfo() {
-        // create our new user
-        user = createUser(Const.TEST_USER_NAME, Const.TEST_USER_ID, Const.TEST_USER_AVATAR, Const.TEST_USER_LAT, Const.TEST_USER_LONG);
-
-        // update all list of this user's circles
-        try {
-            dataUpdater = new DataUpdater(getApplicationContext(), user);
-            dataUpdater.open();
-            dataUpdater.resetCircles();
-
-            // populate the default circle
-            // default circle contains all unique users that the current user has
-            Circle friendCircle = dataUpdater.createCircle(getResources().getString(R.string.friends_circle_title),
-                    new ArrayList<>(Arrays.asList(
-                            createUser("Cat", "pusheen", "http://data.whicdn.com/images/139778481/superthumb.jpg", 1.003, 103.0),
-                            createUser("Sunadda", "fatcat18", "http://images8.cpcache.com/image/17244178_155x155_pad.png", 1.0, 102.1441)
-                    )), getResources().getString(R.string.friends_circle_id)
-            );
-
-            // create event 1 for friends
-            DateTimeFormatter formatter = DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss");
-            DateTime eventTime = formatter.parseDateTime("25/03/2016 15:30:52");
-            String place = "ChIJB5FY5M2e4jARo48nbVRhgAo";
-            Location location = null;
-            dataUpdater.createEvent("Meetup", friendCircle,
-                    new ArrayList<>(Arrays.asList(user)), eventTime, place, location, Event.IN_CIRCLE,
-                    new ArrayList<User>(), true, true, true, null
-                    );
-
-            // create event 2 for friends
-            eventTime = null;
-            place = "ChIJq-I3V62f4jAR8QRewT7N3to";
-            location = null;
-            dataUpdater.createEvent("This is a party", friendCircle,
-                    new ArrayList<>(Arrays.asList(user)), eventTime, place, location, Event.IN_CIRCLE,
-                    new ArrayList<User>(), true, true, true, "Test new event party message to everyone here..."
-            );
-
-            // another circle
-            Circle circle1 = dataUpdater.createCircle("My Love",
-                    new ArrayList<User>(Arrays.asList(
-                            createUser("Sunadda", "fatcat18", "http://images8.cpcache.com/image/17244178_155x155_pad.png", 1.0, 102.1441)
-                    )), "my-love"
-            );
-
-            // create event 1 for my-love
-            eventTime = formatter.parseDateTime("18/10/2015 09:00:00");
-            place = null;
-            location = null;
-            dataUpdater.createEvent("Nad's birthday", circle1,
-                    new ArrayList<>(Arrays.asList(user)), eventTime, place, location, Event.IN_CIRCLE,
-                    new ArrayList<User>(), true, true, true, null
-            );
-
-            eventTime = null;
-            place = null;
-            location = new Location("");
-            location.setLatitude(13.732756);
-            location.setLongitude(100.643101);
-            dataUpdater.createEvent("Event with exact coordinate", circle1,
-                    new ArrayList<>(Arrays.asList(user)), eventTime, place, location, Event.IN_CIRCLE,
-                    new ArrayList<User>(), true, true, true, "Thus it was not rare to find, on the Sunday, the tallboy on its feet by the fire, and the dressing table on its head by the bed, and the night-stool on its face by the door, and the washand-stand on its back by the window; and, on the Monday, the tallboy on its back by the bed, and the dressing table on its face by the door, and the night-stool on its back by the window and the washand-stand on its feet by the fire; and on the Tuesday…");
-
-            circles = dataUpdater.getCircles();
-
-            // set default circle to be the second one
-            currentCircle = circles.get(1);
-        }
-        catch (SQLException ex) {
-            Toast.makeText(this, "Error accessing database: " + ex.getMessage(), Toast.LENGTH_LONG).show();
-        }
-    }
-
-    private User createUser(String name, String id, String avatar, double latitude, double longitude) {
-        Location location = new Location("");
-        location.setLatitude(latitude);
-        location.setLongitude(longitude);
-        User user = new User(name, id, location);
-        user.setAvatar(avatar);
-        return user;
-    }
-
-    public Circle getCurrentCircle() { return currentCircle; }
-
-    public List<Circle> getCircles() { return circles; }
-
-    public Circle getCircleFromTitle(String title) {
-        if (circles != null) {
-            for (Circle c : circles) {
-                if (c.getTitle().equalsIgnoreCase(title)) return c;
-            }
-        }
-
-        return null;
-    }
-
-    public User getUser() {
-        return user;
+        // initialize app state
+        appState = AppState.getInstance(this);
+        appState.init();
+        dataUpdater = appState.getDataUpdater();
     }
 
     @Override
@@ -206,7 +110,7 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
         setSupportActionBar(toolbar);
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setTitle(currentCircle.getTitle() + " (" + currentCircle.getUsers().size() + ")");
+        getSupportActionBar().setTitle(appState.getCurrentCircle().getTitle() + " (" + appState.getCurrentCircle().getUsers().size() + ")");
 //        getSupportActionBar().setDisplayShowHomeEnabled(true);
 
         viewPager = (ViewPager) findViewById(R.id.viewpager);
@@ -217,124 +121,112 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
 
         setupTabIcons();
 
+        // set up our drawer
         drawerFragment = (DrawerFragment)
                 getSupportFragmentManager().findFragmentById(R.id.fragment_navigation_drawer);
         drawerFragment.setUp(R.id.fragment_navigation_drawer, (DrawerLayout) findViewById(R.id.drawer_layout), toolbar);
         drawerFragment.setDrawerListener(this);
 
+        // set up the bottom sheets
+        bottomSheet = (BottomSheetLayout) findViewById(R.id.bottomsheet);
+        bottomSheet.setShouldDimContentView(false);
+        broadcastLocationSheetLayout = LayoutInflater.from(this).inflate(R.layout.bottom_sheet_broadcast_location, bottomSheet, false);
+        broadcastLocationToggle = (SwitchCompat) broadcastLocationSheetLayout.findViewById(R.id.toggleBroadcastLocationSwitch);
+        final TimePicker intervalPicker = (TimePicker) broadcastLocationSheetLayout.findViewById(R.id.intervalTimePicker);
+        intervalPicker.setIs24HourView(true);
+        broadcastLocationToggle.setChecked(appState.getCurrentCircle().isUserBroadcastingLocation());
+        broadcastLocationToggle.setOnClickListener(new CompoundButton.OnClickListener() {
+
+            @Override
+            public void onClick(View buttonView) {
+                CircleFragment circleFragment = (CircleFragment) adapter.getItem(0);
+                if (circleFragment != null) {
+                    circleFragment.toggleBroadcastingLocation();
+                }
+            }
+        });
+
         // register the broadcast receiver for our gcm listener service updates
         broadcastReceiver = new BroadcastReceiver() {
             @Override
+            //TODO keep track of received message of user and circleId to show appropriate
+            //TODO notifications
+            //TODO retrive notification counts from USER table
             public void onReceive(Context context, Intent intent) {
 
                 // location updates from MessageListenerService
+                // updates from OTHER users
                 if ( intent.getAction().equals(getResources().getString(R.string.ACTION_RECEIVE_LOCATION)) ) {
-                    String userJson = intent.getStringExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_USERS));
-                    String circleId = intent.getStringExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_CIRCLE_ID));
-                    Circle circle = findCircle(circleId);
+                    List<User> users = dataUpdater.getLocationUpdates(intent, appState.getCurrentCircle());
 
-                    if (circle != null) {
-                        try {
-                            // update the location markers
-                            JSONArray users = new JSONArray(userJson);
-                            List<User> userList = new ArrayList<User>();
+                    if (users != null && users.size() > 0) {
 
-                            for (int i = 0; i < users.length(); i++) {
-                                JSONObject user = users.getJSONObject(i);
-
-                                // verify that the user is in a circle and the ID is valid
-                                if (Circle.circleContainsUserId(user.getString("id"), circle)) {
-                                    JSONObject locationJson = user.getJSONObject("location");
-                                    Location location = new Location("");
-                                    location.setLatitude(locationJson.getDouble("lat"));
-                                    location.setLongitude(locationJson.getDouble("long"));
-                                    userList.add(new User(null, user.getString("id"), location));
-
-                                    for (User s : circle.getUsers()) {
-                                        if (s.getId().equals(user.getString("id"))) {
-                                            s.setLocation(location);
-                                            dataUpdater.updateUserLocation(s, circle);
-                                        }
-                                    }
-
-                                    Log.i(TAG, "User ID: " + user.getString("id") + "\nLat: " + user.getJSONObject("location").getDouble("lat") + "\nLong: " +
-                                            user.getJSONObject("location").getDouble("long"));
-                                }
-                                else {
-                                    Log.e(TAG, "Received user ID of " + user.getString("id") + " does not exist in circle (" + circleId + ")");
-                                    Toast.makeText(context, "Received user ID of " + user.getString("id") + " does not exist in circle (" + circleId + ")", Toast.LENGTH_SHORT).show();
-                                }
-                            }
-
-                            if (userList.size() > 0) {
-
-                                // only update the location markers when the map is visible and this is the current circle
-                                LocationFragment map = (LocationFragment) adapter.getItem(1);
-                                if (map.isFragmentVisible && circle.getId().equals(currentCircle.getId())) {
-                                    map.updateUserMarkers(userList);
-                                }
-
-                                Toast.makeText(context, userList.get(0).getId() + ": " + userList.get(0).getLocation().getLatitude()
-                                        + ", " + userList.get(0).getLocation().getLongitude(), Toast.LENGTH_SHORT).show();
-                            }
+                        // only update the location markers when the map is visible and this is the current circle
+                        LocationFragment map = (LocationFragment) adapter.getItem(1);
+                        if (map.isFragmentVisible) {
+                            map.updateUserMarkers(users);
                         }
-                        catch (JSONException ex) {
-                            Log.e(TAG, ex.getMessage());
-                        }
+
+                        Toast.makeText(context, users.get(0).getId() + ": " + users.get(0).getLocation().getLatitude()
+                                + ", " + users.get(0).getLocation().getLongitude(), Toast.LENGTH_SHORT).show();
                     }
                     else {
-                        Log.e(TAG, "Could not find circle (" + circleId + ") under this user!");
-                        Toast.makeText(context, "Could not find circle (" + circleId + ") under this user!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(context, "Received location update from server", Toast.LENGTH_SHORT).show();
                     }
                 }
 
                 // location updates from CirclePushService
+                // user's OWN location updates
                 else if (intent.getAction().equals(getResources().getString(R.string.ACTION_USER_LOCATION_UPDATE))) {
                     Location location = intent.getParcelableExtra(getResources().getString(R.string.EXTRA_USER_LOCATION_UPDATE));
-                    user.setLocation(location); //TODO others might not see your location like you do
+                    List<String> circleBroadcastList = intent.getStringArrayListExtra(getResources().getString(R.string.EXTRA_CIRCLES_LOCATION_UPDATE));
 
                     // only update the location markers when the map is visible
+                    // and this circle is in the broadcast list
+                    String circleId = appState.getCurrentCircle().getId();
                     LocationFragment map = (LocationFragment) adapter.getItem(1);
-                    if (map.isFragmentVisible) {
-                        map.updateUserMarkers(Arrays.asList(user));
+
+                    // update the user's location in this circle
+                    User currentUser = null;
+                    for (User user : appState.getCurrentCircle().getUsers()) {
+                        if (user.getId().equals(appState.getUser().getId())) {
+                            currentUser = user;
+                            currentUser.setLocation(location);
+                        }
+                    }
+
+                    if (map.isFragmentVisible && circleBroadcastList.contains(circleId)) {
+                        if (currentUser != null) {
+                            map.updateUserMarkers(Arrays.asList(currentUser));
+                        }
                     }
                 }
             }
         };
 
-        // retrieve the shared preferences
-        sharedPref = getSharedPreferences(getString(R.string.PREFERENCE_FILE), Context.MODE_PRIVATE);
-
         gson = new Gson();
 
         // start IntentService to register this application with GCM
         Intent intent = new Intent(this, RegistrationIntentService.class);
-        intent.putExtra(getResources().getString(R.string.EXTRA_SEND_TOKEN_USER_ID), user.getId());
+        intent.putExtra(getResources().getString(R.string.EXTRA_SEND_TOKEN_USER_ID), appState.getUser().getId());
         startService(intent);
         startService(new Intent(this, BaseInstanceIDListenerService.class));
         startService(new Intent(this, MessageListenerService.class));
     }
 
-    /**
-     * Check if the specified circle ID exists in this user's context
-     *
-     * @param circleId
-     * @return
-     */
-    private Circle findCircle(String circleId) {
-        for (Circle c : circles) {
-            if (c.getId().equals(circleId)) return c;
-        }
-        return null;
-    }
-
     @Override
     protected void onStart() {
         super.onStart();
+
+        GoogleApiClient apiClient = AppState.getInstance(this).getGoogleApiClient();
+        if (apiClient != null && !apiClient.isConnected()) apiClient.connect();
     }
 
     @Override
     protected void onStop() {
+        GoogleApiClient apiClient = AppState.getInstance(this).getGoogleApiClient();
+        if (apiClient != null && apiClient.isConnected()) apiClient.disconnect();
+
         super.onStop();
     }
 
@@ -355,12 +247,25 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
         super.onResume();
     }
 
+    private boolean isServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     protected void onPause() {
         LocalBroadcastManager broadcastManager = LocalBroadcastManager.getInstance(this);
         broadcastManager.unregisterReceiver(broadcastReceiver);
 
+        appState.cleanup();
+
         dataUpdater.close();
+
         super.onPause();
     }
 
@@ -444,7 +349,7 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
         TextView textView = (TextView) view.findViewById(R.id.circleTitle);
         String displayTitle = textView.getText().toString();
         displayTitle = displayTitle.substring(0, displayTitle.indexOf('(')).trim();
-        Circle selected = getCircleFromTitle(displayTitle);
+        Circle selected = dataUpdater.getCircleByName(displayTitle);
 
         if (selected != null) {
             //TODO save date to SQLITE for this circle
@@ -456,10 +361,25 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
         }
     }
 
-    private void updateView(Circle circle) {
-        currentCircle = circle;
+    public LocationFragment getMapFragment() {
+        return (LocationFragment) adapter.getItem(1);
+    }
 
-        getSupportActionBar().setTitle(currentCircle.getTitle() + " (" + currentCircle.getUsers().size() + ")");
+    public BottomSheetLayout getBottomSheet() {
+        return bottomSheet;
+    }
+
+    public View getBroadcastLocationSheetLayout() {
+        return broadcastLocationSheetLayout;
+    }
+
+    private void updateView(Circle circle) {
+        AppState.getInstance(this).setCurrentCircle(circle);
+
+        getSupportActionBar().setTitle(circle.getTitle() + " (" + circle.getUsers().size() + ")");
+
+        // update broadcast location sheet
+        broadcastLocationToggle.setChecked(appState.getCurrentCircle().isUserBroadcastingLocation());
 
         // only update the locations when the map is visible
         LocationFragment mapFragment = (LocationFragment) adapter.getItem(1);

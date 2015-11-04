@@ -1,20 +1,22 @@
 package com.abborg.glom.adapter;
 
 import android.content.Context;
-import android.graphics.Bitmap;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.abborg.glom.AppState;
 import com.abborg.glom.R;
 import com.abborg.glom.model.User;
 import com.abborg.glom.utils.CircleTransform;
 import com.bumptech.glide.Glide;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -24,14 +26,13 @@ import java.util.List;
  */
 public class UserAvatarAdapter extends BaseAdapter {
 
-    /* List of generated avatar images */
-    private List<Bitmap> avatars = Collections.emptyList();
-
     private Context context;
 
     private List<User> users;
 
     private static LayoutInflater inflater;
+
+    private static String TAG = "UserAvatarAdapter";
 
     public UserAvatarAdapter(Context context, List<User> users) {
         this.context = context;
@@ -55,6 +56,13 @@ public class UserAvatarAdapter extends BaseAdapter {
         return users.get(position);
     }
 
+
+    //TODO
+    // notifyItemChanged()
+    public void addItem(int position) {
+
+    }
+
     public void removeItem(int position) {
         //TODO
     }
@@ -68,6 +76,34 @@ public class UserAvatarAdapter extends BaseAdapter {
         ImageView avatar;
         TextView primaryText;
         TextView secondaryText;
+    }
+
+    public void setUserIsBroadcastingLocation(View avatar, boolean isBroadcasting) {
+        ImageView avatarImage = (ImageView) avatar.findViewById(R.id.userAvatar);
+        ImageView broadcastLocationIcon = (ImageView) avatar.findViewById(R.id.userAvatarLocationBroadcast);
+        if (avatarImage != null) {
+            if (isBroadcasting) {
+                if (avatarImage.getAnimation() == null) {
+                    Animation broadcastLocationAnimation = AnimationUtils.loadAnimation(context, R.anim.blink);
+                    avatarImage.startAnimation(broadcastLocationAnimation);
+                    Log.d(TAG, "Setting user avatar to broadcast location");
+                }
+                broadcastLocationIcon.setVisibility(View.VISIBLE);
+            }
+            else {
+                Log.d(TAG, "Setting user avatar to default");
+                avatarImage.clearAnimation();
+                broadcastLocationIcon.setVisibility(View.INVISIBLE);
+            }
+        }
+    }
+
+    public void clearNotificationCount(View avatar, int clearCount) {
+
+    }
+
+    public void addNotificationCount(View avatar, int addCount) {
+
     }
 
     @Override
@@ -100,6 +136,12 @@ public class UserAvatarAdapter extends BaseAdapter {
                 .into(holder.avatar);
         holder.primaryText.setText(users.get(position).getName());
         holder.secondaryText.setText(users.get(position).getId());
+
+        // start any animation regarding the user state
+        AppState appState = AppState.getInstance(context);
+        if (user.getId().equals(appState.getUser().getId())) {
+            setUserIsBroadcastingLocation(convertView, appState.getCurrentCircle().isUserBroadcastingLocation());
+        }
 
         return convertView;
     }

@@ -2,16 +2,48 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:clipChildren="false">
 
-    <ImageView
-        android:id="@+id/userAvatar"
-        android:layout_width="@dimen/user_avatar_width"
-        android:layout_height="@dimen/user_avatar_height"
-        android:layout_gravity="center"
-        android:layout_marginTop="@dimen/user_avatar_margin_top"
-        android:layout_marginBottom="@dimen/user_avatar_margin_bottom"
-        android:scaleType="fitXY"/>
+    <RelativeLayout
+        android:id="@+id/userAvatarLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center">
+
+        <ImageView
+            android:id="@+id/userAvatar"
+            android:layout_width="@dimen/user_avatar_width"
+            android:layout_height="@dimen/user_avatar_height"
+            android:layout_marginTop="@dimen/user_avatar_margin_top"
+            android:layout_marginBottom="@dimen/user_avatar_margin_bottom"
+            android:scaleType="fitXY"/>
+
+        <TextView
+            android:id="@+id/userAvatarPrimaryBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:textColor="#FFF"
+            android:textSize="16sp"
+            android:layout_alignRight="@id/userAvatar"
+            android:layout_alignEnd="@id/userAvatar"
+            android:layout_marginRight="-10dp"
+            android:background="@drawable/badge_circle_red"
+            android:visibility="invisible"/>
+
+        <ImageView
+            android:id="@+id/userAvatarLocationBroadcast"
+            android:layout_width="30dip"
+            android:layout_height="30dip"
+            android:src="@drawable/badge_circle_location"
+            android:layout_alignRight="@id/userAvatar"
+            android:layout_alignEnd="@id/userAvatar"
+            android:layout_alignBottom="@id/userAvatar"
+            android:layout_marginRight="-10dp"
+            android:visibility="invisible"/>
+
+    </RelativeLayout>
 
     <TextView
         android:id="@+id/userPrimaryText"

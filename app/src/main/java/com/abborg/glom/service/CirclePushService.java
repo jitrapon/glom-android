@@ -1,17 +1,21 @@
 package com.abborg.glom.service;
 
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import android.widget.Toast;
 
+import com.abborg.glom.AppState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
+import com.abborg.glom.ui.MainActivity;
 import com.abborg.glom.utils.RequestHandler;
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
@@ -30,7 +34,6 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -42,9 +45,7 @@ import java.util.Map;
  * This class expects data to be passed in primitive format (i.e. String, integers)
  * and not serialized or parcelled objects.
  *
- * TODO possibly spawning another thread to execute tasks
- *
- * Created by Boat on 8/10/58.
+ * Created by Jitrapon Tiachunpun on 8/10/58.
  */
 public class CirclePushService extends Service implements LocationListener,
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
@@ -55,7 +56,7 @@ public class CirclePushService extends Service implements LocationListener,
     private LocationRequest locationRequest;
 
     /* List of circle id to broadcast location to */
-    private List<String> circles;
+    private ArrayList<String> circles;
 
     /* Current user id */
     private String userId;
@@ -82,8 +83,7 @@ public class CirclePushService extends Service implements LocationListener,
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
-        Toast.makeText(this, TAG + " starting", Toast.LENGTH_SHORT).show();
-        Log.d(TAG, "Service starting");
+        Log.d(TAG, "Service receiving start command");
 
         handleCommand(intent);
 
@@ -94,15 +94,21 @@ public class CirclePushService extends Service implements LocationListener,
     public void onLocationChanged(Location location) {
         Log.i(TAG, "Location has changed.");
         if (location != null) {
+
             // broadcast to MainActivity
             userLocation = location;
             Intent intent = new Intent(getResources().getString(R.string.ACTION_USER_LOCATION_UPDATE));
             intent.putExtra(getResources().getString(R.string.EXTRA_USER_LOCATION_UPDATE), location);
+            intent.putStringArrayListExtra(getResources().getString(R.string.EXTRA_CIRCLES_LOCATION_UPDATE), circles);
             LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
 
             // loop through list of circles and send updates to them
+            AppState appState = AppState.getInstance(this);
+            appState.getDataUpdater().open();
             for (String circleId : circles) {
                 sendLocationUpdateRequest(circleId, userLocation);
+                appState.getDataUpdater().updateUserLocation(appState.getUser().getId(), circleId, location.getLatitude(), location.getLongitude());
+                Log.d(TAG, "Sending location info of " + location.getLatitude() + ", " + location.getLongitude());
             }
         }
     }
@@ -201,6 +207,53 @@ public class CirclePushService extends Service implements LocationListener,
         RequestHandler.getInstance(this).addToRequestQueue(request);
     }
 
+    private void showNotification() {
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, Const.NOTIFY_BROADCAST_LOCATION, intent,
+                PendingIntent.FLAG_ONE_SHOT);
+
+        NotificationManager notificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        StringBuilder messageBuilder = new StringBuilder();
+        String messageTitle = null;
+        for (String name : circles) {
+            messageBuilder.append(name + ", ");
+        }
+        messageBuilder.setLength(Math.max(messageBuilder.length() - 2, 0));
+        if (circles.size() > 1) {
+            messageTitle = getResources().getString(R.string.notification_title_broadcast_location) + " " +
+                    circles.size() + " circles";
+        }
+        else if (circles.size() == 1){
+            messageTitle = getResources().getString(R.string.notification_title_broadcast_location) + " " +
+                    circles.get(0);
+        }
+        else {
+            notificationManager.cancel(Const.NOTIFY_BROADCAST_LOCATION);
+        }
+
+
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
+                .setSmallIcon(R.drawable.ic_action_place)
+                .setContentTitle(messageTitle)
+                .setContentText(messageBuilder.toString())
+                .setAutoCancel(false)
+                .setContentIntent(pendingIntent)
+                .setOngoing(true)
+                .addAction(R.drawable.ic_action_cancel,
+                        getResources().getString(R.string.notification_action_cancel_broadcast_location), pendingIntent);
+
+        notificationManager.notify(Const.NOTIFY_BROADCAST_LOCATION, notificationBuilder.build());
+    }
+
+    private void hideNotification() {
+        NotificationManager notificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancel(Const.NOTIFY_BROADCAST_LOCATION);
+    }
+
     private void handleCommand(Intent intent) {
         if (intent != null) {
             String action = intent.getAction();
@@ -212,11 +265,17 @@ public class CirclePushService extends Service implements LocationListener,
                 if (!circles.contains(circleId)) {
                     circles.add(circleId);
                 }
+
+                // display notification to user
+                showNotification();
             }
 
             // action to remove the user's circle to list of broadcast
             else if (action.equals(getResources().getString(R.string.ACTION_CIRCLE_DISABLE_LOCATION_BROADCAST))) {
                 circles.remove(circleId);
+
+                // display notification to user
+                showNotification();
             }
 
             // disconnect Google API client
@@ -260,7 +319,7 @@ public class CirclePushService extends Service implements LocationListener,
      */
     @Override
     public void onCreate() {
-        circles = new ArrayList<String>();
+        circles = new ArrayList<>();
 
         locationRequest = LocationRequest.create();
         locationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
@@ -282,8 +341,10 @@ public class CirclePushService extends Service implements LocationListener,
      */
     @Override
     public void onDestroy() {
-        Toast.makeText(this, TAG + " done", Toast.LENGTH_SHORT).show();
         if (apiClient.isConnected()) apiClient.disconnect();
+
+        hideNotification();
+
         Log.d(TAG, "Service done");
     }
 

@@ -11,25 +11,19 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
+import com.abborg.glom.AppState;
 import com.abborg.glom.R;
 import com.abborg.glom.adapter.EventRecyclerViewAdapter;
-import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.DataUpdater;
 import com.abborg.glom.model.Event;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.places.Places;
 
 import java.util.List;
 
 /**
  * A simple {@link Fragment} subclass.
  */
-public class EventFragment extends Fragment
-        implements GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks {
+public class EventFragment extends Fragment {
 
     private static final String TAG = "EventFragment";
 
@@ -48,52 +42,22 @@ public class EventFragment extends Fragment
     /* Main activity's data updater */
     private DataUpdater dataUpdater;
 
-    /* The current circle */
-    private Circle circle;
-
     /* The list of events in this circle */
     private List<Event> events;
 
     private MainActivity activity;
 
-    /* Helper class that verifies Google's Api client */
-    private GoogleApiAvailability apiAvailability;
-
-    /* Google Play API client */
-    private GoogleApiClient apiClient;
-
     public EventFragment() {
         // Required empty public constructor
-    }
-
-    public boolean verifyGooglePlayServices(Context context) {
-        int resultCode = apiAvailability.isGooglePlayServicesAvailable(context);
-        if (resultCode != ConnectionResult.SUCCESS) {
-//            if (apiAvailability.isUserResolvableError(resultCode)) {
-//                apiAvailability.getErrorDialog(activity, resultCode, PLAY_SERVICES_RESOLUTION_REQUEST)
-//                        .show();
-//            } else {
-//                Log.i(TAG, "This device is not supported.");
-//                activity.finish();
-//            }
-            return false;
-        }
-
-        return true;
     }
 
     @Override
     public void onStart() {
         super.onStart();
-        if (apiClient != null && !apiClient.isConnected()) apiClient.connect();
     }
 
     @Override
     public void onStop() {
-        if (apiClient != null && apiClient.isConnected()) {
-            apiClient.disconnect();
-            Log.d(TAG, "Google Places API disconnected");
-        }
         super.onStop();
     }
 
@@ -101,23 +65,9 @@ public class EventFragment extends Fragment
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        dataUpdater = ((MainActivity) getActivity()).dataUpdater;
-        circle = ((MainActivity) getActivity()).getCurrentCircle();
-
-        apiAvailability = GoogleApiAvailability.getInstance();
-
-        Context context = getContext();
+        dataUpdater = AppState.getInstance(getContext()).getDataUpdater();
 
         adapter = new EventRecyclerViewAdapter(getContext(), getEvents());
-
-        if (verifyGooglePlayServices(context)) {
-            apiClient = new GoogleApiClient
-                    .Builder(context)
-                    .addApi(Places.GEO_DATA_API)
-                    .addConnectionCallbacks(this)
-                    .addOnConnectionFailedListener(this)
-                    .build();
-        }
     }
 
     @Override
@@ -156,45 +106,22 @@ public class EventFragment extends Fragment
         }
     }
 
-    public List<Event> getEvents() {
-        events = circle.getEvents();
-        return events;
-    }
-
     @Override
+    // we get hold of activity instance to know that the fragment has been attached
     public void onAttach(Context context) {
         super.onAttach(context);
         activity = context instanceof Activity ? (MainActivity) context : null;
     }
 
+    public List<Event> getEvents() {
+        events = AppState.getInstance(getContext()).getCurrentCircle().getEvents();
+        return events;
+    }
+
     public void update() {
         if (activity != null) {
-            circle = activity.getCurrentCircle();
-            events = circle.getEvents();
+            events = AppState.getInstance(getContext()).getCurrentCircle().getEvents();
             adapter.update(events);
         }
-    }
-
-    @Override
-    public void onConnected(Bundle bundle) {
-        adapter.setGoogleApiClient(apiClient);
-        Log.d(TAG, "Google Places API connected.");
-    }
-
-    @Override
-    public void onConnectionFailed(ConnectionResult result) {
-        Log.e(TAG, "Google Places API connection failed with error code: "
-                + result.getErrorCode());
-
-        Toast.makeText(getActivity(),
-                "Google Places API connection failed with error code:" +
-                        result.getErrorCode(),
-                Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-        adapter.setGoogleApiClient(null);
-        Log.e(TAG, "Google Places API connection suspended.");
     }
 }

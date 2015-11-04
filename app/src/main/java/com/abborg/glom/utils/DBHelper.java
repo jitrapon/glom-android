@@ -20,6 +20,7 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String TABLE_CIRCLES = "circles";
     public static final String CIRCLE_COLUMN_ID = "id";
     public static final String CIRCLE_COLUMN_NAME = "name";
+    public static final String CIRCLE_COLUMN_BROADCAST_LOCATION = "broadcastLocation";
 
     // User table columns
     public static final String TABLE_USERS = "users";
@@ -49,6 +50,7 @@ public class DBHelper extends SQLiteOpenHelper {
     private static final String DATABASE_CREATE_CIRCLES_TABLE = "CREATE TABLE " + TABLE_CIRCLES + " (" +
             CIRCLE_COLUMN_ID + " TEXT, " +
             CIRCLE_COLUMN_NAME + " TEXT, " +
+            CIRCLE_COLUMN_BROADCAST_LOCATION + " INTEGER NOT NULL DEFAULT 0, " +
             "UNIQUE (" + CIRCLE_COLUMN_ID + ", " + CIRCLE_COLUMN_NAME + ")" +
             ");";
 

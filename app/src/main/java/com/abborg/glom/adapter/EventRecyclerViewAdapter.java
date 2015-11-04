@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.abborg.glom.AppState;
 import com.abborg.glom.R;
 import com.abborg.glom.model.Event;
 import com.abborg.glom.model.FeedAction;
@@ -44,8 +45,6 @@ public class EventRecyclerViewAdapter
     private static EventClickListener eventClickListener;
 
     private Context context;
-
-    private GoogleApiClient apiClient;
 
     private List<Integer> staleEvents;
 
@@ -249,7 +248,8 @@ public class EventRecyclerViewAdapter
             final EventHolder viewHolder = holder;
             final String placeTime = time;
             String placeName = event.getPlace();
-            if (apiClient != null) {
+            GoogleApiClient apiClient = AppState.getInstance(context).getGoogleApiClient();
+            if (apiClient != null && apiClient.isConnected()) {
                 PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(apiClient, event.getPlace());
                 placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {
 
@@ -308,15 +308,6 @@ public class EventRecyclerViewAdapter
     public void deleteItem(int index) {
         events.remove(index);
         notifyItemRemoved(index);
-    }
-
-    public void setGoogleApiClient(GoogleApiClient apiClient) {
-        if (apiClient == null || !apiClient.isConnected()) {
-            this.apiClient = null;
-        }
-        else {
-            this.apiClient = apiClient;
-        }
     }
 
     @Override

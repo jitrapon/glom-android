@@ -11,16 +11,23 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import com.abborg.glom.AppState;
+import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.ui.MainActivity;
 import com.google.android.gms.gcm.GcmListenerService;
 
 /**
  * Created by Boat on 13/9/58.
+ *
+ * http://stackoverflow.com/questions/32137660/android-gcm-duplicate-push-after-notification-dismiss
+ * If a notification is not consumed, and the app is closed (in the recent app), the notification will arrive again
  */
 public class MessageListenerService extends GcmListenerService {
 
     private static final String TAG = "GcmListenerService";
+
+    private static final int LOCATION_UPDATE = 0;
 
     /**
      * Called when message is received.
@@ -42,10 +49,41 @@ public class MessageListenerService extends GcmListenerService {
          *     - Store message in local database.
          *     - Update UI.
          */
-        Intent locUpdateIntent = new Intent(getResources().getString(R.string.ACTION_RECEIVE_LOCATION));
-        locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_USERS), data.getString("users"));
-        locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_CIRCLE_ID), data.getString("circleId"));
-        LocalBroadcastManager.getInstance(this).sendBroadcast(locUpdateIntent);
+        String opCodeString = data.getString("op");
+        if (opCodeString != null) {
+            try {
+                int opCode = Integer.parseInt(opCodeString);
+                Log.d(TAG, "Message of type " + opCode + " received");
+
+                //TODO keep track of received message of user and circleId
+                //TODO store it in USERS table under column notification
+                switch(opCode) {
+
+                    // MESSAGE TYPE 1: Location updates in circle
+                    case LOCATION_UPDATE:
+                        Intent locUpdateIntent = new Intent(getResources().getString(R.string.ACTION_RECEIVE_LOCATION));
+
+                        // save updated location in DB
+                        AppState appState = AppState.getInstance(this);
+                        appState.getDataUpdater().open();
+                        appState.getDataUpdater().onLocationUpdateReceived(data);
+
+                        locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_USERS), data.getString("users"));
+                        locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_CIRCLE_ID), data.getString("circleId"));
+                        LocalBroadcastManager.getInstance(this).sendBroadcast(locUpdateIntent);
+
+                        sendNotification(message);
+                        break;
+
+                    default:
+                        // do nothing for now
+                        Log.e(TAG, "Unsupported opcode received, do nothing for now!");
+                }
+            }
+            catch (NumberFormatException ex) {
+                Log.e(TAG, ex.getMessage());
+            }
+        }
 
         if (from.startsWith("/topics/")) {
             // message received from some topic.
@@ -53,11 +91,6 @@ public class MessageListenerService extends GcmListenerService {
             // normal downstream message.
         }
 
-        /**
-         * In some cases it may be useful to show a notification indicating to the user
-         * that a message was received.
-         */
-        sendNotification(message);
         // [END_EXCLUDE]
     }
     // [END receive_message]
@@ -71,13 +104,13 @@ public class MessageListenerService extends GcmListenerService {
     private void sendNotification(String message) {
         Intent intent = new Intent(this, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0 /* Request code */, intent,
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, Const.NOTIFY_LOCATION_UPDATE, intent,
                 PendingIntent.FLAG_ONE_SHOT);
 
         Uri defaultSoundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
                 .setSmallIcon(R.drawable.ic_action_alarm)
-                .setContentTitle("Message from GlomServer")
+                .setContentTitle(getResources().getString(R.string.notification_title_location_update))
                 .setContentText(message)
                 .setAutoCancel(true)
                 .setSound(defaultSoundUri)
@@ -86,6 +119,6 @@ public class MessageListenerService extends GcmListenerService {
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
-        notificationManager.notify(0 /* ID of notification */, notificationBuilder.build());
+        notificationManager.notify(Const.NOTIFY_LOCATION_UPDATE, notificationBuilder.build());
     }
 }

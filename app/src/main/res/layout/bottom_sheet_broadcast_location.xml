@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <android.support.v7.widget.SwitchCompat
+        android:id="@+id/toggleBroadcastLocationSwitch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/bottom_sheet_broadcast_location_toggle"
+        android:background="@android:color/white"
+        android:textColor="@color/textColorSecondary"
+        android:padding="20dp"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/lineDivider"/>
+
+    <RelativeLayout
+        android:id="@+id/endTimePickerLayout"
+        android:layout_width="match_parent"
+        android:layout_height="174dp"
+        android:background="@android:color/white">
+
+        <TextView
+            android:id="@+id/endTimePickerTitle"
+            android:layout_marginTop="6dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:textSize="14dip"
+            android:text="@string/bottom_sheet_broadcast_location_timepicker_title1"/>
+
+        <TimePicker
+            android:id="@+id/endTimePicker"
+            android:layout_width="wrap_content"
+            android:layout_height="130dp"
+            android:timePickerMode="spinner"
+            android:layout_below="@id/endTimePickerTitle"
+            android:layout_centerHorizontal="true"
+            android:textSize="20dip"
+            android:textColor="#3A69D3">
+        </TimePicker>
+
+        <TextView
+            android:id="@+id/endTimePickerSelect"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_below="@id/endTimePicker"
+            android:textSize="14dip"
+            android:textColor="@color/colorPrimaryDark"
+            android:text="@string/bottom_sheet_broadcast_location_select_duration"/>
+
+    </RelativeLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/lineDivider"/>
+
+    <RelativeLayout
+        android:id="@+id/intervalPickerLayout"
+        android:layout_width="match_parent"
+        android:layout_height="156dp"
+        android:background="@android:color/white">
+
+        <TextView
+            android:id="@+id/intervalTimePickerTitle"
+            android:layout_marginTop="6dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:textSize="14dip"
+            android:text="@string/bottom_sheet_broadcast_location_interval_title"/>
+
+        <TimePicker
+            android:id="@+id/intervalTimePicker"
+            android:layout_width="wrap_content"
+            android:layout_height="130dp"
+            android:timePickerMode="spinner"
+            android:layout_below="@id/intervalTimePickerTitle"
+            android:layout_centerHorizontal="true"
+            android:textSize="20dip"
+            android:textColor="#3A69D3"/>
+
+    </RelativeLayout>
+
+</LinearLayout>
