@@ -41,13 +41,7 @@ public class User implements Parcelable {
 
     public static final int LOCATION_REQUEST_RECEIVE = 6;
 
-    public static final int SHOUT_RECEIVE = 7;
-
-    public static final int SECRET_MESSAGE = 8;
-
-    public static final int SONG_SNIPPET_RECEIVE = 9;
-
-    public static final int POLL_RECEIVE = 10;
+    public static final int CREATE_EVENT = 7;
 
     public User(String name, String id, Location location) {
         this.name = name;

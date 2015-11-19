@@ -1,8 +1,6 @@
 <resources>
 
-    <style name="AppMaterialTheme" parent="AppMaterialTheme.Base">
-
-    </style>
+    <style name="AppMaterialTheme" parent="AppMaterialTheme.Base" />
 
     <!-- Base application theme. -->
     <style name="AppMaterialTheme.Base" parent="Theme.AppCompat.Light.DarkActionBar">
@@ -13,5 +11,19 @@
         <item name="colorAccent">@color/colorAccent</item>
         <item name="colorControlActivated">@color/colorPrimaryDark</item>
     </style>
+
+    <style name="FabStyle">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_margin">@dimen/spacing_large</item>
+        <item name="android:src">@drawable/ic_action_new</item>
+        <item name="backgroundTint">@color/colorPrimaryDark</item>
+        <item name="borderWidth">0dp</item>
+        <item name="elevation">6dp</item>
+        <item name="pressedTranslationZ">12dp</item>
+        <item name="rippleColor">@android:color/white</item>
+    </style>
+    <style name="AppMaterialTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+    <style name="AppMaterialTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
 </resources>

@@ -17,6 +17,9 @@ import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.places.Places;
 
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+
 import java.util.List;
 
 /**
@@ -53,11 +56,15 @@ public class AppState
     /* Google Play API client */
     private GoogleApiClient apiClient;
 
+    /* App-wide date formatter */
+    private DateTimeFormatter dateTimeFormatter;
+
     private AppState(Context context) {
         this.context = context;
 
+        // make sure the phone has installed required Google Play Services version
+        // if it's available, connect to Google API services
         apiAvailability = GoogleApiAvailability.getInstance();
-
         if (verifyGooglePlayServices(context)) {
             apiClient = new GoogleApiClient
                     .Builder(context)
@@ -67,70 +74,41 @@ public class AppState
                     .addOnConnectionFailedListener(this)
                     .build();
         }
-
         if (!apiClient.isConnected()) apiClient.connect();
 
-        user = createUser(Const.TEST_USER_NAME, Const.TEST_USER_ID, Const.TEST_USER_AVATAR, Const.TEST_USER_LAT, Const.TEST_USER_LONG);
+        dateTimeFormatter = DateTimeFormat.forPattern(context.getResources().getString(R.string.action_create_event_datetime_format));
 
-        dataUpdater = new DataUpdater(context, user);
-//        dataUpdater.open();
-//        dataUpdater.resetCircles();
-//
-//        // populate the default circle
-//        // default circle contains all unique users that the current user has
-//        Circle friendCircle = dataUpdater.createCircle(
-//                context.getResources().getString(R.string.friends_circle_title),
-//                new ArrayList<>(Arrays.asList(
-//                        createUser("Cat", "pusheen", "http://data.whicdn.com/images/139778481/superthumb.jpg", 1.003, 103.0),
-//                        createUser("Sunadda", "fatcat18", "http://images8.cpcache.com/image/17244178_155x155_pad.png", 1.0, 102.1441)
-//                )), context.getResources().getString(R.string.friends_circle_id)
-//        );
-//
-//        // create event 1 for friends
-//        DateTimeFormatter formatter = DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss");
-//        DateTime eventTime = formatter.parseDateTime("25/03/2016 15:30:52");
-//        String place = "ChIJB5FY5M2e4jARo48nbVRhgAo";
-//        Location location = null;
-//        dataUpdater.createEvent("Meetup", friendCircle,
-//                new ArrayList<>(Arrays.asList(user)), eventTime, place, location, Event.IN_CIRCLE,
-//                new ArrayList<User>(), true, true, true, null
-//        );
-//
-//        // create event 2 for friends
-//        eventTime = null;
-//        place = "ChIJq-I3V62f4jAR8QRewT7N3to";
-//        location = null;
-//        dataUpdater.createEvent("This is a party", friendCircle,
-//                new ArrayList<>(Arrays.asList(user)), eventTime, place, location, Event.IN_CIRCLE,
-//                new ArrayList<User>(), true, true, true, "Test new event party message to everyone here..."
-//        );
-//
-//        // another circle
-//        Circle circle1 = dataUpdater.createCircle("My Love",
-//                new ArrayList<User>(Arrays.asList(
-//                        createUser("Sunadda", "fatcat18", "http://images8.cpcache.com/image/17244178_155x155_pad.png", 1.0, 102.1441)
-//                )), "my-love"
-//        );
-//
-//        // create event 1 for my-love
-//        eventTime = formatter.parseDateTime("18/10/2015 09:00:00");
-//        place = null;
-//        location = null;
-//        dataUpdater.createEvent("Nad's birthday", circle1,
-//                new ArrayList<>(Arrays.asList(user)), eventTime, place, location, Event.IN_CIRCLE,
-//                new ArrayList<User>(), true, true, true, null
-//        );
-//
-//        eventTime = null;
-//        place = null;
-//        location = new Location("");
-//        location.setLatitude(13.732756);
-//        location.setLongitude(100.643101);
-//        dataUpdater.createEvent("Event with exact coordinate", circle1,
-//                new ArrayList<>(Arrays.asList(user)), eventTime, place, location, Event.IN_CIRCLE,
-//                new ArrayList<User>(), true, true, true, "Thus it was not rare to find, on the Sunday, the tallboy on its feet by the fire, and the dressing table on its head by the bed, and the night-stool on its face by the door, and the washand-stand on its back by the window; and, on the Monday, the tallboy on its back by the bed, and the dressing table on its face by the door, and the night-stool on its back by the window and the washand-stand on its feet by the fire; and on the Tuesday…");
+        // initialize the user info
+        // if user is not there, TODO sign in again
+        dataUpdater = new DataUpdater(context);
+        dataUpdater.open();
+        user = dataUpdater.initCurrentUser(Const.TEST_USER_ID);
+        if (user == null) {
+            //TODO SIGN IN
+            user = createUser(Const.TEST_USER_NAME, Const.TEST_USER_ID, Const.TEST_USER_AVATAR, Const.TEST_USER_LAT, Const.TEST_USER_LONG);
+        }
+        dataUpdater.setCurrentUser(user);
+
+//        reset();
 
         init();
+    }
+
+    /**
+     * Call this to reset the state of everything
+     */
+    public void reset() {
+        dataUpdater.resetCircles();
+        dataUpdater.createCircle(
+                context.getResources().getString(R.string.friends_circle_title), null, context.getResources().getString(R.string.friends_circle_id)
+        );
+
+        circles = dataUpdater.getCirclesInfo();
+        currentCircle = dataUpdater.getCircleByName(context.getResources().getString(R.string.friends_circle_title));
+    }
+
+    public DateTimeFormatter getDateTimeFormatter() {
+        return dateTimeFormatter;
     }
 
     public void init() {
@@ -141,8 +119,21 @@ public class AppState
             Log.e("Database", ex.getMessage());
         }
 
+//        // create event 1 for friends
+//        if (currentCircle != null) {
+//            DateTime eventTime = dateTimeFormatter.parseDateTime("25/03/2016 15:30:52");
+//            String place = "ChIJB5FY5M2e4jARo48nbVRhgAo";
+//            Location location = null;
+//            dataUpdater.createEvent("Meetup", currentCircle,
+//                    new ArrayList<>(Arrays.asList(user)), eventTime, null, place, location, Event.IN_CIRCLE,
+//                    new ArrayList<User>(), true, true, true, null
+//            );
+//        }
+//        else
+//            Log.d("UNABLE TO CREATE EVENT", "Current circle null");
+
         circles = dataUpdater.getCirclesInfo();
-        currentCircle = dataUpdater.getCircleByName("My Love");
+        currentCircle = dataUpdater.getCircleByName(context.getResources().getString(R.string.friends_circle_title));
     }
 
     private User createUser(String name, String id, String avatar, double latitude, double longitude) {
@@ -177,7 +168,13 @@ public class AppState
         return true;
     }
 
-    public void cleanup() {
+    public void connectGoogleApiClient() {
+        if (apiClient != null && !apiClient.isConnected()) {
+            apiClient.connect();
+        }
+    }
+
+    public void disconnectGoogleApiClient() {
         if (apiClient != null && apiClient.isConnected()) {
             apiClient.disconnect();
             Log.d("Google API Client", "Google Places API disconnected");

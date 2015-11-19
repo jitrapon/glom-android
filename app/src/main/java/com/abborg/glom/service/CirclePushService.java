@@ -7,10 +7,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.abborg.glom.AppState;
 import com.abborg.glom.Const;
@@ -29,6 +32,7 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
+import org.joda.time.Duration;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -45,6 +49,9 @@ import java.util.Map;
  * This class expects data to be passed in primitive format (i.e. String, integers)
  * and not serialized or parcelled objects.
  *
+ * TODO Need to use PowerManager.PARTIAL_WAKE_LOCK to keep this Service running while device is sleeping
+ * TODO or let user have an option
+ *
  * Created by Jitrapon Tiachunpun on 8/10/58.
  */
 public class CirclePushService extends Service implements LocationListener,
@@ -57,6 +64,12 @@ public class CirclePushService extends Service implements LocationListener,
 
     /* List of circle id to broadcast location to */
     private ArrayList<String> circles;
+
+    /* List of broadcast location duration for each circle */
+    private ArrayList<Float> durations;
+
+    /* Wakelock to keep CPU running */
+    private PowerManager.WakeLock wakeLock;
 
     /* Current user id */
     private String userId;
@@ -85,6 +98,7 @@ public class CirclePushService extends Service implements LocationListener,
         super.onStartCommand(intent, flags, startId);
         Log.d(TAG, "Service receiving start command");
 
+        // handle each intent separately
         handleCommand(intent);
 
         return START_STICKY;
@@ -103,12 +117,14 @@ public class CirclePushService extends Service implements LocationListener,
             LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
 
             // loop through list of circles and send updates to them
-            AppState appState = AppState.getInstance(this);
-            appState.getDataUpdater().open();
-            for (String circleId : circles) {
-                sendLocationUpdateRequest(circleId, userLocation);
-                appState.getDataUpdater().updateUserLocation(appState.getUser().getId(), circleId, location.getLatitude(), location.getLongitude());
-                Log.d(TAG, "Sending location info of " + location.getLatitude() + ", " + location.getLongitude());
+            if (!circles.isEmpty()) {
+                AppState appState = AppState.getInstance(this);
+                appState.getDataUpdater().open();
+                for (String circleId : circles) {
+                    sendLocationUpdateRequest(circleId, userLocation);
+                    appState.getDataUpdater().updateUserLocation(appState.getUser().getId(), circleId, location.getLatitude(), location.getLongitude());
+                    Log.d(TAG, "Sending location info of " + location.getLatitude() + ", " + location.getLongitude());
+                }
             }
         }
     }
@@ -216,24 +232,16 @@ public class CirclePushService extends Service implements LocationListener,
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
+        if (circles.size() < 1) {
+            notificationManager.cancel(Const.NOTIFY_BROADCAST_LOCATION);
+        }
+
         StringBuilder messageBuilder = new StringBuilder();
-        String messageTitle = null;
+        String messageTitle = getResources().getString(R.string.notification_title_broadcast_location);
         for (String name : circles) {
             messageBuilder.append(name + ", ");
         }
         messageBuilder.setLength(Math.max(messageBuilder.length() - 2, 0));
-        if (circles.size() > 1) {
-            messageTitle = getResources().getString(R.string.notification_title_broadcast_location) + " " +
-                    circles.size() + " circles";
-        }
-        else if (circles.size() == 1){
-            messageTitle = getResources().getString(R.string.notification_title_broadcast_location) + " " +
-                    circles.get(0);
-        }
-        else {
-            notificationManager.cancel(Const.NOTIFY_BROADCAST_LOCATION);
-        }
-
 
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
                 .setSmallIcon(R.drawable.ic_action_place)
@@ -259,11 +267,33 @@ public class CirclePushService extends Service implements LocationListener,
             String action = intent.getAction();
             userId = intent.getStringExtra(getResources().getString(R.string.EXTRA_BROADCAST_LOCATION_USER_ID));
             String circleId = intent.getStringExtra(getResources().getString(R.string.EXTRA_BROADCAST_LOCATION_CIRCLE_ID));
+            long duration = intent.getLongExtra(getResources().getString(R.string.EXTRA_BROADCAST_LOCATION_DURATION), -1);
 
             // action to add the user's circle to list of broadcast
             if (action.equals(getResources().getString(R.string.ACTION_CIRCLE_ENABLE_LOCATION_BROADCAST))) {
                 if (!circles.contains(circleId)) {
                     circles.add(circleId);
+
+                    // acquire the wakelock to prevent CPU from sleeping
+                    if (wakeLock != null && circles.size() == 1) {
+                        wakeLock.acquire();
+                        Log.d(TAG, "Acquiring CPU Wakelock");
+                    }
+
+                    // if we receive a duration that's not -1, we set an alarm to stop broadcasting
+                    //TODO
+                    if (duration != -1) {
+                        Duration broadcastDuration = new Duration(duration);
+                        Handler handler = new Handler();
+                        duration = 7000;
+                        handler.postDelayed(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                Toast.makeText(getApplicationContext(), "TIME TO CUT OFF BROADCAST!", Toast.LENGTH_SHORT).show();
+                            }
+                        }, duration);
+                    }
                 }
 
                 // display notification to user
@@ -283,6 +313,14 @@ public class CirclePushService extends Service implements LocationListener,
                 if (apiClient.isConnected()) {
                     apiClient.disconnect();
                     Log.d(TAG, "No more circle to broadcast. Location services disconnected");
+                }
+
+                // remove any wakelock
+                if (wakeLock != null) {
+                   if (wakeLock.isHeld()) {
+                       wakeLock.release();
+                       Log.d(TAG, "Released CPU wakelock");
+                   }
                 }
 
                 // end the service
@@ -320,6 +358,7 @@ public class CirclePushService extends Service implements LocationListener,
     @Override
     public void onCreate() {
         circles = new ArrayList<>();
+        durations = new ArrayList<>();
 
         locationRequest = LocationRequest.create();
         locationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
@@ -334,6 +373,9 @@ public class CirclePushService extends Service implements LocationListener,
                     .addOnConnectionFailedListener(this)
                     .build();
         }
+
+        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
     }
 
     /**
@@ -342,9 +384,13 @@ public class CirclePushService extends Service implements LocationListener,
     @Override
     public void onDestroy() {
         if (apiClient.isConnected()) apiClient.disconnect();
-
         hideNotification();
-
+        if (wakeLock != null) {
+            if (wakeLock.isHeld()) {
+                wakeLock.release();
+                Log.d(TAG, "Released CPU wakelock");
+            }
+        }
         Log.d(TAG, "Service done");
     }
 

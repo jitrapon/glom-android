@@ -34,6 +34,7 @@
     <string name="EXTRA_USER_LOCATION_UPDATE">com.abborg.glom.extra.USER_LOCATION_UPDATE</string>
     <string name="EXTRA_CIRCLES_LOCATION_UPDATE">com.abborg.glom.extra.CIRCLES_LOCATION_UPDATE</string>
     <string name="EXTRA_SEND_TOKEN_USER_ID">com.abborg.glom.extra.SEND_TOKEN_USERID</string>
+    <string name="EXTRA_BROADCAST_LOCATION_DURATION">com.abborg.glom.extra.BROADCAST_LOCATION_DURATION</string>
 
     <!-- Profile activity strings -->
     <string name="profile_activity_label">My Profile</string>
@@ -75,18 +76,39 @@
 
     <!-- Notification messages -->
     <string name="notification_title_location_update">Message from GlomServer</string>
-    <string name="notification_title_broadcast_location">Broadcasting location to</string>
+    <string name="notification_title_broadcast_location">Broadcasting location</string>
     <string name="notification_action_cancel_broadcast_location">Stop</string>
 
     <!-- Broadcast location options -->
     <string name="bottom_sheet_broadcast_location_toggle">Broadcast my location</string>
-    <string name="bottom_sheet_broadcast_location_timepicker_title1">Share until</string>
+    <string name="bottom_sheet_broadcast_location_timepicker_title1">Broadcast until time below</string>
     <string name="bottom_sheet_broadcast_location_timepicker_title2">Share for</string>
     <string name="bottom_sheet_broadcast_location_select_duration">Or tap here to set duration instead</string>
+    <string name="bottom_sheet_broadcast_location_change_interval">You can change the interval of broadcast in the settings</string>
     <string name="bottom_sheet_broadcast_location_interval_title">Share every</string>
+    <string name="time_unit_hour_title">Hour</string>
+    <string name="time_unit_minute_title">Minute</string>
+    <string name="time_unit_second_title">Second</string>
+    <string name="time_unit_before_noon">AM</string>
+    <string name="time_unit_after_noon">PM</string>
 
-    <string name="hello_world">Hello world!</string>
+    <!-- Create events action -->
+    <string name="action_create_event_datetime_format">dd/MM/yyyy HH:mm:ss</string>
+    <string name="create_event_title">New Event</string>
+    <string name="menu_item_done">Done</string>
+    <string name="hint_event_name">Name*</string>
+    <string name="hint_event_start_date">Date</string>
+    <string name="hint_event_start_time">Time</string>
+    <string name="hint_event_end_datetime">End</string>
+    <string name="hint_event_location">Location</string>
+    <string name="display_date_format">dd MMM, yyyy</string>
+    <string name="display_time_format">hh:mm a</string>
+    <string name="error_past_date_selected">You cannot select a date prior to today\'s date</string>
+    <string name="time_today">Today</string>
+    <string name="time_tomorrow">Tomorrow</string>
+    <string name="error_event_name_empty">Enter event name</string>
 
 <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="title_activity_create_event">CreateEventActivity</string>
 </resources>

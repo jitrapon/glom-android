@@ -119,46 +119,48 @@ public class EventRecyclerViewAdapter
 
         // update poster info
         FeedAction feedAction = event.getLastAction();
-        if (feedAction.user != null) {
+        if (feedAction != null) {
+            if (feedAction.user != null) {
 
-            // set update text
-            switch(feedAction.type) {
-                case FeedAction.CREATE_EVENT:
-                    holder.posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
-                            context.getResources().getString(R.string.card_post_create_event)));
-                    break;
-                case FeedAction.CANCEL_EVENT:
-                    holder.posterName.setText(feedAction.user.getName() + " " + context.getResources().getString(R.string.card_post_cancel_event));
-                    break;
-                default:
-                    holder.posterName.setText(feedAction.user.getName());
+                // set update text
+                switch(feedAction.type) {
+                    case FeedAction.CREATE_EVENT:
+                        holder.posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
+                                context.getResources().getString(R.string.card_post_create_event)));
+                        break;
+                    case FeedAction.CANCEL_EVENT:
+                        holder.posterName.setText(feedAction.user.getName() + " " + context.getResources().getString(R.string.card_post_cancel_event));
+                        break;
+                    default:
+                        holder.posterName.setText(feedAction.user.getName());
+                }
+
+                // load avatar
+                Glide.with(context)
+                        .load(feedAction.user.getAvatar()).fitCenter()
+                        .transform(new CircleTransform(context))
+                        .override(context.getResources().getDimensionPixelSize(R.dimen.event_card_avatar_size),
+                                context.getResources().getDimensionPixelSize(R.dimen.event_card_avatar_size))
+                        .placeholder(R.drawable.ic_profile)
+                        .error(R.drawable.ic_profile)
+                        .crossFade(1000)
+                        .into(holder.posterAvatar);
             }
+            if (feedAction.dateTime != null) {
+                DateTime now = new DateTime();
+                Duration duration = new Duration(feedAction.dateTime, now);
+                String displayTime = null;
+                if (duration.getStandardSeconds() < 60)
+                    displayTime = duration.getStandardSeconds() + " " + context.getResources().getString(R.string.time_unit_second);
+                else if (duration.getStandardMinutes() < 60)
+                    displayTime = duration.getStandardMinutes() + " " + context.getResources().getString(R.string.time_unit_minute);
+                else if (duration.getStandardHours() < 24)
+                    displayTime = duration.getStandardHours() + " " + context.getResources().getString(R.string.time_unit_hour);
+                else
+                    displayTime = duration.getStandardDays() + " " + context.getResources().getString(R.string.time_unit_day);
 
-            // load avatar
-            Glide.with(context)
-                    .load(feedAction.user.getAvatar()).fitCenter()
-                    .transform(new CircleTransform(context))
-                    .override(context.getResources().getDimensionPixelSize(R.dimen.event_card_avatar_size),
-                            context.getResources().getDimensionPixelSize(R.dimen.event_card_avatar_size))
-                    .placeholder(R.drawable.ic_profile)
-                    .error(R.drawable.ic_profile)
-                    .crossFade(1000)
-                    .into(holder.posterAvatar);
-        }
-        if (feedAction.dateTime != null) {
-            DateTime now = new DateTime();
-            Duration duration = new Duration(feedAction.dateTime, now);
-            String displayTime = null;
-            if (duration.getStandardSeconds() < 60)
-                displayTime = duration.getStandardSeconds() + " " + context.getResources().getString(R.string.time_unit_second);
-            else if (duration.getStandardMinutes() < 60)
-                displayTime = duration.getStandardMinutes() + " " + context.getResources().getString(R.string.time_unit_minute);
-            else if (duration.getStandardHours() < 24)
-                displayTime = duration.getStandardHours() + " " + context.getResources().getString(R.string.time_unit_hour);
-            else
-                displayTime = duration.getStandardDays() + " " + context.getResources().getString(R.string.time_unit_day);
-
-            holder.postTime.setText(displayTime);
+                holder.postTime.setText(displayTime);
+            }
         }
 
         // update event info
@@ -296,18 +298,6 @@ public class EventRecyclerViewAdapter
             holder.googleLogo.setVisibility(View.INVISIBLE);
         }
         holder.eventNote.setText(event.getNote());
-    }
-
-
-
-    public void addItem(Event event, int index) {
-        events.add(index, event);
-        notifyItemInserted(index);
-    }
-
-    public void deleteItem(int index) {
-        events.remove(index);
-        notifyItemRemoved(index);
     }
 
     @Override

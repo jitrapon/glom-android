@@ -71,6 +71,9 @@ public class Event {
     /* Notes about this event - OPTIONAL */
     private String note;
 
+    /* OPTIONAL ending time of the event */
+    private DateTime endTime;
+
     /* The last user action to the event for use as display */
     private FeedAction lastAction;
 
@@ -129,6 +132,7 @@ public class Event {
         this.circle = circle;
         this.hosts = hosts;
         this.dateTime = dateTime;
+        this.endTime = null;
         this.place = place;
         this.location = location;
         this.discoverType = discoverType;
@@ -260,6 +264,10 @@ public class Event {
     public void setLastAction(FeedAction action) {
         lastAction = action;
     }
+
+    public void setEndTime(DateTime endTime) { this.endTime = endTime; }
+
+    public DateTime getEndTime() { return endTime; }
 
     private static String generateEventId() {
         return String.valueOf(UUID.randomUUID());

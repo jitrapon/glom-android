@@ -41,6 +41,7 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String EVENT_COLUMN_CIRCLE_ID = "circle";
     public static final String EVENT_COLUMN_NAME = "name";
     public static final String EVENT_COLUMN_DATETIME = "time";
+    public static final String EVENT_COLUMN_ENDTIME = "endTime";
     public static final String EVENT_COLUMN_PLACE = "place";
     public static final String EVENT_COLUMN_LATITUDE = "latitude";
     public static final String EVENT_COLUMN_LONGITUDE = "longitude";
@@ -78,6 +79,7 @@ public class DBHelper extends SQLiteOpenHelper {
             EVENT_COLUMN_CIRCLE_ID + " TEXT, " +
             EVENT_COLUMN_NAME + " TEXT, " +
             EVENT_COLUMN_DATETIME + " INTEGER, " +
+            EVENT_COLUMN_ENDTIME + " INTEGER, " +
             EVENT_COLUMN_PLACE + " TEXT, " +
             EVENT_COLUMN_LATITUDE + " REAL, " +
             EVENT_COLUMN_LONGITUDE + " REAL, " +

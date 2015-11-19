@@ -64,10 +64,9 @@ public class EventFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         dataUpdater = AppState.getInstance(getContext()).getDataUpdater();
-
         adapter = new EventRecyclerViewAdapter(getContext(), getEvents());
+        Log.d(TAG, "OnCreate events");
     }
 
     @Override
@@ -88,8 +87,21 @@ public class EventFragment extends Fragment {
                 Log.i(TAG, "Clicked on event " + position);
             }
         });
+        Log.d(TAG, "OnCreateView " + events.size() + " events");
 
         return root;
+    }
+
+    public void addItem(Event event, int index) {
+        events.add(index, event);
+        adapter.notifyItemInserted(index);
+    }
+
+    public void deleteItem(int index) {
+        events.remove(index);
+        recyclerView.removeViewAt(index);
+        adapter.notifyItemRemoved(index);
+        adapter.notifyItemRangeChanged(index, events.size());
     }
 
     @Override

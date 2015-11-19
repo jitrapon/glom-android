@@ -15,6 +15,7 @@
             xmlns:android="http://schemas.android.com/apk/res/android"
             xmlns:app="http://schemas.android.com/apk/res-auto"
             xmlns:tools="http://schemas.android.com/tools"
+            android:id="@+id/parentView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:paddingLeft="0dp"
@@ -48,6 +49,17 @@
                 android:id="@+id/viewpager"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
+
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/fab"
+                android:layout_gravity="bottom|end"
+                style="@style/FabStyle"/>
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:id="@+id/overlayLayout">
+            </RelativeLayout>
 
         </android.support.design.widget.CoordinatorLayout>
 

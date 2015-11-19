@@ -64,13 +64,12 @@ public class DataUpdater {
 
     /**
      * Creates a new instance of the DataUpdater
+     * Call set
      *
      * @param context
-     * @param currentUser
      */
-    public DataUpdater(Context context, User currentUser) {
+    public DataUpdater(Context context) {
         this.context = context;
-        this.currentUser = currentUser;
         dbHelper = new DBHelper(context);
     }
 
@@ -115,7 +114,30 @@ public class DataUpdater {
         }
     }
 
-    //TODO update db when user broadcasts location in a circle
+    /**
+     * Retrieves main user from DB. The user is a generic instance whose location and circle may not be set.
+     * TODO may need to check from server to sync info.
+     * @param id
+     * @return
+     */
+    public User initCurrentUser(String id) {
+        User user = null;
+        Cursor cursor = database.query(DBHelper.TABLE_USERS, null, DBHelper.USER_COLUMN_ID + " = '" + id + "'", null, null, null ,null);
+        if (cursor.moveToFirst()) {
+            String name = cursor.getString(cursor.getColumnIndex(DBHelper.USER_COLUMN_NAME));
+            String userId = cursor.getString(cursor.getColumnIndex(DBHelper.USER_COLUMN_ID));
+            String avatar = cursor.getString(cursor.getColumnIndex(DBHelper.USER_COLUMN_AVATAR_ID));
+            user = new User(name, userId, null);
+            user.setAvatar(avatar);
+        }
+        cursor.close();
+
+        return user;
+    }
+
+    public void setCurrentUser(User user) {
+        this.currentUser = user;
+    }
 
     /**
      * Creates a new circle, with the current user, and the specified users in it.
@@ -128,7 +150,7 @@ public class DataUpdater {
     public Circle createCircle(String name, List<User> users, String id) {
         Circle circle = Circle.createCircle(name, currentUser);
         if (id != null) circle.setId(id);
-        circle.addUsers(users);
+        if (users != null && !users.isEmpty()) circle.addUsers(users);
 
         database.beginTransaction();
 
@@ -301,6 +323,13 @@ public class DataUpdater {
         userPerm.add(User.ALARM_RECEIVE);
         userPerm.add(User.NOTE_RECEIVE);
         userPerm.add(User.LOCATION_REQUEST_RECEIVE);
+        if (currentUser.getId().equals(user.getId())) {
+            userPerm.add(User.CREATE_EVENT);
+//            userPerm.add(User.CREATE_TODO);
+//             userPerm.add(User.CREATE_CALENDAR);
+//            userPerm.add(User.INVITE_GAME);
+        }
+//        userPerm.add(User.POST_LINK);
 //        userPerm.add(User.SHOUT_RECEIVE);
 //        userPerm.add(User.SECRET_MESSAGE);
 //        userPerm.add(User.SONG_SNIPPET_RECEIVE);
@@ -463,13 +492,13 @@ public class DataUpdater {
     /**
      * Create a new event under an optionally specified circle
      */
-    public Event createEvent(String name, Circle circle, List<User> hosts, DateTime time, String place, Location location,
+    public Event createEvent(String name, Circle circle, List<User> hosts, DateTime time, DateTime endTime, String place, Location location,
                              int discoverType, List<User> invitees, boolean showHosts,
                              boolean showInvitees, boolean showAttendees, String note) {
         Event event = Event.createEvent(name, circle, hosts, time, place, location, discoverType, invitees, showHosts,  showInvitees,
                 showAttendees, note);
-
-        circle.addEvent(event);
+        event.setEndTime(endTime);
+        circle.addEvent(event);     // this add event to the circle, automatically updating the recyclerview adapter
 
         database.beginTransaction();
 
@@ -480,6 +509,9 @@ public class DataUpdater {
             values.put(DBHelper.EVENT_COLUMN_NAME, event.getName());
             if (event.getDateTime() != null) {
                 values.put(DBHelper.EVENT_COLUMN_DATETIME, event.getDateTime().getMillis());
+            }
+            if (event.getEndTime() != null) {
+                values.put(DBHelper.EVENT_COLUMN_ENDTIME, event.getEndTime().getMillis());
             }
             values.put(DBHelper.EVENT_COLUMN_PLACE, event.getPlace());
             if (event.getLocation() != null) {
@@ -544,21 +576,36 @@ public class DataUpdater {
     }
 
     private Event serializeEvent(Cursor cursor, Circle circle) {
-        String id = cursor.getString(0);
-        String name = cursor.getString(2);
-        DateTime time = null;
-        if (cursor.getLong(3) != 0)
-           time = new DateTime(cursor.getLong(3));
-        String place = cursor.getString(4);
-        Location location = null;
-        if (cursor.getDouble(5) != -1.0 && cursor.getDouble(6) != -1.0) {
-            location = new Location("");
-            location.setLatitude(cursor.getDouble(5));
-            location.setLongitude(cursor.getDouble(6));
-        }
-        String note = cursor.getString(7);
+        Log.d(TAG, "Serializing an event...");
+        int idColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_ID);
+        int nameColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_NAME);
+        int dateColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_DATETIME);
+        int endDateColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_ENDTIME);
+        int placeColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_PLACE);
+        int latColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_LATITUDE);
+        int longColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_LONGITUDE);
+        int noteColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_NOTE);
 
-        return Event.createEvent(id, circle, name, time, place, location, note);
+        String id = cursor.getString(idColumn);
+        String name = cursor.getString(nameColumn);
+        DateTime time = null;
+        DateTime endTime = null;
+        if (cursor.getLong(dateColumn) != 0)
+           time = new DateTime(cursor.getLong(dateColumn));
+        if (cursor.getLong(endDateColumn) != 0)
+            endTime = new DateTime(cursor.getLong(endDateColumn));
+        String place = cursor.getString(placeColumn);
+        Location location = null;
+        if (cursor.getDouble(latColumn) != -1.0 && cursor.getDouble(longColumn) != -1.0) {
+            location = new Location("");
+            location.setLatitude(cursor.getDouble(latColumn));
+            location.setLongitude(cursor.getDouble(longColumn));
+        }
+        String note = cursor.getString(noteColumn);
+
+        Event event = Event.createEvent(id, circle, name, time, place, location, note);
+        event.setEndTime(endTime);
+        return event;
     }
 
     public List<User> getLocationUpdates(Intent intent, Circle circle) {

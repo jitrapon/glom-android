@@ -211,11 +211,29 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
             // TODO depending on settings, start CirclePushService to start tracking user location without broadcasting
 
             updateMarkersInfo();
+
+            if (userMarkers != null && broadcastCircle == null && appState.getCurrentCircle().isUserBroadcastingLocation()) {
+                Marker userMarker = userMarkers.get(appState.getUser().getId());
+                if (userMarker != null && appState.getCurrentCircle().isUserBroadcastingLocation()) {
+                    addBroadcastLocationCircle(userMarker);
+                }
+            }
+            if (animator != null && !animator.isRunning()) animator.start();
         }
         else {
             isFragmentVisible = false;
             // TODO depending on settings, stop CirclePushService
             Log.i(TAG, "Map is now INVISIBLE to user");
+
+            if (animator != null && animator.isRunning()) {
+                animator.end();
+            }
+            if (broadcastCircle != null) {
+                broadcastCircle.remove();
+                broadcastCircle = null;
+
+                Log.d(TAG, "Removed broadcast circle");
+            }
         }
     }
 
@@ -294,13 +312,29 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
 
     @Override
     public void onBroadcastLocationEnabled() {
-        if (animator != null) animator.start();
+        Log.d(TAG, "Broadcast location is enabled");
+
+        if (userMarkers != null && broadcastCircle == null) {
+            Marker userMarker = userMarkers.get(appState.getUser().getId());
+            if (userMarker != null && appState.getCurrentCircle().isUserBroadcastingLocation()) {
+                addBroadcastLocationCircle(userMarker);
+            }
+        }
+        if (animator != null && !animator.isRunning()) animator.start();
     }
 
     @Override
     public void onBroadcastLocationDisabled() {
+        Log.d(TAG, "Broadcast location is disabled");
+
         if (animator != null && animator.isRunning()) {
             animator.end();
+        }
+        if (broadcastCircle != null) {
+            broadcastCircle.remove();
+            broadcastCircle = null;
+
+            Log.d(TAG, "Removed broadcast circle");
         }
     }
 
@@ -386,66 +420,21 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
                     marker.showInfoWindow();
 
                     // if the user is currently broadcasting location, animate circle around the marker
-                    CircleOptions circleOptions = new CircleOptions()
-                            .center(marker.getPosition())
-                            .radius(CIRCLE_TO_MAP_RATIO * visibleMapRadius)           // radius in meters
-                            .fillColor(Color.TRANSPARENT)  // 55 represents percentage of transparency. For 100% transparency, specify 00.
-                                    // For 0% transparency ( ie, opaque ) , specify ff
-                                    // The remaining 6 characters(00ff00) specify the fill color
-                            .strokeColor(0x55000000)
-                            .strokeWidth(5);
-                    broadcastCircle = googleMap.addCircle(circleOptions);
-
-                    // add animation to the circle
-                    animator = new ValueAnimator();
-//                    animator.setRepeatCount(ValueAnimator.INFINITE);
-//                    animator.setRepeatMode(ValueAnimator.RESTART);
-                    animator.setIntValues(0, Math.round(CIRCLE_TO_MAP_RATIO * visibleMapRadius));  // minimum and maximum radius of circle to animate
-                    animator.setDuration(2000);
-                    animator.setStartDelay(1000);
-                    animator.setFrameDelay(30);
-                    animator.setEvaluator(new IntEvaluator());
-                    animator.setInterpolator(new AccelerateDecelerateInterpolator());
-                    animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                        @Override
-                        public void onAnimationUpdate(ValueAnimator valueAnimator) {
-                            int animatedValue = (Integer) valueAnimator.getAnimatedValue();
-                            broadcastCircle.setRadius(animatedValue);
-                        }
-                    });
-                    animator.addListener(new Animator.AnimatorListener() {
-
-                        @Override
-                        public void onAnimationStart(Animator animation) {
-                            Log.d(TAG, "Animation STARTED");
-                        }
-
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            if (appState.getCurrentCircle().isUserBroadcastingLocation()) {
-                                animator.setIntValues(0, Math.round(CIRCLE_TO_MAP_RATIO * visibleMapRadius));
-                                animator.setStartDelay(1000);
-                                animator.start();
-                            }
-                            Log.d(TAG, "Animation ENDED");
-                        }
-
-                        @Override
-                        public void onAnimationCancel(Animator animation) {
-                            Log.d(TAG, "Animation CANCELED");
-                        }
-
-                        @Override
-                        public void onAnimationRepeat(Animator animation) {
-                            Log.d(TAG, "Animation REPEATED");
-                        }
-                    });
-
                     if (appState.getCurrentCircle().isUserBroadcastingLocation()) {
-                        animator.start();
+                        if (broadcastCircle == null) {
+                            addBroadcastLocationCircle(marker);
+                        }
+                        if (animator != null && !animator.isRunning()) animator.start();
                     }
                     else {
-                        if (animator.isRunning()) animator.end();
+                        if (animator != null && animator.isRunning()) {
+                            animator.end();
+                        }
+                        if (broadcastCircle != null) {
+                            broadcastCircle.remove();
+                            broadcastCircle = null;
+                            Log.d(TAG, "Removed broadcast circle");
+                        }
                     }
                 }
 
@@ -460,7 +449,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
                 }
                 userMarkers.put(user.getId(), marker);
 
-                    // update the boundary
+                // update the boundary
                 boundBuilder.include(marker.getPosition());
             }
 
@@ -509,6 +498,67 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
 
             updateMarkersInfo();
         }
+    }
+
+    private void addBroadcastLocationCircle(Marker marker) {
+        CircleOptions circleOptions = new CircleOptions()
+                .center(marker.getPosition())
+                .radius(CIRCLE_TO_MAP_RATIO * visibleMapRadius)           // radius in meters
+                .fillColor(Color.TRANSPARENT)  // 55 represents percentage of transparency. For 100% transparency, specify 00.
+                        // For 0% transparency ( ie, opaque ) , specify ff
+                        // The remaining 6 characters(00ff00) specify the fill color
+                .strokeColor(0x55000000)
+                .strokeWidth(5);
+        broadcastCircle = googleMap.addCircle(circleOptions);
+
+        // add animation to the circle
+        animator = new ValueAnimator();
+//                    animator.setRepeatCount(ValueAnimator.INFINITE);
+//                    animator.setRepeatMode(ValueAnimator.RESTART);
+        animator.setIntValues(0, Math.round(CIRCLE_TO_MAP_RATIO * visibleMapRadius));  // minimum and maximum radius of circle to animate
+        animator.setDuration(2000);
+        animator.setStartDelay(1000);
+        animator.setFrameDelay(30);
+        animator.setEvaluator(new IntEvaluator());
+        animator.setInterpolator(new AccelerateDecelerateInterpolator());
+        animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                if (broadcastCircle != null) {
+                    int animatedValue = (Integer) valueAnimator.getAnimatedValue();
+                    broadcastCircle.setRadius(animatedValue);
+                }
+            }
+        });
+        animator.addListener(new Animator.AnimatorListener() {
+
+            @Override
+            public void onAnimationStart(Animator animation) {
+                Log.d(TAG, "Animation STARTED");
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (appState.getCurrentCircle().isUserBroadcastingLocation()) {
+                    animator.setIntValues(0, Math.round(CIRCLE_TO_MAP_RATIO * visibleMapRadius));
+                    animator.setStartDelay(1000);
+                    animator.start();
+                }
+                Log.d(TAG, "Animation ENDED");
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                Log.d(TAG, "Animation CANCELED");
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animation) {
+                Log.d(TAG, "Animation REPEATED");
+            }
+        });
+
+        Log.d(TAG, "Added broadcast circle");
     }
 
     private void updateEventMarkers(final Event event) {
