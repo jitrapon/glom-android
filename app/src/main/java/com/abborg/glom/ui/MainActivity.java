@@ -37,6 +37,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.abborg.glom.AppState;
+import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.DataUpdater;
@@ -118,10 +119,9 @@ public class MainActivity extends AppCompatActivity
     /**
      * TODO set default state for DEMO purposes
      */
-    private void loadDefaultCircleInfo() {
+    private void loadData() {
         // initialize app state
         appState = AppState.getInstance(this);
-        appState.init();
         dataUpdater = appState.getDataUpdater();
     }
 
@@ -133,7 +133,7 @@ public class MainActivity extends AppCompatActivity
         // joda-time-android will not work.
         JodaTimeAndroid.init(this);
 
-        loadDefaultCircleInfo();
+        loadData();
 
         setContentView(R.layout.activity_main);
 
@@ -507,8 +507,8 @@ public class MainActivity extends AppCompatActivity
                     @Override
                     public void onClick(View v) {
                         hideMenuOverlay(false);
-                        Intent intent = new Intent(context, CreateEventActivity.class);
-                        startActivity(intent);
+                        Intent intent = new Intent(context, EventActivity.class);
+                        startActivityForResult(intent, Const.CREATE_EVENT_RESULT_CODE);
                     }
                 });
                 break;
@@ -644,6 +644,8 @@ public class MainActivity extends AppCompatActivity
         super.onPause();
     }
 
+
+
     private boolean isServiceRunning(Class<?> serviceClass) {
         ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         for (RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
@@ -774,5 +776,30 @@ public class MainActivity extends AppCompatActivity
         // refresh the event lists
         EventFragment eventFragment = (EventFragment) adapter.getItem(2);
         eventFragment.update();
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case Const.CREATE_EVENT_RESULT_CODE:
+                if (resultCode == RESULT_OK) {
+                    EventFragment eventFragment = getEventFragment();
+                    if (eventFragment != null) {
+                        eventFragment.onItemAdded(0);       // new item always appears first
+                    }
+
+                    LocationFragment locationFragment = getMapFragment();
+                    if (locationFragment != null) {
+                        if (data != null) {
+                            String newEventId = data.getStringExtra(getResources().getString(R.string.EXTRA_CREATE_EVENT_ID));
+                            locationFragment.onEventAdded(newEventId);
+                        }
+                    }
+                }
+                break;
+
+            default:
+                break;
+        }
     }
 }

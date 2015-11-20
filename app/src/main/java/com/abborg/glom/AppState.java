@@ -2,9 +2,11 @@ package com.abborg.glom;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.database.SQLException;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.location.Location;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -46,6 +48,7 @@ public class AppState
     /* List of circle info */
     private List<CircleInfo> circles;
 
+    /* App's shared preferences file */
     private SharedPreferences sharedPref;
 
     private DataUpdater dataUpdater;
@@ -59,6 +62,67 @@ public class AppState
     /* App-wide date formatter */
     private DateTimeFormatter dateTimeFormatter;
 
+    /* Determines the type of app start */
+    public enum AppStart {
+        FIRST_TIME, FIRST_TIME_VERSION, NORMAL;
+    }
+
+    /* The app version code (not the name) used on the last start of the app */
+    private static final String LAST_APP_VERSION = "last_app_version";
+
+    /**
+     * Finds out started for the first time (ever or in the current version).<br/>
+     * <br/>
+     * Note: This method is <b>not idempotent</b> only the first call will
+     * determine the proper result. Any subsequent calls will only return
+     * {@link AppStart#NORMAL} until the app is started again. So you might want
+     * to consider caching the result!
+     *
+     * @return the type of app start
+     */
+    public AppStart checkAppStart() {
+        PackageInfo pInfo;
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        AppStart appStart = AppStart.NORMAL;
+        try {
+            pInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+            int lastVersionCode = sharedPreferences.getInt(LAST_APP_VERSION, -1);
+            int currentVersionCode = pInfo.versionCode;
+            appStart = checkAppStart(currentVersionCode, lastVersionCode);
+
+            // Update version in preferences
+            sharedPreferences.edit()
+                    .putInt(LAST_APP_VERSION, currentVersionCode).commit();
+        } catch (NameNotFoundException e) {
+            Log.w("ERROR",
+                    "Unable to determine current app version from package manager. Defensisvely assuming normal app start.");
+        }
+        return appStart;
+    }
+
+    public AppStart checkAppStart(int currentVersionCode, int lastVersionCode) {
+        if (lastVersionCode == -1) {
+            return AppStart.FIRST_TIME;
+        }
+        else if (lastVersionCode < currentVersionCode) {
+            return AppStart.FIRST_TIME_VERSION;
+        }
+        else if (lastVersionCode > currentVersionCode) {
+            Log.w("ERROR", "Current version code (" + currentVersionCode
+                    + ") is less then the one recognized on last startup ("
+                    + lastVersionCode
+                    + "). Defenisvely assuming normal app start.");
+            return AppStart.NORMAL;
+        }
+        else {
+            return AppStart.NORMAL;
+        }
+    }
+
+    /**
+     * This ctor supposedly is initialized once
+     * @param context
+     */
     private AppState(Context context) {
         this.context = context;
 
@@ -89,19 +153,29 @@ public class AppState
         }
         dataUpdater.setCurrentUser(user);
 
-//        reset();
-
-        init();
+        // determine if the user has launched the app before and what version
+        init(checkAppStart());
     }
 
-    /**
-     * Call this to reset the state of everything
-     */
-    public void reset() {
-        dataUpdater.resetCircles();
-        dataUpdater.createCircle(
-                context.getResources().getString(R.string.friends_circle_title), null, context.getResources().getString(R.string.friends_circle_id)
-        );
+    private void init(AppStart appStart) {
+        switch (appStart) {
+            case NORMAL:
+                Log.d("INIT", "App has launched normally, version is the same");
+                break;
+            case FIRST_TIME_VERSION:
+                Log.d("INIT", "App has been upgraded! Version is different");
+                break;
+            case FIRST_TIME:
+                Log.d("INIT", "App has not been launched before, resetting the state to default");
+                dataUpdater.resetCircles();
+                dataUpdater.createCircle(
+                        context.getResources().getString(R.string.friends_circle_title), null,
+                        context.getResources().getString(R.string.friends_circle_id)
+                );
+                break;
+            default:
+
+        }
 
         circles = dataUpdater.getCirclesInfo();
         currentCircle = dataUpdater.getCircleByName(context.getResources().getString(R.string.friends_circle_title));
@@ -109,31 +183,6 @@ public class AppState
 
     public DateTimeFormatter getDateTimeFormatter() {
         return dateTimeFormatter;
-    }
-
-    public void init() {
-        try {
-            dataUpdater.open();
-        }
-        catch (SQLException ex) {
-            Log.e("Database", ex.getMessage());
-        }
-
-//        // create event 1 for friends
-//        if (currentCircle != null) {
-//            DateTime eventTime = dateTimeFormatter.parseDateTime("25/03/2016 15:30:52");
-//            String place = "ChIJB5FY5M2e4jARo48nbVRhgAo";
-//            Location location = null;
-//            dataUpdater.createEvent("Meetup", currentCircle,
-//                    new ArrayList<>(Arrays.asList(user)), eventTime, null, place, location, Event.IN_CIRCLE,
-//                    new ArrayList<User>(), true, true, true, null
-//            );
-//        }
-//        else
-//            Log.d("UNABLE TO CREATE EVENT", "Current circle null");
-
-        circles = dataUpdater.getCirclesInfo();
-        currentCircle = dataUpdater.getCircleByName(context.getResources().getString(R.string.friends_circle_title));
     }
 
     private User createUser(String name, String id, String avatar, double latitude, double longitude) {

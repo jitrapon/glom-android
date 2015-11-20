@@ -36,4 +36,9 @@ public class Const {
     public static final int NOTIFY_LOCATION_UPDATE = 0;
 
     public static final int NOTIFY_BROADCAST_LOCATION = 1;
+
+    /**
+     * ACTIVITY RESULTCODES
+     */
+    public static final int CREATE_EVENT_RESULT_CODE = 0;
 }

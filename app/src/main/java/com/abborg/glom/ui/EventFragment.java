@@ -11,6 +11,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.OvershootInterpolator;
 
 import com.abborg.glom.AppState;
 import com.abborg.glom.R;
@@ -19,6 +20,10 @@ import com.abborg.glom.model.DataUpdater;
 import com.abborg.glom.model.Event;
 
 import java.util.List;
+
+import jp.wasabeef.recyclerview.animators.SlideInUpAnimator;
+import jp.wasabeef.recyclerview.animators.adapters.AnimationAdapter;
+import jp.wasabeef.recyclerview.animators.adapters.SlideInBottomAnimationAdapter;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -36,6 +41,9 @@ public class EventFragment extends Fragment {
     /* Adapter to the recycler view */
     private EventRecyclerViewAdapter adapter;
 
+    /* Animation adapter */
+    private AnimationAdapter animationAdapter;
+
     /* Layout manager for the view */
     private RecyclerView.LayoutManager layoutManager;
 
@@ -46,6 +54,10 @@ public class EventFragment extends Fragment {
     private List<Event> events;
 
     private MainActivity activity;
+
+    private static final int ITEM_APPEARANCE_ANIM_TIME = 650;
+
+    private static final long ITEM_MODIFY_ANIM_TIME = 650;
 
     public EventFragment() {
         // Required empty public constructor
@@ -78,30 +90,35 @@ public class EventFragment extends Fragment {
         recyclerView.setHasFixedSize(true);
         layoutManager = new LinearLayoutManager(getContext());
         recyclerView.setLayoutManager(layoutManager);
-        recyclerView.setAdapter(adapter);
-        adapter.setOnItemClickListener(new EventRecyclerViewAdapter
-                .EventClickListener() {
 
-            @Override
-            public void onItemClick(int position, View v) {
-                Log.i(TAG, "Clicked on event " + position);
-            }
-        });
+        // set up adapter and its appearance animation
+        animationAdapter = new SlideInBottomAnimationAdapter(adapter);
+        animationAdapter.setDuration(ITEM_APPEARANCE_ANIM_TIME);
+        animationAdapter.setFirstOnly(true);
+        recyclerView.setAdapter(animationAdapter);
+
+        // set up item animations
+        recyclerView.setItemAnimator(new SlideInUpAnimator(new OvershootInterpolator(1f)));
+        recyclerView.getItemAnimator().setAddDuration(ITEM_MODIFY_ANIM_TIME);
+        recyclerView.getItemAnimator().setRemoveDuration(ITEM_MODIFY_ANIM_TIME);
+        recyclerView.getItemAnimator().setMoveDuration(ITEM_MODIFY_ANIM_TIME);
+        recyclerView.getItemAnimator().setChangeDuration(ITEM_MODIFY_ANIM_TIME);
+
         Log.d(TAG, "OnCreateView " + events.size() + " events");
 
         return root;
     }
 
-    public void addItem(Event event, int index) {
-        events.add(index, event);
-        adapter.notifyItemInserted(index);
+    public void onItemAdded(int index) {
+        layoutManager.scrollToPosition(0);
+        animationAdapter.notifyItemInserted(index);
     }
 
-    public void deleteItem(int index) {
-        events.remove(index);
+    public void onItemDeleted(int index) {
+        // TODO notify server
         recyclerView.removeViewAt(index);
-        adapter.notifyItemRemoved(index);
-        adapter.notifyItemRangeChanged(index, events.size());
+        animationAdapter.notifyItemRemoved(index);
+        animationAdapter.notifyItemRangeChanged(index, events.size());
     }
 
     @Override

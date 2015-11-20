@@ -178,8 +178,12 @@ public class Circle implements Parcelable {
 
     public List<Event> getEvents() { return events; }
 
+    /**
+     * Add a new event to the list of in-circle events according to the sort
+     * @param event
+     */
     public void addEvent(Event event) {
-        events.add(event);
+        events.add(0, event);
     }
 
     public void setEvents(List<Event> events) {

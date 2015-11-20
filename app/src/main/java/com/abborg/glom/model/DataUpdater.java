@@ -498,6 +498,10 @@ public class DataUpdater {
         Event event = Event.createEvent(name, circle, hosts, time, place, location, discoverType, invitees, showHosts,  showInvitees,
                 showAttendees, note);
         event.setEndTime(endTime);
+
+        //TODO retrieve last action and action timestamp from server
+        //TODO for now hardcode this
+        event.setLastAction(new FeedAction(FeedAction.CREATE_EVENT, currentUser, new DateTime()));
         circle.addEvent(event);     // this add event to the circle, automatically updating the recyclerview adapter
 
         database.beginTransaction();
@@ -549,14 +553,15 @@ public class DataUpdater {
      */
     public List<Event> getCircleEvents(Circle circle) {
         //TODO send request to server
-
         List<Event> events = new ArrayList<>();
 
-        DateTimeFormatter formatter = DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss");
-        DateTime postTime = formatter.parseDateTime("14/10/2015 17:00:00");
+        DateTimeFormatter formatter = DateTimeFormat.forPattern(context.getResources().getString(R.string.action_create_event_datetime_format));
+        DateTime postTime = formatter.parseDateTime("20/11/2015 12:00:00");
 
+        // default sorting is order by event start time ascending
         String query = "SELECT * FROM " + DBHelper.TABLE_EVENTS + " WHERE " +
-                DBHelper.TABLE_EVENTS + "." + DBHelper.EVENT_COLUMN_CIRCLE_ID + "='" + circle.getId() + "'";
+                DBHelper.TABLE_EVENTS + "." + DBHelper.EVENT_COLUMN_CIRCLE_ID + "='" + circle.getId() + "' ORDER BY " +
+                DBHelper.TABLE_EVENTS + "." + DBHelper.EVENT_COLUMN_DATETIME + " ASC";
         Cursor cursor = database.rawQuery(query, null);
 
         cursor.moveToFirst();
@@ -566,7 +571,6 @@ public class DataUpdater {
             //TODO retrieve last action and action timestamp from server
             //TODO for now hardcode this
             event.setLastAction(new FeedAction(FeedAction.CREATE_EVENT, currentUser, postTime));
-
             events.add(event);
             cursor.moveToNext();
         }

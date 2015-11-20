@@ -93,7 +93,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ui.CreateEventActivity"
+            android:name=".ui.EventActivity"
             android:label="@string/title_activity_create_event"
             android:parentActivityName=".ui.MainActivity"
             android:theme="@style/AppMaterialTheme" >

@@ -35,6 +35,7 @@
     <string name="EXTRA_CIRCLES_LOCATION_UPDATE">com.abborg.glom.extra.CIRCLES_LOCATION_UPDATE</string>
     <string name="EXTRA_SEND_TOKEN_USER_ID">com.abborg.glom.extra.SEND_TOKEN_USERID</string>
     <string name="EXTRA_BROADCAST_LOCATION_DURATION">com.abborg.glom.extra.BROADCAST_LOCATION_DURATION</string>
+    <string name="EXTRA_CREATE_EVENT_ID">com.abborg.glom.extra.CREATE_EVENT_ID</string>
 
     <!-- Profile activity strings -->
     <string name="profile_activity_label">My Profile</string>

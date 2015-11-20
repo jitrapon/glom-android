@@ -3,6 +3,7 @@ package com.abborg.glom.ui;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.TimePickerDialog;
+import android.content.Intent;
 import android.database.SQLException;
 import android.location.Location;
 import android.os.Bundle;
@@ -35,7 +36,7 @@ import org.joda.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class CreateEventActivity extends AppCompatActivity {
+public class EventActivity extends AppCompatActivity {
 
     private AppState appState;
 
@@ -76,7 +77,7 @@ public class CreateEventActivity extends AppCompatActivity {
         startDateTime = null;
         endDateTime = null;
 
-        setContentView(R.layout.activity_create_event);
+        setContentView(R.layout.activity_event);
         Toolbar toolbar = (Toolbar) findViewById(R.id.create_event_toolbar);
         setSupportActionBar(toolbar);
 
@@ -220,21 +221,33 @@ public class CreateEventActivity extends AppCompatActivity {
             // verify that the event name is provided
             // verify that datetime is input correctly
             if (validateName() && validateDateTime()) {
-                //TODO possibly do it in other thread
                 User user = appState.getUser();
-                String place = "ChIJB5FY5M2e4jARo48nbVRhgAo";
-                Location location = null;
+//                String place = "ChIJB5FY5M2e4jARo48nbVRhgAo";
+                String place = null;
+                Location location = new Location("");
+                location.setLatitude(1.29929);
+                location.setLongitude(103.86286);
                 dataUpdater.open();
-                dataUpdater.createEvent(nameText.getText().toString(), appState.getCurrentCircle(),
+                Event newEvent = dataUpdater.createEvent(nameText.getText().toString(), appState.getCurrentCircle(),
                         new ArrayList<>(Arrays.asList(user)), startDateTime, endDateTime, place, location, Event.IN_CIRCLE,
                         new ArrayList<User>(), true, true, true, null
                 );
-                finish();
+
+                // TODO notify server that an event has been added
+                // pass data to finishWithResult()
+                finishWithResult(newEvent.getId());
             }
             return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void finishWithResult(String id) {
+        Intent intent = new Intent();
+        intent.putExtra(getResources().getString(R.string.EXTRA_CREATE_EVENT_ID), id);
+        setResult(RESULT_OK, intent);
+        finish();
     }
 
     private boolean validateName() {
@@ -285,10 +298,10 @@ public class CreateEventActivity extends AppCompatActivity {
             DateTime dateTime = formatter.parseDateTime(hourOfDay + ":" + minute);
 
             if (editText.getTag().toString().equals(START_TIME_TAG)) {
-                ((CreateEventActivity)getActivity()).onStartTimeSet(dateTime);
+                ((EventActivity)getActivity()).onStartTimeSet(dateTime);
             }
             else {
-                ((CreateEventActivity)getActivity()).onEndTimeSet(dateTime);
+                ((EventActivity)getActivity()).onEndTimeSet(dateTime);
             }
 
             editText.setText(printFormat.print(dateTime));
@@ -331,10 +344,10 @@ public class CreateEventActivity extends AppCompatActivity {
             DateTime dateTime = formatter.parseDateTime(year + " " + month + " " + day);
 
             if (editText.getTag().toString().equals(START_DATE_TAG)) {
-                ((CreateEventActivity)getActivity()).onStartDateSet(dateTime);
+                ((EventActivity)getActivity()).onStartDateSet(dateTime);
             }
             else {
-                ((CreateEventActivity)getActivity()).onEndDateSet(dateTime);
+                ((EventActivity)getActivity()).onEndDateSet(dateTime);
             }
 
             DateTime now = new DateTime();

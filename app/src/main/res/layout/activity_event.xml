@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
     android:layout_height="match_parent" android:fitsSystemWindows="true"
-    tools:context="com.abborg.glom.ui.CreateEventActivity">
+    tools:context="com.abborg.glom.ui.EventActivity">
 
     <android.support.design.widget.AppBarLayout android:layout_height="wrap_content"
         android:layout_width="match_parent" android:theme="@style/AppMaterialTheme.AppBarOverlay">
@@ -18,6 +18,6 @@
 
     </android.support.design.widget.AppBarLayout>
 
-    <include layout="@layout/content_create_event" />
+    <include layout="@layout/content_event" />
 
 </android.support.design.widget.CoordinatorLayout>

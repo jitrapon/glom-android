@@ -310,6 +310,56 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         updateMap(false);
     }
 
+    public void onEventAdded(String id) {
+        List<Event> events = appState.getCurrentCircle().getEvents();
+        Event newEvent = null;
+        for (Event event : events) {
+            if (event.getId().equals(id)) newEvent = event;
+        }
+        if (newEvent == null) return;
+
+        MarkerOptions options = new MarkerOptions()
+                .title(newEvent.getName())
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_meetup))
+                .position(new LatLng(newEvent.getLocation().getLatitude(), newEvent.getLocation().getLongitude()));
+        Marker eventMarker = googleMap.addMarker(options);
+        eventMarkers.put(newEvent.getId(), eventMarker);
+        Log.d(TAG, "Marker for event " + id + " added");
+    }
+
+    public void onEventLocationChanged(String id) {
+        List<Event> events = appState.getCurrentCircle().getEvents();
+        Event changedEvent = null;
+        for (Event event : events) {
+            if (event.getId().equals(id)) changedEvent = event;
+        }
+        if (changedEvent == null) return;
+
+        Marker changedEventMarker = eventMarkers.get(id);
+        if (changedEventMarker == null) return;
+        else {
+            changedEventMarker.setPosition(new LatLng(changedEvent.getLocation().getLatitude(), changedEvent.getLocation().getLongitude()));
+        }
+        Log.d(TAG, "Marker for event " + id + " changed");
+    }
+
+    public void onEventRemoved(String id) {
+        List<Event> events = appState.getCurrentCircle().getEvents();
+        Event removedEvent = null;
+        for (Event event : events) {
+            if (event.getId().equals(id)) removedEvent = event;
+        }
+        if (removedEvent == null) return;
+
+        Marker removedEventMarker = eventMarkers.get(id);
+        if (removedEventMarker == null) return;
+        else {
+            removedEventMarker.remove();
+            eventMarkers.remove(id);
+        }
+        Log.d(TAG, "Marker for event " + id + " removed");
+    }
+
     @Override
     public void onBroadcastLocationEnabled() {
         Log.d(TAG, "Broadcast location is enabled");
