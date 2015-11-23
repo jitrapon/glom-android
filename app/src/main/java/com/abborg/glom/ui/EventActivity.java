@@ -222,8 +222,8 @@ public class EventActivity extends AppCompatActivity {
             // verify that datetime is input correctly
             if (validateName() && validateDateTime()) {
                 User user = appState.getUser();
-//                String place = "ChIJB5FY5M2e4jARo48nbVRhgAo";
-                String place = null;
+                String place = "ChIJB5FY5M2e4jARo48nbVRhgAo";
+//                String place = null;
                 Location location = new Location("");
                 location.setLatitude(1.29929);
                 location.setLongitude(103.86286);

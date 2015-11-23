@@ -318,13 +318,32 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         }
         if (newEvent == null) return;
 
-        MarkerOptions options = new MarkerOptions()
-                .title(newEvent.getName())
-                .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_meetup))
-                .position(new LatLng(newEvent.getLocation().getLatitude(), newEvent.getLocation().getLongitude()));
-        Marker eventMarker = googleMap.addMarker(options);
-        eventMarkers.put(newEvent.getId(), eventMarker);
-        Log.d(TAG, "Marker for event " + id + " added");
+        if (newEvent.getLocation() != null || newEvent.getPlace() != null) {
+            MarkerOptions options = new MarkerOptions()
+                    .title(newEvent.getName())
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_meetup))
+                    .position(new LatLng(0, 0));
+            Marker eventMarker = googleMap.addMarker(options);
+
+            StringBuffer dateLocation = new StringBuffer();
+            if (newEvent.getDateTime() != null) {
+                dateLocation.append(formatter.print(newEvent.getDateTime()) + "\n");
+            }
+            if (newEvent.getPlace() != null) {
+                dateLocation.append(newEvent.getPlace());
+
+                staleEvents.add(newEvent);
+            }
+            else {
+                LatLng eventLocation = new LatLng(newEvent.getLocation().getLatitude(), newEvent.getLocation().getLongitude());
+                eventMarker.setPosition(eventLocation);
+            }
+
+            eventMarker.setSnippet(dateLocation.toString());
+            eventMarkers.put(newEvent.getId(), eventMarker);
+
+            Log.d(TAG, "Marker for event " + id + " added");
+        }
     }
 
     public void onEventLocationChanged(String id) {

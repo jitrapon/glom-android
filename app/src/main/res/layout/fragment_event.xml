@@ -1,10 +1,10 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/circle_event_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.abborg.glom.ui.EventFragment"
-    android:paddingTop="@dimen/fragment_margin_top"
-    >
+    android:paddingTop="?attr/actionBarSize">
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/circle_event_view"

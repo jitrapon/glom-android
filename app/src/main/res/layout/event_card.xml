@@ -19,6 +19,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="?android:attr/selectableItemBackground"
             android:orientation="vertical">
 
             <RelativeLayout
@@ -78,6 +79,17 @@
                     android:textColor="@color/cardPrimaryText"
                     android:text="@string/card_event_name_placeholder"/>
 
+                <ImageView
+                    android:id="@+id/cardActionButtonMenu"
+                    android:layout_width="45dp"
+                    android:layout_height="45dp"
+                    android:padding="8dp"
+                    android:layout_alignParentTop="true"
+                    android:layout_alignParentRight="true"
+                    android:layout_alignParentEnd="true"
+                    android:src="@drawable/ic_action_menu"
+                    android:background="?android:attr/selectableItemBackground"/>
+
                 <TextView
                     android:id="@+id/cardEventVenue"
                     android:layout_width="wrap_content"
@@ -108,22 +120,26 @@
                 android:layout_height="wrap_content">
 
                 <Button
-                    android:id="@+id/cardButton1"
+                    android:id="@+id/cardActionButton1"
+                    android:focusable="false"
+                    android:focusableInTouchMode="false"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/event_card_action_padding"
                     android:background="?android:attr/selectableItemBackground"
-                    android:textColor="@android:color/secondary_text_light"
+                    android:textColor="@color/actionButtonColor"
                     android:text="ACTION 1"/>
 
                 <Button
-                    android:id="@+id/cardButton2"
+                    android:id="@+id/cardActionButton2"
+                    android:focusable="false"
+                    android:focusableInTouchMode="false"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/event_card_action_padding"
                     android:background="?android:attr/selectableItemBackground"
-                    android:layout_toRightOf="@+id/cardButton1"
-                    android:textColor="@android:color/secondary_text_light"
+                    android:layout_toRightOf="@+id/cardActionButton1"
+                    android:textColor="@color/actionButtonColor"
                     android:text="ACTION 2"/>
 
                 <ImageView

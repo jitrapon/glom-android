@@ -28,7 +28,7 @@ import jp.wasabeef.recyclerview.animators.adapters.SlideInBottomAnimationAdapter
 /**
  * A simple {@link Fragment} subclass.
  */
-public class EventFragment extends Fragment {
+public class EventFragment extends Fragment implements View.OnClickListener {
 
     private static final String TAG = "EventFragment";
 
@@ -77,7 +77,7 @@ public class EventFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         dataUpdater = AppState.getInstance(getContext()).getDataUpdater();
-        adapter = new EventRecyclerViewAdapter(getContext(), getEvents());
+        adapter = new EventRecyclerViewAdapter(getContext(), getEvents(), this);
         Log.d(TAG, "OnCreate events");
     }
 
@@ -107,6 +107,11 @@ public class EventFragment extends Fragment {
         Log.d(TAG, "OnCreateView " + events.size() + " events");
 
         return root;
+    }
+
+    @Override
+    public void onClick(View view) {
+        Log.d(TAG, "A card is clicked");
     }
 
     public void onItemAdded(int index) {

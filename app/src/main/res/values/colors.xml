@@ -10,4 +10,5 @@
     <color name="menuOverlay">#88676767</color>
     <color name="lineDivider">#D8D8D8</color>
     <color name="cardPrimaryText">#000000</color>
+    <color name="actionButtonColor">#5766BD</color>
 </resources>
