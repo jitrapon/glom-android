@@ -11,6 +11,8 @@ public class FeedAction {
 
     public static final int CANCEL_EVENT = 1;
 
+    public static final int UPDATE_EVENT = 2;
+
     public int type;
 
     public User user;

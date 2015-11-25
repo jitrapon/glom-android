@@ -35,6 +35,7 @@ import org.joda.time.format.DateTimeFormatter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class EventActivity extends AppCompatActivity {
 
@@ -68,9 +69,27 @@ public class EventActivity extends AppCompatActivity {
 
     private DateTime endDateTime;
 
+    /* The received intent, this should never be null because this activity is only launched from an intent */
+    private Intent intent;
+
+    private Mode mode;
+
+    private Event editEvent;
+
+    private enum Mode {
+        CREATE_EVENT,   // this mode tells the activity on creation that all fields are to remain blank
+        UPDATE_EVENT,   // this mode tells the activity on creation that all fields are retrieved from a created event and can be modified
+        VIEW_EVENT      // this mode tells the activity on creation that all fields are retrieved from a created event, but cannot be modified
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        intent = getIntent();
+        if (intent == null) {
+            finishWithResult(null); // end abruptly if we don't know what MODE we're in
+        }
 
         appState = AppState.getInstance(this);
         dataUpdater = appState.getDataUpdater();
@@ -82,7 +101,6 @@ public class EventActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setTitle(getResources().getString(R.string.create_event_title));
         getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_action_close);
 
         nameText = (EditText) findViewById(R.id.input_event_name);
@@ -136,6 +154,58 @@ public class EventActivity extends AppCompatActivity {
                 showTimePickerDialog(view);
             }
         });
+
+        // based on the mode we receive in the intent, we further retrieve data and fill out the fields
+        if (intent.getAction().equals(getResources().getString(R.string.ACTION_CREATE_EVENT)))
+            mode = Mode.CREATE_EVENT;
+        else if (intent.getAction().equals(getResources().getString(R.string.ACTION_UPDATE_EVENT)))
+            mode = Mode.UPDATE_EVENT;
+        else
+            mode = Mode.VIEW_EVENT;
+        init(mode);
+    }
+
+    private void init(Mode mode) {
+        switch (mode) {
+            case CREATE_EVENT:
+                getSupportActionBar().setTitle(getResources().getString(R.string.create_event_title));
+                break;
+            case UPDATE_EVENT:
+                //TODO contact server to get more information
+                // only display information stored in DB, which is name, time, and place
+                List<Event> events = appState.getCurrentCircle().getEvents();
+                String id = intent.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_ID));
+                if (id != null && !events.isEmpty()) {
+                    for (Event event : events) {
+                        if (event.getId().equals(id)) {
+                            editEvent = event;
+                            break;
+                        }
+                    }
+                    if (editEvent != null) {
+                        getSupportActionBar().setTitle(editEvent.getName());
+                        DateTimeFormatter printDateFormat = DateTimeFormat.forPattern(getResources().getString(R.string.display_date_format));
+                        DateTimeFormatter printTimeFormat = DateTimeFormat.forPattern(getResources().getString(R.string.display_time_format));
+                        String name = editEvent.getName();
+                        startDateTime = editEvent.getDateTime();
+                        endDateTime = editEvent.getEndTime();
+
+                        nameText.setText(name);
+                        if (startDateTime != null) {
+                            startDateText.setText(printDateFormat.print(startDateTime));
+                            startTimeText.setText(printTimeFormat.print(startDateTime));
+                        }
+                        if (endDateTime != null) {
+                            endDateText.setText(printDateFormat.print(endDateTime));
+                            endTimeText.setText(printTimeFormat.print(endDateTime));
+                        }
+                    }
+                }
+                break;
+            case VIEW_EVENT:
+                break;
+            default: break;
+        }
     }
 
     public void showTimePickerDialog(View view) {
@@ -151,7 +221,7 @@ public class EventActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_create_event, menu);
+        getMenuInflater().inflate(R.menu.menu_event, menu);
         return true;
     }
 
@@ -217,25 +287,33 @@ public class EventActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        if (id == R.id.action_create_event_done) {
+        if (id == R.id.action_event_done) {
+
             // verify that the event name is provided
             // verify that datetime is input correctly
             if (validateName() && validateDateTime()) {
                 User user = appState.getUser();
-                String place = "ChIJB5FY5M2e4jARo48nbVRhgAo";
-//                String place = null;
-                Location location = new Location("");
-                location.setLatitude(1.29929);
-                location.setLongitude(103.86286);
+                String place = null;
+                Location location = null;
                 dataUpdater.open();
-                Event newEvent = dataUpdater.createEvent(nameText.getText().toString(), appState.getCurrentCircle(),
-                        new ArrayList<>(Arrays.asList(user)), startDateTime, endDateTime, place, location, Event.IN_CIRCLE,
-                        new ArrayList<User>(), true, true, true, null
-                );
 
-                // TODO notify server that an event has been added
-                // pass data to finishWithResult()
-                finishWithResult(newEvent.getId());
+                if (mode.equals(Mode.CREATE_EVENT)) {
+                    editEvent = dataUpdater.createEvent(nameText.getText().toString(), appState.getCurrentCircle(),
+                            new ArrayList<>(Arrays.asList(user)), startDateTime, endDateTime, place, location, Event.IN_CIRCLE,
+                            new ArrayList<User>(), true, true, true, null
+                    );
+                }
+                else if (mode.equals(Mode.UPDATE_EVENT)) {
+                    if (editEvent != null) {
+                        editEvent = dataUpdater.updateEvent(editEvent.getId(), appState.getCurrentCircle(), nameText.getText().toString(),
+                                new ArrayList<>(Arrays.asList(user)), startDateTime, endDateTime, place, location, Event.IN_CIRCLE,
+                                new ArrayList<User>(), true, true, true, null
+                        );
+                    }
+                }
+
+                // pass data to finishWithResult
+                finishWithResult(editEvent.getId());
             }
             return true;
         }
@@ -244,9 +322,17 @@ public class EventActivity extends AppCompatActivity {
     }
 
     private void finishWithResult(String id) {
-        Intent intent = new Intent();
-        intent.putExtra(getResources().getString(R.string.EXTRA_CREATE_EVENT_ID), id);
-        setResult(RESULT_OK, intent);
+        if (id != null) {
+            Intent intent = new Intent();
+            intent.putExtra(getResources().getString(R.string.EXTRA_EVENT_ID), id);
+            setResult(RESULT_OK, intent);
+            Log.d(TAG, "finishing with result " + RESULT_OK + " and id of " + id);
+        }
+        else {
+            setResult(RESULT_CANCELED);
+            Log.d(TAG, "finishing with result " + RESULT_CANCELED);
+        }
+
         finish();
     }
 

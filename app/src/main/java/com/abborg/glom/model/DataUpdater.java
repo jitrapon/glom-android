@@ -495,6 +495,7 @@ public class DataUpdater {
     public Event createEvent(String name, Circle circle, List<User> hosts, DateTime time, DateTime endTime, String place, Location location,
                              int discoverType, List<User> invitees, boolean showHosts,
                              boolean showInvitees, boolean showAttendees, String note) {
+        // TODO notify server
         Event event = Event.createEvent(name, circle, hosts, time, place, location, discoverType, invitees, showHosts,  showInvitees,
                 showAttendees, note);
         event.setEndTime(endTime);
@@ -543,6 +544,89 @@ public class DataUpdater {
         //TODO send update to server of the created event
 
         return event;
+    }
+
+    public Event updateEvent(String eventId, Circle eventCircle, String newName, List<User> newHosts, DateTime newStartTime, DateTime newEndTime,
+                             String newPlace, Location newLocation, int newDiscoverType, List<User> newInvitees, boolean newShowHosts,
+                             boolean newShowInvitees, boolean newShowAttendees, String newNote) {
+        //TODO update server
+
+        List<Event> events = eventCircle.getEvents();
+        Event updatedEvent = null;
+        for (Event event : events) {
+            if (event.getId().equals(eventId)) {
+                updatedEvent = event;
+                break;
+            }
+        }
+
+        if (updatedEvent != null) {
+            //TODO retrieve last action and action timestamp from server
+            //TODO for now hardcode this
+            updatedEvent.setLastAction(new FeedAction(FeedAction.UPDATE_EVENT, currentUser, new DateTime()));
+            updatedEvent.setName(newName);
+            updatedEvent.setHosts(newHosts);
+            updatedEvent.setDateTime(newStartTime);
+            updatedEvent.setEndTime(newEndTime);
+            updatedEvent.setPlace(newPlace);
+            updatedEvent.setLocation(newLocation);
+            updatedEvent.setDiscoverType(newDiscoverType);
+            updatedEvent.setInvitees(newInvitees);
+            updatedEvent.setHostsShown(newShowHosts);
+            updatedEvent.setInviteesShown(newShowInvitees);
+            updatedEvent.setAttendeesShown(newShowAttendees);
+            updatedEvent.setNote(newNote);
+
+            database.beginTransaction();
+
+            try {
+                ContentValues values = new ContentValues();
+                values.put(DBHelper.EVENT_COLUMN_NAME, updatedEvent.getName());
+                if (updatedEvent.getDateTime() != null) {
+                    values.put(DBHelper.EVENT_COLUMN_DATETIME, updatedEvent.getDateTime().getMillis());
+                }
+                if (updatedEvent.getEndTime() != null) {
+                    values.put(DBHelper.EVENT_COLUMN_ENDTIME, updatedEvent.getEndTime().getMillis());
+                }
+                values.put(DBHelper.EVENT_COLUMN_PLACE, updatedEvent.getPlace());
+                if (updatedEvent.getLocation() != null) {
+                    values.put(DBHelper.EVENT_COLUMN_LATITUDE, updatedEvent.getLocation().getLatitude());
+                    values.put(DBHelper.EVENT_COLUMN_LONGITUDE, updatedEvent.getLocation().getLongitude());
+                }
+                else {
+                    values.put(DBHelper.EVENT_COLUMN_LATITUDE, -1.0);
+                    values.put(DBHelper.EVENT_COLUMN_LONGITUDE, -1.0);
+                }
+                values.put(DBHelper.EVENT_COLUMN_NOTE, updatedEvent.getNote());
+                long updateId = database.update(DBHelper.TABLE_EVENTS, values,
+                        DBHelper.EVENT_COLUMN_ID + "='" + updatedEvent.getId() + "'", null);
+                Log.d(TAG, "Updated event with _id: " + updateId + ", id: " + updatedEvent.getId() + ", name: " +
+                    updatedEvent.getName() + ", time: " + updatedEvent.getDateTime() + ", place: " + updatedEvent.getPlace());
+
+                database.setTransactionSuccessful();
+            }
+            catch (SQLException ex) {
+                Log.e(TAG, ex.getMessage());
+            }
+            finally {
+                database.endTransaction();
+            }
+        }
+
+        return updatedEvent;
+    }
+
+    public void deleteEvent(String id, Circle circle) {
+        List<Event> events = circle.getEvents();
+        Event deleted = null;
+        for (int index = 0; index < events.size(); index++) {
+            if (events.get(index).getId().equals(id)) {
+                deleted = events.remove(index);
+            }
+        }
+        if (deleted != null) id = deleted.getId();
+
+        database.delete(DBHelper.TABLE_EVENTS, DBHelper.EVENT_COLUMN_ID + "='" + id + "'", null);
     }
 
     /**

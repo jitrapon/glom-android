@@ -5,7 +5,7 @@
     tools:context="com.abborg.glom.ui.EventActivity">
 
     <item
-        android:id="@+id/action_create_event_done"
+        android:id="@+id/action_event_done"
         android:title="@string/menu_item_done"
         android:orderInCategory="100"
         android:icon="@drawable/ic_action_done"

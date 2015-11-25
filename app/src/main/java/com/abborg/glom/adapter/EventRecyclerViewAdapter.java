@@ -1,6 +1,8 @@
 package com.abborg.glom.adapter;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.support.v7.widget.RecyclerView;
 import android.text.Html;
 import android.util.Log;
@@ -35,7 +37,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by Boat on 13/10/58.
+ * Handles the view logic to display items in a RecyclerView. The adapter can support
+ * showing items in two layouts: the traditional linear layout and in a staggered grid.
  */
 public class EventRecyclerViewAdapter
         extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
@@ -53,6 +56,8 @@ public class EventRecyclerViewAdapter
     private List<Integer> staleEvents;
 
     private View.OnClickListener onClickListener;
+
+    private OnEventChangedListener eventChangedListener;
 
     public static class EventHolder extends RecyclerView.ViewHolder {
         ImageView menuButton;
@@ -95,6 +100,10 @@ public class EventRecyclerViewAdapter
         staleEvents = new ArrayList<>();
     }
 
+    public void setEventChangedListener(OnEventChangedListener listener) {
+        eventChangedListener = listener;
+    }
+
     public void update(List<Event> events) {
         // update from specific list of events
         if (events != null) {
@@ -128,10 +137,15 @@ public class EventRecyclerViewAdapter
             return null;
     }
 
+    public interface OnEventChangedListener {
+        void onItemDeleted(String id);
+    }
+
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder recyclerViewHolder, int position) {
         if (!isPositionHeader(position) && recyclerViewHolder instanceof EventHolder) {
             Event event = events.get(position - 1);
+            final String id = event.getId();
             EventHolder holder = (EventHolder) recyclerViewHolder;
 
             // set clicklistener for menu buttons
@@ -139,6 +153,37 @@ public class EventRecyclerViewAdapter
                 @Override
                 public void onClick(View v) {
                     Log.d(TAG, "Menu button clicked");
+                    final CharSequence[] items = {
+                            context.getResources().getString(R.string.menu_item_delete),
+                            context.getResources().getString(R.string.menu_item_copy),
+                            context.getResources().getString(R.string.menu_item_send),
+                            context.getResources().getString(R.string.menu_item_bookmark)
+                    };
+                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                    builder.setItems(items, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int item) {
+                            switch (item) {
+                                case 0:
+                                    if (eventChangedListener != null) {
+                                        eventChangedListener.onItemDeleted(id);
+                                    }
+                                    break;
+                                case 1:
+
+                                    break;
+                                case 2:
+
+                                    break;
+                                case 3:
+
+                                    break;
+                                default: return;
+                            }
+                        }
+                    });
+                    AlertDialog alert = builder.create();
+                    alert.setCanceledOnTouchOutside(true);
+                    alert.show();
                 }
             });
 
@@ -158,7 +203,12 @@ public class EventRecyclerViewAdapter
                                     context.getResources().getString(R.string.card_post_create_event)));
                             break;
                         case FeedAction.CANCEL_EVENT:
-                            holder.posterName.setText(feedAction.user.getName() + " " + context.getResources().getString(R.string.card_post_cancel_event));
+                            holder.posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
+                                    context.getResources().getString(R.string.card_post_cancel_event)));
+                            break;
+                        case FeedAction.UPDATE_EVENT:
+                            holder.posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
+                                    context.getResources().getString(R.string.card_post_update_event)));
                             break;
                         default:
                             holder.posterName.setText(feedAction.user.getName());

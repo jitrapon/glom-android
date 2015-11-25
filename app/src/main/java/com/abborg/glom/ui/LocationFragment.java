@@ -307,9 +307,13 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
             }
         });
 
-        updateMap(false);
+        update(false);
     }
 
+    /**
+     * Called when the UI is to be updated when an event is added
+     * @param id
+     */
     public void onEventAdded(String id) {
         List<Event> events = appState.getCurrentCircle().getEvents();
         Event newEvent = null;
@@ -318,6 +322,10 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         }
         if (newEvent == null) return;
 
+        addMarker(newEvent);
+    }
+
+    private void addMarker(Event newEvent) {
         if (newEvent.getLocation() != null || newEvent.getPlace() != null) {
             MarkerOptions options = new MarkerOptions()
                     .title(newEvent.getName())
@@ -342,10 +350,17 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
             eventMarker.setSnippet(dateLocation.toString());
             eventMarkers.put(newEvent.getId(), eventMarker);
 
-            Log.d(TAG, "Marker for event " + id + " added");
+            Log.d(TAG, "Marker for event " + newEvent.getName() + " added");
+        }
+        else {
+            Log.d(TAG, "Marker for event " + newEvent.getName() + " NOT added because a place or a coordinate has not been set");
         }
     }
 
+    /**
+     * Called when the UI is to be updated when an event is to be changed
+     * @param id
+     */
     public void onEventLocationChanged(String id) {
         List<Event> events = appState.getCurrentCircle().getEvents();
         Event changedEvent = null;
@@ -355,21 +370,22 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         if (changedEvent == null) return;
 
         Marker changedEventMarker = eventMarkers.get(id);
-        if (changedEventMarker == null) return;
+
+        // if null, it means that we haven't added the marker yet, which can be due to the user
+        // not setting location prior to this change. We proceed to add the marker to the map.
+        if (changedEventMarker == null) {
+            addMarker(changedEvent);
+        }
         else {
             changedEventMarker.setPosition(new LatLng(changedEvent.getLocation().getLatitude(), changedEvent.getLocation().getLongitude()));
+            Log.d(TAG, "Marker for event " + id + " changed");
         }
-        Log.d(TAG, "Marker for event " + id + " changed");
     }
 
+    /**
+     * Called when the UI is to be updated when an event is to be removed
+     */
     public void onEventRemoved(String id) {
-        List<Event> events = appState.getCurrentCircle().getEvents();
-        Event removedEvent = null;
-        for (Event event : events) {
-            if (event.getId().equals(id)) removedEvent = event;
-        }
-        if (removedEvent == null) return;
-
         Marker removedEventMarker = eventMarkers.get(id);
         if (removedEventMarker == null) return;
         else {
@@ -379,6 +395,10 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         Log.d(TAG, "Marker for event " + id + " removed");
     }
 
+
+    /**
+     * Called when the UI is to be updated when broadcasting location is enabled
+     */
     @Override
     public void onBroadcastLocationEnabled() {
         Log.d(TAG, "Broadcast location is enabled");
@@ -392,6 +412,9 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         if (animator != null && !animator.isRunning()) animator.start();
     }
 
+    /**
+     * Called when the UI is to be updated when broadcasting location is disabled
+     */
     @Override
     public void onBroadcastLocationDisabled() {
         Log.d(TAG, "Broadcast location is disabled");
@@ -459,7 +482,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
      *
      * @param clear
      */
-    public void updateMap(boolean clear) {
+    public void update(boolean clear) {
         // initialize the default user's marker from sqlite
         if (googleMap != null) {
             if (clear) {

@@ -3,6 +3,7 @@ package com.abborg.glom.ui;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
@@ -14,6 +15,7 @@ import android.view.ViewGroup;
 import android.view.animation.OvershootInterpolator;
 
 import com.abborg.glom.AppState;
+import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.adapter.EventRecyclerViewAdapter;
 import com.abborg.glom.model.DataUpdater;
@@ -22,8 +24,6 @@ import com.abborg.glom.model.Event;
 import java.util.List;
 
 import jp.wasabeef.recyclerview.animators.SlideInUpAnimator;
-import jp.wasabeef.recyclerview.animators.adapters.AnimationAdapter;
-import jp.wasabeef.recyclerview.animators.adapters.SlideInBottomAnimationAdapter;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -41,9 +41,6 @@ public class EventFragment extends Fragment implements View.OnClickListener {
     /* Adapter to the recycler view */
     private EventRecyclerViewAdapter adapter;
 
-    /* Animation adapter */
-    private AnimationAdapter animationAdapter;
-
     /* Layout manager for the view */
     private RecyclerView.LayoutManager layoutManager;
 
@@ -57,7 +54,13 @@ public class EventFragment extends Fragment implements View.OnClickListener {
 
     private static final int ITEM_APPEARANCE_ANIM_TIME = 650;
 
-    private static final long ITEM_MODIFY_ANIM_TIME = 650;
+    private static final long ITEM_ADD_ANIM_TIME = 650;
+
+    private static final long ITEM_REMOVE_ANIM_TIME = 350;
+
+    private static final long ITEM_MOVE_ANIM_TIME = 350;
+
+    private static final long ITEM_CHANGE_ANIM_TIME = 350;
 
     public EventFragment() {
         // Required empty public constructor
@@ -90,19 +93,17 @@ public class EventFragment extends Fragment implements View.OnClickListener {
         recyclerView.setHasFixedSize(true);
         layoutManager = new LinearLayoutManager(getContext());
         recyclerView.setLayoutManager(layoutManager);
+        adapter.setEventChangedListener(activity);
 
         // set up adapter and its appearance animation
-        animationAdapter = new SlideInBottomAnimationAdapter(adapter);
-        animationAdapter.setDuration(ITEM_APPEARANCE_ANIM_TIME);
-        animationAdapter.setFirstOnly(true);
-        recyclerView.setAdapter(animationAdapter);
+        recyclerView.setAdapter(adapter);
 
         // set up item animations
         recyclerView.setItemAnimator(new SlideInUpAnimator(new OvershootInterpolator(1f)));
-        recyclerView.getItemAnimator().setAddDuration(ITEM_MODIFY_ANIM_TIME);
-        recyclerView.getItemAnimator().setRemoveDuration(ITEM_MODIFY_ANIM_TIME);
-        recyclerView.getItemAnimator().setMoveDuration(ITEM_MODIFY_ANIM_TIME);
-        recyclerView.getItemAnimator().setChangeDuration(ITEM_MODIFY_ANIM_TIME);
+        recyclerView.getItemAnimator().setAddDuration(ITEM_ADD_ANIM_TIME);
+        recyclerView.getItemAnimator().setRemoveDuration(ITEM_REMOVE_ANIM_TIME);
+        recyclerView.getItemAnimator().setMoveDuration(ITEM_MOVE_ANIM_TIME);
+        recyclerView.getItemAnimator().setChangeDuration(ITEM_CHANGE_ANIM_TIME);
 
         Log.d(TAG, "OnCreateView " + events.size() + " events");
 
@@ -111,19 +112,40 @@ public class EventFragment extends Fragment implements View.OnClickListener {
 
     @Override
     public void onClick(View view) {
-        Log.d(TAG, "A card is clicked");
+        int position = recyclerView.getChildAdapterPosition(view);
+        Event selected = events.get(position - 1);
+        if (selected != null) {
+            Log.d(TAG, "Event (" + selected.getName() + ") selected");
+            Intent intent = new Intent(activity, EventActivity.class);
+            intent.putExtra(getResources().getString(R.string.EXTRA_EVENT_ID), selected.getId());
+            intent.setAction(getResources().getString(R.string.ACTION_UPDATE_EVENT));
+            getActivity().startActivityForResult(intent, Const.UPDATE_EVENT_RESULT_CODE);
+        }
     }
 
+    /**
+     * Called when the UI is to be updated when an item is to be added
+     * @param index
+     */
     public void onItemAdded(int index) {
         layoutManager.scrollToPosition(0);
-        animationAdapter.notifyItemInserted(index);
+        adapter.notifyItemInserted(index);
+        Log.d(TAG, "Inserted item at " + index);
     }
 
+    public void onItemChanged(int index) {
+        layoutManager.scrollToPosition(index);
+        adapter.notifyItemChanged(index);
+        Log.d(TAG, "Updated item at " + index);
+    }
+
+    /**
+     * Called when the UI is to be updated when an item is to be deleted
+     * @param index
+     */
     public void onItemDeleted(int index) {
-        // TODO notify server
-        recyclerView.removeViewAt(index);
-        animationAdapter.notifyItemRemoved(index);
-        animationAdapter.notifyItemRangeChanged(index, events.size());
+        Log.d(TAG, "Removed item at " + index);
+        adapter.notifyItemRemoved(index);
     }
 
     @Override

@@ -40,5 +40,7 @@ public class Const {
     /**
      * ACTIVITY RESULTCODES
      */
-    public static final int CREATE_EVENT_RESULT_CODE = 0;
+    public static final int CREATE_EVENT_RESULT_CODE = 700;
+
+    public static final int UPDATE_EVENT_RESULT_CODE = 701;
 }

@@ -10,7 +10,9 @@ import android.content.IntentFilter;
 import android.database.SQLException;
 import android.location.Location;
 import android.os.Bundle;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -39,8 +41,10 @@ import android.widget.Toast;
 import com.abborg.glom.AppState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
+import com.abborg.glom.adapter.EventRecyclerViewAdapter;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.DataUpdater;
+import com.abborg.glom.model.Event;
 import com.abborg.glom.model.User;
 import com.abborg.glom.service.BaseInstanceIDListenerService;
 import com.abborg.glom.service.MessageListenerService;
@@ -62,7 +66,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity
-        implements DrawerFragment.FragmentDrawerListener {
+        implements DrawerFragment.FragmentDrawerListener, EventRecyclerViewAdapter.OnEventChangedListener {
 
     private Toolbar toolbar;
 
@@ -100,6 +104,8 @@ public class MainActivity extends AppCompatActivity
 
     private android.support.design.widget.FloatingActionButton fab;
 
+    private CoordinatorLayout mainCoordinatorLayout;
+
     FloatingActionMenu avatarActionMenu;
 
     Animation fadeInAnim;
@@ -136,6 +142,8 @@ public class MainActivity extends AppCompatActivity
         loadData();
 
         setContentView(R.layout.activity_main);
+
+        mainCoordinatorLayout = (CoordinatorLayout) findViewById(R.id.parentView);
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -508,6 +516,7 @@ public class MainActivity extends AppCompatActivity
                     public void onClick(View v) {
                         hideMenuOverlay(false);
                         Intent intent = new Intent(context, EventActivity.class);
+                        intent.setAction(getResources().getString(R.string.ACTION_CREATE_EVENT));
                         startActivityForResult(intent, Const.CREATE_EVENT_RESULT_CODE);
                     }
                 });
@@ -767,7 +776,7 @@ public class MainActivity extends AppCompatActivity
 
         // only update the locations when the map is visible
         LocationFragment mapFragment = (LocationFragment) adapter.getItem(1);
-        mapFragment.updateMap(true);    //TODO this needs to be retrieved from SQLite
+        mapFragment.update(true);    //TODO this needs to be retrieved from SQLite
 
         // refresh the circle fragment
         CircleFragment circleFragment = (CircleFragment) adapter.getItem(0);
@@ -791,15 +800,73 @@ public class MainActivity extends AppCompatActivity
                     LocationFragment locationFragment = getMapFragment();
                     if (locationFragment != null) {
                         if (data != null) {
-                            String newEventId = data.getStringExtra(getResources().getString(R.string.EXTRA_CREATE_EVENT_ID));
+                            String newEventId = data.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_ID));
                             locationFragment.onEventAdded(newEventId);
                         }
                     }
                 }
                 break;
 
+            //TODO MOVE TO FRAGMENT!!!
+            case Const.UPDATE_EVENT_RESULT_CODE:
+                if (resultCode == RESULT_OK) {
+                    Log.d(TAG, "Update event done, result OK!");
+                    String newEventId = data.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_ID));
+                    EventFragment eventFragment = getEventFragment();
+                    if (eventFragment != null) {
+                        int index = -1;
+                        List<Event> events = appState.getCurrentCircle().getEvents();
+                        for (int i = 0; i < events.size(); i++) {
+                            if (events.get(i).getId().equals(newEventId)) {
+                                index = i;
+                                break;
+                            }
+                        }
+                        eventFragment.onItemChanged(index + 1);
+                    }
+
+                    LocationFragment locationFragment = getMapFragment();
+                    if (locationFragment != null) {
+                        if (data != null) {
+                            locationFragment.onEventLocationChanged(newEventId);
+                        }
+                    }
+                }
+                break;
             default:
                 break;
         }
+    }
+
+    @Override
+    public void onItemDeleted(String id) {
+        EventFragment eventFragment = getEventFragment();
+        if (eventFragment != null) {
+            List<Event> events = appState.getCurrentCircle().getEvents();
+            int index = -1;
+            for (int i = 0; i < events.size(); i++) {
+                if (events.get(i).getId().equals(id)) {
+                    index = i;
+                    break;
+                }
+            }
+            if (index != -1) eventFragment.onItemDeleted(index + 1);    // add 1 becaue the invisible header is index 0
+        }
+
+        LocationFragment mapFragment = getMapFragment();
+        if (mapFragment != null) {
+            mapFragment.onEventRemoved(id);
+        }
+
+        dataUpdater.deleteEvent(id, appState.getCurrentCircle());
+
+        Snackbar.make(mainCoordinatorLayout, getResources().getQuantityString(R.plurals.notification_delete_item,
+                1, 1), Snackbar.LENGTH_LONG)
+                .setAction(getResources().getString(R.string.menu_item_undo), new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        //TODO
+                    }
+                }).show();
     }
 }

@@ -35,7 +35,9 @@
     <string name="EXTRA_CIRCLES_LOCATION_UPDATE">com.abborg.glom.extra.CIRCLES_LOCATION_UPDATE</string>
     <string name="EXTRA_SEND_TOKEN_USER_ID">com.abborg.glom.extra.SEND_TOKEN_USERID</string>
     <string name="EXTRA_BROADCAST_LOCATION_DURATION">com.abborg.glom.extra.BROADCAST_LOCATION_DURATION</string>
-    <string name="EXTRA_CREATE_EVENT_ID">com.abborg.glom.extra.CREATE_EVENT_ID</string>
+    <string name="ACTION_CREATE_EVENT">com.abborg.glom.action.CREATE_EVENT</string>
+    <string name="ACTION_UPDATE_EVENT">com.abborg.glom.action.UPDATE_EVENT</string>
+    <string name="EXTRA_EVENT_ID">com.abborg.glom.extra.EVENT_ID</string>
 
     <!-- Profile activity strings -->
     <string name="profile_activity_label">My Profile</string>
@@ -64,6 +66,7 @@
     <string name="card_event_note_placeholder">Event note is undefined</string>
     <string name="card_post_create_event">created an event</string>
     <string name="card_post_cancel_event">cancelled an event</string>
+    <string name="card_post_update_event">updated an event</string>
     <string name="time_unit_second">secs</string>
     <string name="time_unit_minute">mins</string>
     <string name="time_unit_hour">hrs</string>
@@ -108,6 +111,17 @@
     <string name="time_today">Today</string>
     <string name="time_tomorrow">Tomorrow</string>
     <string name="error_event_name_empty">Enter event name</string>
+    <plurals name="notification_delete_item">
+        <item quantity="one">Deleted $d item</item>
+        <item quantity="other">Deleted $d items</item>
+    </plurals>
+
+    <!-- Global menu items -->
+    <string name="menu_item_delete">Delete</string>
+    <string name="menu_item_copy">Copy</string>
+    <string name="menu_item_send">Send</string>
+    <string name="menu_item_bookmark">Bookmark</string>
+    <string name="menu_item_undo">Undo</string>
 
 <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
