@@ -517,6 +517,9 @@ public class MainActivity extends AppCompatActivity
                         hideMenuOverlay(false);
                         Intent intent = new Intent(context, EventActivity.class);
                         intent.setAction(getResources().getString(R.string.ACTION_CREATE_EVENT));
+
+                        // make sure to not disconnect Google Api just yet
+                        appState.setKeepGoogleApiClientAlive(true);
                         startActivityForResult(intent, Const.CREATE_EVENT_RESULT_CODE);
                     }
                 });
@@ -608,6 +611,7 @@ public class MainActivity extends AppCompatActivity
 
         // connect to the Google Play API
         appState.connectGoogleApiClient();
+        appState.setKeepGoogleApiClientAlive(false);
 
         // register local broadcast receiver
         LocalBroadcastManager broadcastManager = LocalBroadcastManager.getInstance(this);
@@ -623,8 +627,6 @@ public class MainActivity extends AppCompatActivity
         catch (SQLException ex) {
             Log.e(TAG, ex.getMessage());
         }
-
-        Log.d(TAG, "OnStart is called");
     }
 
     @Override
@@ -634,13 +636,12 @@ public class MainActivity extends AppCompatActivity
         broadcastManager.unregisterReceiver(broadcastReceiver);
 
         // disconnect google api client
-        appState.disconnectGoogleApiClient();
+        if (!appState.shouldKeepGoogleApiAlive()) appState.disconnectGoogleApiClient();
 
         // close database
         dataUpdater.close();
 
         super.onStop();
-        Log.d(TAG, "OnStop is called");
     }
 
     @Override
@@ -807,7 +808,6 @@ public class MainActivity extends AppCompatActivity
                 }
                 break;
 
-            //TODO MOVE TO FRAGMENT!!!
             case Const.UPDATE_EVENT_RESULT_CODE:
                 if (resultCode == RESULT_OK) {
                     Log.d(TAG, "Update event done, result OK!");
@@ -828,7 +828,7 @@ public class MainActivity extends AppCompatActivity
                     LocationFragment locationFragment = getMapFragment();
                     if (locationFragment != null) {
                         if (data != null) {
-                            locationFragment.onEventLocationChanged(newEventId);
+                            locationFragment.onEventChanged(newEventId);
                         }
                     }
                 }

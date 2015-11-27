@@ -5,6 +5,7 @@ import android.animation.Animator;
 import android.animation.IntEvaluator;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -26,9 +27,9 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.abborg.glom.AppState;
+import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.Event;
@@ -285,7 +286,12 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
             public void onInfoWindowClick(Marker marker) {
                 for (String eventId : eventMarkers.keySet()) {
                     if (eventMarkers.get(eventId).getId().equals(marker.getId())) {
-                        Toast.makeText(getContext().getApplicationContext(), "Clicked on event " + eventId, Toast.LENGTH_SHORT).show();
+                        Log.d(TAG, "Event (" + eventId + ") selected");
+                        Intent intent = new Intent(getActivity(), EventActivity.class);
+                        intent.putExtra(getResources().getString(R.string.EXTRA_EVENT_ID), eventId);
+                        intent.setAction(getResources().getString(R.string.ACTION_UPDATE_EVENT));
+                        AppState.getInstance(getActivity()).setKeepGoogleApiClientAlive(true);
+                        getActivity().startActivityForResult(intent, Const.UPDATE_EVENT_RESULT_CODE);
                     }
                 }
 
@@ -325,35 +331,34 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         addMarker(newEvent);
     }
 
-    private void addMarker(Event newEvent) {
-        if (newEvent.getLocation() != null || newEvent.getPlace() != null) {
+    private void addMarker(Event event) {
+        if (event.getLocation() != null || event.getPlace() != null) {
             MarkerOptions options = new MarkerOptions()
-                    .title(newEvent.getName())
+                    .title(event.getName())
                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_meetup))
                     .position(new LatLng(0, 0));
             Marker eventMarker = googleMap.addMarker(options);
 
             StringBuffer dateLocation = new StringBuffer();
-            if (newEvent.getDateTime() != null) {
-                dateLocation.append(formatter.print(newEvent.getDateTime()) + "\n");
+            if (event.getDateTime() != null) {
+                dateLocation.append(formatter.print(event.getDateTime()) + "\n");
             }
-            if (newEvent.getPlace() != null) {
-                dateLocation.append(newEvent.getPlace());
-
-                staleEvents.add(newEvent);
+            if (event.getPlace() != null) {
+                staleEvents.add(event);
             }
-            else {
-                LatLng eventLocation = new LatLng(newEvent.getLocation().getLatitude(), newEvent.getLocation().getLongitude());
+            if (event.getLocation() != null) {
+                dateLocation.append(event.getLocation().getLatitude() + ", " + event.getLocation().getLongitude());
+                LatLng eventLocation = new LatLng(event.getLocation().getLatitude(), event.getLocation().getLongitude());
                 eventMarker.setPosition(eventLocation);
             }
 
             eventMarker.setSnippet(dateLocation.toString());
-            eventMarkers.put(newEvent.getId(), eventMarker);
+            eventMarkers.put(event.getId(), eventMarker);
 
-            Log.d(TAG, "Marker for event " + newEvent.getName() + " added");
+            Log.d(TAG, "Marker for event " + event.getName() + " added");
         }
         else {
-            Log.d(TAG, "Marker for event " + newEvent.getName() + " NOT added because a place or a coordinate has not been set");
+            Log.d(TAG, "Marker for event " + event.getName() + " NOT added because a place or a coordinate has not been set");
         }
     }
 
@@ -361,24 +366,48 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
      * Called when the UI is to be updated when an event is to be changed
      * @param id
      */
-    public void onEventLocationChanged(String id) {
+    public void onEventChanged(String id) {
         List<Event> events = appState.getCurrentCircle().getEvents();
-        Event changedEvent = null;
-        for (Event event : events) {
-            if (event.getId().equals(id)) changedEvent = event;
+        Event event = null;
+        for (Event e : events) {
+            if (e.getId().equals(id)) event = e;
         }
-        if (changedEvent == null) return;
+        if (event == null) return;
 
         Marker changedEventMarker = eventMarkers.get(id);
 
         // if null, it means that we haven't added the marker yet, which can be due to the user
         // not setting location prior to this change. We proceed to add the marker to the map.
-        if (changedEventMarker == null) {
-            addMarker(changedEvent);
+        if (event.getPlace() != null || event.getLocation() != null) {
+            if (changedEventMarker == null) {
+                addMarker(event);
+            }
+            else {
+                StringBuffer dateLocation = new StringBuffer();
+                if (event.getDateTime() != null) {
+                    dateLocation.append(formatter.print(event.getDateTime()) + "\n");
+                }
+                if (event.getPlace() != null) {
+                    staleEvents.add(event);
+                }
+                if (event.getLocation() != null) {
+                    dateLocation.append(event.getLocation().getLatitude() + ", " + event.getLocation().getLongitude());
+                    LatLng eventLocation = new LatLng(event.getLocation().getLatitude(), event.getLocation().getLongitude());
+                    changedEventMarker.setPosition(eventLocation);
+                }
+                changedEventMarker.setSnippet(dateLocation.toString());
+                changedEventMarker.hideInfoWindow();
+                changedEventMarker.showInfoWindow();
+
+                Log.d(TAG, "Marker for event " + id + " changed");
+            }
         }
         else {
-            changedEventMarker.setPosition(new LatLng(changedEvent.getLocation().getLatitude(), changedEvent.getLocation().getLongitude()));
-            Log.d(TAG, "Marker for event " + id + " changed");
+            if (changedEventMarker != null) {
+                changedEventMarker.remove();
+                eventMarkers.remove(event.getId());
+            }
+            Log.d(TAG, "Marker for event " + id + " removed because a location is not provided");
         }
     }
 
@@ -562,11 +591,10 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
                         dateLocation.append(formatter.print(event.getDateTime()) + "\n");
                     }
                     if (event.getPlace() != null) {
-                        dateLocation.append(event.getPlace());
-
                         staleEvents.add(event);
                     }
-                    else {
+                    if (event.getLocation() != null) {
+                        dateLocation.append(event.getLocation().getLatitude() + ", " + event.getLocation().getLongitude());
                         LatLng eventLocation = new LatLng(event.getLocation().getLatitude(), event.getLocation().getLongitude());
                         eventMarker.setPosition(eventLocation);
                     }
@@ -685,7 +713,6 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
                             staleEvents.remove(updatedEventIndex);
 
                         Log.d(TAG, "Place marker query succeeded for " + place.getName());
-                        Toast.makeText(getActivity(), "Event markers updated", Toast.LENGTH_SHORT).show();
                     }
 
                     places.release();

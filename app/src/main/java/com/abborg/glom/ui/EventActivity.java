@@ -11,21 +11,33 @@ import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AutoCompleteTextView;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.TimePicker;
-import android.widget.Toast;
 
 import com.abborg.glom.AppState;
 import com.abborg.glom.R;
+import com.abborg.glom.adapter.PlaceArrayAdapter;
 import com.abborg.glom.model.DataUpdater;
 import com.abborg.glom.model.Event;
 import com.abborg.glom.model.User;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.location.places.AutocompleteFilter;
+import com.google.android.gms.location.places.Place;
+import com.google.android.gms.location.places.PlaceBuffer;
+import com.google.android.gms.location.places.Places;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.maps.android.SphericalUtil;
 
 import org.joda.time.DateTime;
 import org.joda.time.Days;
@@ -69,8 +81,25 @@ public class EventActivity extends AppCompatActivity {
 
     private DateTime endDateTime;
 
+    private String place;
+
+    private Location location;
+
+    private AutoCompleteTextView locationText;
+
+    private PlaceArrayAdapter placeArrayAdapter;
+
+    /* biasing the results of autocomplete places to a specific area specified by latitude and longitude bounds */
+    private LatLngBounds autocompleteBounds;
+
+    /* containing a set of place types, which can be used to restrict the results to one or more types of place. */
+    private AutocompleteFilter autocompleteFilter;
+
     /* The received intent, this should never be null because this activity is only launched from an intent */
     private Intent intent;
+
+    /* Place API search radius */
+    private static final double PLACE_SEARCH_RADIUS = 50 * 1000;
 
     private Mode mode;
 
@@ -81,6 +110,45 @@ public class EventActivity extends AppCompatActivity {
         UPDATE_EVENT,   // this mode tells the activity on creation that all fields are retrieved from a created event and can be modified
         VIEW_EVENT      // this mode tells the activity on creation that all fields are retrieved from a created event, but cannot be modified
     }
+
+    private AdapterView.OnItemClickListener autocompleteClickListener = new AdapterView.OnItemClickListener() {
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            final PlaceArrayAdapter.PlaceAutocomplete item = placeArrayAdapter.getItem(position);
+            final String placeId = String.valueOf(item.placeId);
+            Log.d(TAG, "Selected " + item.description);
+            PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi
+                    .getPlaceById(appState.getGoogleApiClient(), placeId);
+            placeResult.setResultCallback(updatePlaceDetailsCallback);
+            Log.d(TAG, "Fetching details for ID: " + item.placeId);
+        }
+    };
+
+    private ResultCallback<PlaceBuffer> updatePlaceDetailsCallback
+            = new ResultCallback<PlaceBuffer>() {
+        @Override
+        public void onResult(PlaceBuffer places) {
+            if (!places.getStatus().isSuccess()) {
+                Log.e(TAG, "Place query did not complete. Error: " +
+                        places.getStatus().toString());
+                places.release();
+                return;
+            }
+            // Selecting the first object buffer.
+            Place googlePlace = places.get(0);
+            if (googlePlace != null) {
+                place = googlePlace.getId();
+                location = new Location("");
+                double lat = googlePlace.getLatLng().latitude;
+                double lng = googlePlace.getLatLng().longitude;
+                location.setLatitude(lat);
+                location.setLongitude(lng);
+                Log.d(TAG, "Saving place (" + place + ") with LatLng: " + lat + ", " + lng);
+            }
+
+            places.release();
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -155,6 +223,29 @@ public class EventActivity extends AppCompatActivity {
             }
         });
 
+        // set up Google Api auto-suggest places
+        locationText = (AutoCompleteTextView) findViewById(R.id.input_event_location);
+        locationText.setThreshold(3);   // user has to type at least 3 characters for place suggestions to display
+        List<User> users = appState.getCurrentCircle().getUsers();
+        Location userLocation = null;
+        for (User user : users) {
+            if (user.getId().equals(appState.getUser().getId())) {
+                userLocation = user.getLocation();
+            }
+        }
+        if (userLocation != null) {
+            LatLng latlng = new LatLng(userLocation.getLatitude(), userLocation.getLongitude());
+            autocompleteBounds = new LatLngBounds.Builder().
+                    include(SphericalUtil.computeOffset(latlng, PLACE_SEARCH_RADIUS, 0)).
+                    include(SphericalUtil.computeOffset(latlng, PLACE_SEARCH_RADIUS, 90)).
+                    include(SphericalUtil.computeOffset(latlng, PLACE_SEARCH_RADIUS, 180)).
+                    include(SphericalUtil.computeOffset(latlng, PLACE_SEARCH_RADIUS, 270)).build();
+        }
+        autocompleteFilter = null;
+        locationText.setOnItemClickListener(autocompleteClickListener);
+        placeArrayAdapter = new PlaceArrayAdapter(this, R.layout.simple_list_item, autocompleteBounds, autocompleteFilter);
+        locationText.setAdapter(placeArrayAdapter);
+
         // based on the mode we receive in the intent, we further retrieve data and fill out the fields
         if (intent.getAction().equals(getResources().getString(R.string.ACTION_CREATE_EVENT)))
             mode = Mode.CREATE_EVENT;
@@ -186,18 +277,89 @@ public class EventActivity extends AppCompatActivity {
                         getSupportActionBar().setTitle(editEvent.getName());
                         DateTimeFormatter printDateFormat = DateTimeFormat.forPattern(getResources().getString(R.string.display_date_format));
                         DateTimeFormatter printTimeFormat = DateTimeFormat.forPattern(getResources().getString(R.string.display_time_format));
+                        DateTimeFormatter dayFormat = DateTimeFormat.forPattern("EEEE");
+                        DateTime now = new DateTime();
                         String name = editEvent.getName();
                         startDateTime = editEvent.getDateTime();
                         endDateTime = editEvent.getEndTime();
+                        place = editEvent.getPlace();
+                        location = editEvent.getLocation();
 
                         nameText.setText(name);
                         if (startDateTime != null) {
-                            startDateText.setText(printDateFormat.print(startDateTime));
+                            int days = Days.daysBetween(now.withTimeAtStartOfDay(), startDateTime.withTimeAtStartOfDay()).getDays();
+                            if (days == -1) {
+                                startDateText.setText(getResources().getString(R.string.time_yesterday));
+                            }
+                            else if (days == 0) {
+                                startDateText.setText(getResources().getString(R.string.time_today));
+                            }
+                            else if (days == 1) {
+                                startDateText.setText(getResources().getString(R.string.time_tomorrow));
+                            }
+                            else if (days < 7 && days > 0) {
+                                startDateText.setText(dayFormat.print(startDateTime));
+                            }
+                            else {
+                                startDateText.setText(printDateFormat.print(startDateTime));
+                            }
+
                             startTimeText.setText(printTimeFormat.print(startDateTime));
                         }
                         if (endDateTime != null) {
-                            endDateText.setText(printDateFormat.print(endDateTime));
+                            int days = Days.daysBetween(now.withTimeAtStartOfDay(), endDateTime.withTimeAtStartOfDay()).getDays();
+                            if (days == -1) {
+                                endDateText.setText(getResources().getString(R.string.time_yesterday));
+                            }
+                            else if (days == 0) {
+                                endDateText.setText(getResources().getString(R.string.time_today));
+                            }
+                            else if (days == 1) {
+                                endDateText.setText(getResources().getString(R.string.time_tomorrow));
+                            }
+                            else if (days < 7 && days > 0) {
+                                endDateText.setText(dayFormat.print(endDateTime));
+                            }
+                            else {
+                                endDateText.setText(printDateFormat.print(endDateTime));
+                            }
+
                             endTimeText.setText(printTimeFormat.print(endDateTime));
+                        }
+
+                        if (place != null || location != null) {
+                            if (place != null) {
+                                if (location != null) {
+                                    locationText.setText(location.getLatitude() + ", " + location.getLongitude());
+                                }
+                                else {
+                                    locationText.setText(getResources().getString(R.string.notify_retrieving_place_info));
+                                }
+
+                                PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi
+                                        .getPlaceById(appState.getGoogleApiClient(), place);
+                                placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {
+                                    @Override
+                                    public void onResult(PlaceBuffer places) {
+                                        if (!places.getStatus().isSuccess()) {
+                                            Log.e(TAG, "Place query did not complete. Error: " +
+                                                    places.getStatus().toString());
+                                            places.release();
+                                            return;
+                                        }
+                                        // Selecting the first object buffer.
+                                        Place googlePlace = places.get(0);
+                                        if (googlePlace != null) {
+                                            locationText.setText(googlePlace.getName());
+                                        }
+
+                                        places.release();
+                                    }
+                                });
+                            }
+                            else {
+                                locationText.setText(location.getLatitude() + ", " + location.getLongitude());
+                            }
                         }
                     }
                 }
@@ -293,8 +455,6 @@ public class EventActivity extends AppCompatActivity {
             // verify that datetime is input correctly
             if (validateName() && validateDateTime()) {
                 User user = appState.getUser();
-                String place = null;
-                Location location = null;
                 dataUpdater.open();
 
                 if (mode.equals(Mode.CREATE_EVENT)) {
@@ -305,6 +465,16 @@ public class EventActivity extends AppCompatActivity {
                 }
                 else if (mode.equals(Mode.UPDATE_EVENT)) {
                     if (editEvent != null) {
+                        //TODO handle the case where LOCATION is custom
+                        //TODO if the user has not picked a location from a LocationPicker or selected one from auto-suggest
+                        //TODO assume that the location is custom, alert the user to create a new place,
+                        //TODO picked a location instead, or continue without map knowing the place location.
+                        if (TextUtils.isEmpty(locationText.getText())) {
+                            place = null;
+                            location = null;
+                            Log.d(TAG, "Location is empty");
+                        }
+
                         editEvent = dataUpdater.updateEvent(editEvent.getId(), appState.getCurrentCircle(), nameText.getText().toString(),
                                 new ArrayList<>(Arrays.asList(user)), startDateTime, endDateTime, place, location, Event.IN_CIRCLE,
                                 new ArrayList<User>(), true, true, true, null
@@ -439,8 +609,8 @@ public class EventActivity extends AppCompatActivity {
             DateTime now = new DateTime();
             int days = Days.daysBetween(now.withTimeAtStartOfDay(), dateTime.withTimeAtStartOfDay()).getDays();
 
-            if (days < 0) {
-                Toast.makeText(getActivity(), getResources().getString(R.string.error_past_date_selected), Toast.LENGTH_SHORT).show();
+            if (days == -1) {
+                editText.setText(getResources().getString(R.string.time_yesterday));
             }
             else if (days == 0) {
                 editText.setText(getResources().getString(R.string.time_today));
@@ -448,7 +618,7 @@ public class EventActivity extends AppCompatActivity {
             else if (days == 1) {
                 editText.setText(getResources().getString(R.string.time_tomorrow));
             }
-            else if (days < 7) {
+            else if (days < 7 && days > 0) {
                 editText.setText(dayFormat.print(dateTime));
             }
             else {
@@ -465,6 +635,10 @@ public class EventActivity extends AppCompatActivity {
         catch (SQLException ex) {
             Log.e(TAG, ex.getMessage());
         }
+
+        // make sure google api client for place api is connected
+        appState.connectGoogleApiClient();
+
         super.onResume();
     }
 

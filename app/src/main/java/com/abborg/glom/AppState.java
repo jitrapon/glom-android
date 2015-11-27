@@ -59,6 +59,9 @@ public class AppState
     /* Google Play API client */
     private GoogleApiClient apiClient;
 
+    /* Whether or not to keep Google Api connection alive */
+    private boolean keepGoogleApiAlive;
+
     /* App-wide date formatter */
     private DateTimeFormatter dateTimeFormatter;
 
@@ -139,6 +142,7 @@ public class AppState
                     .build();
         }
         if (!apiClient.isConnected()) apiClient.connect();
+        keepGoogleApiAlive = false;
 
         dateTimeFormatter = DateTimeFormat.forPattern(context.getResources().getString(R.string.action_create_event_datetime_format));
 
@@ -200,6 +204,12 @@ public class AppState
         }
         return instance;
     }
+
+    public void setKeepGoogleApiClientAlive(boolean alive) {
+        keepGoogleApiAlive = alive;
+    }
+
+    public boolean shouldKeepGoogleApiAlive() { return keepGoogleApiAlive; }
 
     public boolean verifyGooglePlayServices(Context context) {
         int resultCode = apiAvailability.isGooglePlayServicesAvailable(context);

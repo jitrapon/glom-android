@@ -28,6 +28,7 @@ import com.google.android.gms.location.places.PlaceBuffer;
 import com.google.android.gms.location.places.Places;
 
 import org.joda.time.DateTime;
+import org.joda.time.Days;
 import org.joda.time.Duration;
 import org.joda.time.Period;
 import org.joda.time.format.DateTimeFormat;
@@ -250,6 +251,7 @@ public class EventRecyclerViewAdapter
             String duration = "";
             if (event.getDateTime() != null) {
                 DateTimeFormatter formatter = DateTimeFormat.forPattern(context.getResources().getString(R.string.card_event_datetime_format));
+                DateTimeFormatter timeFormatter = DateTimeFormat.forPattern(context.getResources().getString(R.string.card_event_time_format));
                 DateTime now = new DateTime();
                 Period period = new Period(now, event.getDateTime());
 
@@ -320,7 +322,62 @@ public class EventRecyclerViewAdapter
                             context.getResources().getString(R.string.time_suffix_ago);
                 }
 
-                time = formatter.print(event.getDateTime()) + " (" + duration + ")\n";
+                String formattedStartDateTime = "";
+                String formattedEndDateTime = "";
+                int daysBetween = Days.daysBetween(now.withTimeAtStartOfDay(), event.getDateTime().withTimeAtStartOfDay()).getDays();
+                DateTimeFormatter dayWithTimeFormatter = DateTimeFormat.forPattern("EEEE, " +
+                        context.getResources().getString(R.string.card_event_time_format));
+                if (daysBetween == -1) {
+                    formattedStartDateTime = context.getResources().getString(R.string.time_yesterday)
+                            + ", " + timeFormatter.print(event.getDateTime());
+                }
+                else if (daysBetween == 0) {
+                    formattedStartDateTime = context.getResources().getString(R.string.time_today)
+                            + ", " + timeFormatter.print(event.getDateTime());
+                }
+                else if (daysBetween == 1) {
+                    formattedStartDateTime = context.getResources().getString(R.string.time_tomorrow)
+                            + ", " + timeFormatter.print(event.getDateTime());
+                }
+                else if (daysBetween < 7 && daysBetween > 0) {
+                    formattedStartDateTime = dayWithTimeFormatter.print(event.getDateTime());
+                }
+                else {
+                    formattedStartDateTime = formatter.print(event.getDateTime());
+                }
+
+                if (event.getEndTime() != null) {
+                    daysBetween = Days.daysBetween(now.withTimeAtStartOfDay(), event.getEndTime().withTimeAtStartOfDay()).getDays();
+                    int daysDuration = Days.daysBetween(event.getDateTime().withTimeAtStartOfDay(),
+                            event.getEndTime().withTimeAtStartOfDay()).getDays();
+                    if (daysDuration == 0) {
+                        formattedEndDateTime = " - " + timeFormatter.print(event.getEndTime()) + " ";
+                    }
+                    else {
+                        if (daysBetween == -1) {
+                            formattedEndDateTime = " - " + context.getResources().getString(R.string.time_yesterday)
+                                    + ", " + timeFormatter.print(event.getEndTime()) + " ";
+                        }
+                        else if (daysBetween == 0) {
+                            formattedEndDateTime = " - " + context.getResources().getString(R.string.time_today)
+                                    + ", " + timeFormatter.print(event.getEndTime()) + " ";
+                        }
+                        else if (daysBetween == 1) {
+                            formattedEndDateTime = " - " + context.getResources().getString(R.string.time_tomorrow)
+                                    + ", " + timeFormatter.print(event.getEndTime()) + " ";
+                        }
+                        else if (daysBetween < 7 && daysBetween > 0) {
+                            formattedEndDateTime = " - " + dayWithTimeFormatter.print(event.getEndTime()) + " ";
+                        }
+                        else {
+                            formattedEndDateTime = " - " + formatter.print(event.getEndTime()) + " ";
+                        }
+                    }
+                }
+
+                String durationPrefix = period.getMillis() > 0 ? context.getResources().getString(R.string.duration_incoming_prefix) :
+                        context.getResources().getString(R.string.duration_started_prefix);
+                time = formattedStartDateTime + formattedEndDateTime + " (" + durationPrefix + " " + duration + ")\n";
             }
 
             if (event.getPlace() != null) {
@@ -328,7 +385,9 @@ public class EventRecyclerViewAdapter
                 // retrieve place from its ID
                 final EventHolder viewHolder = holder;
                 final String placeTime = time;
-                String placeName = event.getPlace();
+                String placeName = event.getLocation()!=null ?
+                        event.getLocation().getLatitude() + ", " + event.getLocation().getLongitude() :
+                        context.getResources().getString(R.string.notify_retrieving_place_info);
                 GoogleApiClient apiClient = AppState.getInstance(context).getGoogleApiClient();
                 if (apiClient != null && apiClient.isConnected()) {
                     PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(apiClient, event.getPlace());

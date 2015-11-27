@@ -119,6 +119,7 @@ public class EventFragment extends Fragment implements View.OnClickListener {
             Intent intent = new Intent(activity, EventActivity.class);
             intent.putExtra(getResources().getString(R.string.EXTRA_EVENT_ID), selected.getId());
             intent.setAction(getResources().getString(R.string.ACTION_UPDATE_EVENT));
+            AppState.getInstance(getActivity()).setKeepGoogleApiClientAlive(true);
             getActivity().startActivityForResult(intent, Const.UPDATE_EVENT_RESULT_CODE);
         }
     }

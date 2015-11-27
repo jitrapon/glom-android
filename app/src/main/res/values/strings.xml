@@ -77,6 +77,7 @@
     <string name="time_unit_and_seperator">and</string>
     <string name="time_suffix_ago">ago</string>
     <string name="card_event_datetime_format">MM/dd/yyyy, h:mm aa</string>
+    <string name="card_event_time_format">h:mm aa</string>
 
     <!-- Notification messages -->
     <string name="notification_title_location_update">Message from GlomServer</string>
@@ -101,8 +102,8 @@
     <string name="create_event_title">New Event</string>
     <string name="menu_item_done">Done</string>
     <string name="hint_event_name">Name*</string>
-    <string name="hint_event_start_date">Date</string>
-    <string name="hint_event_start_time">Time</string>
+    <string name="hint_event_start_date">Start</string>
+    <string name="hint_event_start_time"></string>
     <string name="hint_event_end_datetime">End</string>
     <string name="hint_event_location">Location</string>
     <string name="display_date_format">dd MMM, yyyy</string>
@@ -110,11 +111,15 @@
     <string name="error_past_date_selected">You cannot select a date prior to today\'s date</string>
     <string name="time_today">Today</string>
     <string name="time_tomorrow">Tomorrow</string>
+    <string name="time_yesterday">Yesterday</string>
     <string name="error_event_name_empty">Enter event name</string>
+    <string name="duration_incoming_prefix">In</string>
+    <string name="duration_started_prefix">Started</string>
     <plurals name="notification_delete_item">
         <item quantity="one">Deleted $d item</item>
         <item quantity="other">Deleted $d items</item>
     </plurals>
+    <string name="notify_retrieving_place_info">Retrieving place...</string>
 
     <!-- Global menu items -->
     <string name="menu_item_delete">Delete</string>
