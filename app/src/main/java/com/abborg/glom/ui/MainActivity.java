@@ -46,8 +46,6 @@ import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.DataUpdater;
 import com.abborg.glom.model.Event;
 import com.abborg.glom.model.User;
-import com.abborg.glom.service.BaseInstanceIDListenerService;
-import com.abborg.glom.service.MessageListenerService;
 import com.abborg.glom.service.RegistrationIntentService;
 import com.abborg.glom.utils.CircleTransform;
 import com.bumptech.glide.Glide;
@@ -416,8 +414,6 @@ public class MainActivity extends AppCompatActivity
         Intent intent = new Intent(this, RegistrationIntentService.class);
         intent.putExtra(getResources().getString(R.string.EXTRA_SEND_TOKEN_USER_ID), appState.getUser().getId());
         startService(intent);
-        startService(new Intent(this, BaseInstanceIDListenerService.class));
-        startService(new Intent(this, MessageListenerService.class));
     }
 
     public void showMenuOptions(User user) {

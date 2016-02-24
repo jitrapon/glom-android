@@ -174,8 +174,8 @@ public class CirclePushService extends Service implements LocationListener,
         final Context context = this;
 
         try {
-            body.put("id", userId);
-            body.put("circle", circleId);
+            body.put("user_id", userId);
+            body.put("circle_id", circleId);
 
             JSONObject loc = new JSONObject();
             loc.put("lat", location.getLatitude());
@@ -187,7 +187,7 @@ public class CirclePushService extends Service implements LocationListener,
             Log.e(TAG, ex.getMessage());
         }
 
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, Const.HOST_ADDRESS, body,
+        JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, Const.HOST_ADDRESS + "location", body,
                 new Response.Listener<JSONObject>() {
 
                     @Override
@@ -207,7 +207,7 @@ public class CirclePushService extends Service implements LocationListener,
             @Override
             public Map<String, String> getHeaders() throws AuthFailureError {
                 HashMap<String, String> headers = new HashMap<String, String>();
-                headers.put("AUTHORIZATION", "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789");
+                headers.put("Authorization", "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789");
                 return headers;
             }
 

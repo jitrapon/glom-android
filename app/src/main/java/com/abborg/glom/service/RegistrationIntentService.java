@@ -100,7 +100,7 @@ public class RegistrationIntentService extends IntentService {
             Log.e(TAG, ex.getMessage());
         }
 
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, Const.HOST_ADDRESS, body,
+        JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, Const.HOST_ADDRESS + "checkin", body,
                 new Response.Listener<JSONObject>() {
 
                     @Override
@@ -120,7 +120,7 @@ public class RegistrationIntentService extends IntentService {
             @Override
             public Map<String, String> getHeaders() throws AuthFailureError {
                 HashMap<String, String> headers = new HashMap<String, String>();
-                headers.put("AUTHORIZATION", "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789");
+                headers.put("Authorization", "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789");
                 return headers;
             }
         };

@@ -1,11 +1,11 @@
 <resources>
     <!-- App-wide strings -->
+    <string name="google_app_id">1098468135284</string>
     <string name="app_name">Glom</string>
     <string name="PREFERENCE_FILE">com.abborg.glom.preferences</string>
     <string name="server_address">http://www.google.com</string>
     <string name="server_port">80</string>
     <string name="friends_circle_title">Friends</string>
-    <string name="friends_circle_id">friends</string>
     <string name="menu_item_search">Search</string>
     <string name="menu_item_chat">Chat</string>
     <string name="menu_item_settings">Settings</string>

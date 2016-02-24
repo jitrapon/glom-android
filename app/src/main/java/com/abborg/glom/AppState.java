@@ -73,6 +73,8 @@ public class AppState
     /* The app version code (not the name) used on the last start of the app */
     private static final String LAST_APP_VERSION = "last_app_version";
 
+    private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
+
     /**
      * Finds out started for the first time (ever or in the current version).<br/>
      * <br/>
@@ -174,7 +176,7 @@ public class AppState
                 dataUpdater.resetCircles();
                 dataUpdater.createCircle(
                         context.getResources().getString(R.string.friends_circle_title), null,
-                        context.getResources().getString(R.string.friends_circle_id)
+                        Const.TEST_CIRCLE_ID
                 );
                 break;
             default:
@@ -214,16 +216,15 @@ public class AppState
     public boolean verifyGooglePlayServices(Context context) {
         int resultCode = apiAvailability.isGooglePlayServicesAvailable(context);
         if (resultCode != ConnectionResult.SUCCESS) {
-//            if (apiAvailability.isUserResolvableError(resultCode)) {
-//                apiAvailability.getErrorDialog(activity, resultCode, PLAY_SERVICES_RESOLUTION_REQUEST)
+            if (apiAvailability.isUserResolvableError(resultCode)) {
+//                apiAvailability.getErrorDialog(this, resultCode, PLAY_SERVICES_RESOLUTION_REQUEST)
 //                        .show();
-//            } else {
+            } else {
 //                Log.i(TAG, "This device is not supported.");
-//                activity.finish();
-//            }
+//                finish();
+            }
             return false;
         }
-
         return true;
     }
 

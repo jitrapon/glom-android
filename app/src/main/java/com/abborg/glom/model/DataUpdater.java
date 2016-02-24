@@ -284,7 +284,7 @@ public class DataUpdater {
             @Override
             public Map<String, String> getHeaders() throws AuthFailureError {
                 HashMap<String, String> headers = new HashMap<String, String>();
-                headers.put("AUTHORIZATION", "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789");
+                headers.put("Authorization", "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789");
                 return headers;
             }
 
@@ -413,8 +413,8 @@ public class DataUpdater {
     }
 
     public void onLocationUpdateReceived(Bundle data) {
-        String userJson = data.getString("users");
-        String circleId = data.getString("circleId");
+        String userJson = data.getString("user_ids");
+        String circleId = data.getString("circle_id");
 
         // we first find the circle from its ID
         Cursor circleCursor = database.query(DBHelper.TABLE_CIRCLES,
@@ -441,13 +441,13 @@ public class DataUpdater {
                         location.setLongitude(locationJson.getDouble("long"));
 
                         // update user location in DB
-                        updateUserLocation(user.getString("id"), circleId, location.getLatitude(), location.getLongitude());
+                        updateUserLocation(user.getString("user_id"), circleId, location.getLatitude(), location.getLongitude());
 
-                        Log.i(TAG, "User ID: " + user.getString("id") + "\nLat: " + user.getJSONObject("location").getDouble("lat") + "\nLong: " +
+                        Log.i(TAG, "User ID: " + user.getString("user_id") + "\nLat: " + user.getJSONObject("location").getDouble("lat") + "\nLong: " +
                                 user.getJSONObject("location").getDouble("long"));
                     }
                     else {
-                        Log.e(TAG, "Received user ID of " + user.getString("id") + " does not exist in circle (" + circleId + ")");
+                        Log.e(TAG, "Received user ID of " + user.getString("user_id") + " does not exist in circle (" + circleId + ")");
                     }
 
                     userInCircleCursor.close();
@@ -712,12 +712,12 @@ public class DataUpdater {
 
                 // verify that each user in the JSON belongs to this circle
                 for (User s : circle.getUsers()) {
-                    if (user.getString("id").equals(s.getId())) {
+                    if (user.getString("user_id").equals(s.getId())) {
                         JSONObject locationJson = user.getJSONObject("location");
                         Location location = new Location("");
                         location.setLatitude(locationJson.getDouble("lat"));
                         location.setLongitude(locationJson.getDouble("long"));
-                        userList.add(new User(null, user.getString("id"), location));
+                        userList.add(new User(null, user.getString("user_id"), location));
                         s.setLocation(location);
                     }
                 }

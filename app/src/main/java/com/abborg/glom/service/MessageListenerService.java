@@ -68,8 +68,8 @@ public class MessageListenerService extends GcmListenerService {
                         appState.getDataUpdater().open();
                         appState.getDataUpdater().onLocationUpdateReceived(data);
 
-                        locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_USERS), data.getString("users"));
-                        locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_CIRCLE_ID), data.getString("circleId"));
+                        locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_USERS), data.getString("user_ids"));
+                        locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_CIRCLE_ID), data.getString("circle_id"));
                         LocalBroadcastManager.getInstance(this).sendBroadcast(locUpdateIntent);
 
                         sendNotification(message);
