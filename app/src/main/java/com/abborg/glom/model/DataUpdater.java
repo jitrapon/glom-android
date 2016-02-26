@@ -10,15 +10,10 @@ import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.abborg.glom.AppState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.utils.DBHelper;
-import com.abborg.glom.utils.RequestHandler;
-import com.android.volley.AuthFailureError;
-import com.android.volley.Request;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
 
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -28,9 +23,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Class that wraps around model to perform CRUD operations on database and 
@@ -261,49 +254,6 @@ public class DataUpdater {
         return users;
     }
 
-    public void getUserInfo(String userId, Circle circle, String field, final ResponseListener listener) {
-        String url = Const.HOST_ADDRESS;
-
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
-                new Response.Listener<JSONObject>() {
-
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        listener.onUserInfoReceived(response);
-                    }
-                },
-                new Response.ErrorListener() {
-
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        RequestHandler.getInstance(context).handleError(error);
-                    }
-                })
-
-        {
-            @Override
-            public Map<String, String> getHeaders() throws AuthFailureError {
-                HashMap<String, String> headers = new HashMap<String, String>();
-                headers.put("Authorization", "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789");
-                return headers;
-            }
-
-//            @Override
-//            protected Map<String, String> getParams() {
-//                Map<String, String> params = new HashMap<String, String>();
-//                params.put("email", "rm@test.com.br");
-//                params.put("senha", "aaa");
-//                return params;
-//            }
-        };
-
-        RequestHandler.getInstance(context).addToRequestQueue(request);
-    }
-
-    public interface ResponseListener {
-        void onUserInfoReceived(JSONObject response);
-    }
-
     private User serializeUser(Cursor cursor, Circle circle) {
         User user = new User(null, null, null);
         user.setId(cursor.getString(0));
@@ -413,8 +363,8 @@ public class DataUpdater {
     }
 
     public void onLocationUpdateReceived(Bundle data) {
-        String userJson = data.getString("user_ids");
-        String circleId = data.getString("circle_id");
+        String userJson = data.getString(Const.JSON_SERVER_USERIDS);
+        String circleId = data.getString(Const.JSON_SERVER_CIRCLEID);
 
         // we first find the circle from its ID
         Cursor circleCursor = database.query(DBHelper.TABLE_CIRCLES,
@@ -428,26 +378,27 @@ public class DataUpdater {
 
                 for (int i = 0; i < users.length(); i++) {
                     JSONObject user = users.getJSONObject(i);
+                    String userId = user.getString(Const.JSON_SERVER_USERID);
 
                     // verify that the user is in a circle and the ID is valid
                     Cursor userInCircleCursor = database.query(DBHelper.TABLE_USER_CIRCLE,
                             userCircleColumns, DBHelper.USERCIRCLE_COLUMN_CIRCLE_ID + "='" + circleId + "' AND " +
-                            DBHelper.USERCIRCLE_COLUMN_USER_ID + "='" + user.getString("id") + "'", null, null, null, null);
+                            DBHelper.USERCIRCLE_COLUMN_USER_ID + "='" + userId + "'", null, null, null, null);
 
                     if (userInCircleCursor.moveToFirst()) {
-                        JSONObject locationJson = user.getJSONObject("location");
+                        JSONObject locationJson = user.getJSONObject(Const.JSON_SERVER_LOCATION);
                         Location location = new Location("");
-                        location.setLatitude(locationJson.getDouble("lat"));
-                        location.setLongitude(locationJson.getDouble("long"));
+                        location.setLatitude(locationJson.getDouble(Const.JSON_SERVER_LOCATION_LAT));
+                        location.setLongitude(locationJson.getDouble(Const.JSON_SERVER_LOCATION_LONG));
 
                         // update user location in DB
-                        updateUserLocation(user.getString("user_id"), circleId, location.getLatitude(), location.getLongitude());
+                        updateUserLocation(userId, circleId, location.getLatitude(), location.getLongitude());
 
-                        Log.i(TAG, "User ID: " + user.getString("user_id") + "\nLat: " + user.getJSONObject("location").getDouble("lat") + "\nLong: " +
-                                user.getJSONObject("location").getDouble("long"));
+                        Log.i(TAG, "User ID: " + userId + "\nLat: " + locationJson.getDouble(Const.JSON_SERVER_LOCATION_LAT) + "\nLong: " +
+                                locationJson.getDouble(Const.JSON_SERVER_LOCATION_LONG));
                     }
                     else {
-                        Log.e(TAG, "Received user ID of " + user.getString("user_id") + " does not exist in circle (" + circleId + ")");
+                        Log.e(TAG, "Received user ID of " + userId + " does not exist in circle (" + circleId + ")");
                     }
 
                     userInCircleCursor.close();
@@ -711,13 +662,19 @@ public class DataUpdater {
                 JSONObject user = users.getJSONObject(i);
 
                 // verify that each user in the JSON belongs to this circle
+                // don't update if it's the user's own location
                 for (User s : circle.getUsers()) {
-                    if (user.getString("user_id").equals(s.getId())) {
-                        JSONObject locationJson = user.getJSONObject("location");
+                    String userId = user.getString(Const.JSON_SERVER_USERID);
+                    if (userId.equals(AppState.getInstance(context).getUser().getId())) {
+                        Log.d(TAG, "Skipping updating user's own location");
+                        continue;
+                    }
+                    if (userId.equals(s.getId())) {
+                        JSONObject locationJson = user.getJSONObject(Const.JSON_SERVER_LOCATION);
                         Location location = new Location("");
-                        location.setLatitude(locationJson.getDouble("lat"));
-                        location.setLongitude(locationJson.getDouble("long"));
-                        userList.add(new User(null, user.getString("user_id"), location));
+                        location.setLatitude(locationJson.getDouble(Const.JSON_SERVER_LOCATION_LAT));
+                        location.setLongitude(locationJson.getDouble(Const.JSON_SERVER_LOCATION_LONG));
+                        userList.add(new User(null, userId, location));
                         s.setLocation(location);
                     }
                 }

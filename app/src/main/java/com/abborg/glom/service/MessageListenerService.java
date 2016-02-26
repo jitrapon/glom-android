@@ -39,8 +39,9 @@ public class MessageListenerService extends GcmListenerService {
     // [START receive_message]
     @Override
     public void onMessageReceived(String from, Bundle data) {
-        String message = data.getString("message");
-        Log.i(TAG, "Message: " + message);
+        Log.d(TAG, "Data received: " + data);
+        String message = data.getString(Const.JSON_SERVER_MESSAGE);
+        Log.d(TAG, "Message: " + message);
 
         // [START_EXCLUDE]
         /**
@@ -49,7 +50,7 @@ public class MessageListenerService extends GcmListenerService {
          *     - Store message in local database.
          *     - Update UI.
          */
-        String opCodeString = data.getString("op");
+        String opCodeString = data.getString(Const.JSON_SERVER_OP);
         if (opCodeString != null) {
             try {
                 int opCode = Integer.parseInt(opCodeString);
@@ -68,8 +69,8 @@ public class MessageListenerService extends GcmListenerService {
                         appState.getDataUpdater().open();
                         appState.getDataUpdater().onLocationUpdateReceived(data);
 
-                        locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_USERS), data.getString("user_ids"));
-                        locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_CIRCLE_ID), data.getString("circle_id"));
+                        locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_USERS), data.getString(Const.JSON_SERVER_USERIDS));
+                        locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_CIRCLE_ID), data.getString(Const.JSON_SERVER_CIRCLEID));
                         LocalBroadcastManager.getInstance(this).sendBroadcast(locUpdateIntent);
 
                         sendNotification(message);

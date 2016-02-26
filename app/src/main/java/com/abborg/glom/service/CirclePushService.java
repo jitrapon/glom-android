@@ -20,11 +20,8 @@ import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.ui.MainActivity;
 import com.abborg.glom.utils.RequestHandler;
-import com.android.volley.AuthFailureError;
-import com.android.volley.Request;
-import com.android.volley.Response;
+import com.abborg.glom.utils.ResponseListener;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -37,8 +34,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * This service handles sending background push message to the server
@@ -164,63 +159,49 @@ public class CirclePushService extends Service implements LocationListener,
     }
 
     /**
+     * POST /location
      * Sends location update to the server
-     *
-     * @param location
      */
     private void sendLocationUpdateRequest(String circleId, Location location) {
-        // initialize the body
         JSONObject body =  new JSONObject();
-        final Context context = this;
+        final Context ctx = this;
 
         try {
-            body.put("user_id", userId);
-            body.put("circle_id", circleId);
+            body.put(Const.JSON_SERVER_USERID, userId);
+            body.put(Const.JSON_SERVER_CIRCLEID, circleId);
 
             JSONObject loc = new JSONObject();
-            loc.put("lat", location.getLatitude());
-            loc.put("long", location.getLongitude());
+            loc.put(Const.JSON_SERVER_LOCATION_LAT, location.getLatitude());
+            loc.put(Const.JSON_SERVER_LOCATION_LONG, location.getLongitude());
 
-            body.put("location", loc);
+            body.put(Const.JSON_SERVER_LOCATION, loc);
         }
         catch (JSONException ex) {
             Log.e(TAG, ex.getMessage());
         }
 
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, Const.HOST_ADDRESS + "location", body,
-                new Response.Listener<JSONObject>() {
-
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        RequestHandler.getInstance(context).handleResponse(context, response);
-                    }
-                },
-                new Response.ErrorListener() {
-
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        RequestHandler.getInstance(context).handleError(error);
-                    }
-                })
-
-        {
+        RequestHandler.getInstance(ctx).post("Update Location", Const.API_LOCATION, body, new ResponseListener() {
             @Override
-            public Map<String, String> getHeaders() throws AuthFailureError {
-                HashMap<String, String> headers = new HashMap<String, String>();
-                headers.put("Authorization", "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789");
-                return headers;
+            public void onSuccess(JSONObject response) {
+                if (response != null) {
+                    try {
+                        String message = response.getString(Const.JSON_SERVER_MESSAGE);
+                        if (message != null && getApplicationContext() != null)
+                            Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
+                    }
+                    catch (JSONException ex) {
+                        Log.e(TAG, ex.getMessage());
+                        if (getApplicationContext() != null)
+                            Toast.makeText(getApplicationContext(), ex.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                }
             }
 
-//            @Override
-//            protected Map<String, String> getParams() {
-//                Map<String, String> params = new HashMap<String, String>();
-//                params.put("email", "rm@test.com.br");
-//                params.put("senha", "aaa");
-//                return params;
-//            }
-        };
-
-        RequestHandler.getInstance(this).addToRequestQueue(request);
+            @Override
+            public void onError(VolleyError error) {
+                RequestHandler.getInstance(ctx).handleError(error);
+            }
+        });
     }
 
     private void showNotification() {

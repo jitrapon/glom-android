@@ -6,15 +6,13 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.utils.RequestHandler;
-import com.android.volley.AuthFailureError;
-import com.android.volley.Request;
-import com.android.volley.Response;
+import com.abborg.glom.utils.ResponseListener;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
 import com.google.android.gms.gcm.GcmPubSub;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 import com.google.android.gms.iid.InstanceID;
@@ -23,8 +21,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Created by Boat on 13/9/58.
@@ -79,6 +75,7 @@ public class RegistrationIntentService extends IntentService {
     }
 
     /**
+     * POST /checkin
      * Persist registration to third-party servers.
      *
      * Modify this method to associate the user's GCM registration token with any server-side account
@@ -87,45 +84,42 @@ public class RegistrationIntentService extends IntentService {
      * @param token The new token.
      */
     private void sendRegistrationToServer(String token, String userId) {
-        // initialize the body
         JSONObject body =  new JSONObject();
 
-        final IntentService self = this;
-
         try {
-            body.put("gcm_token", token);
-            body.put("user_id", userId);
+            body.put(Const.JSON_SERVER_GCM_TOKEN, token);
+            body.put(Const.JSON_SERVER_USERID, userId);
         }
         catch (JSONException ex) {
             Log.e(TAG, ex.getMessage());
         }
 
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, Const.HOST_ADDRESS + "checkin", body,
-                new Response.Listener<JSONObject>() {
-
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        RequestHandler.getInstance(self).handleResponse(self, response);
-                    }
-                },
-                new Response.ErrorListener() {
-
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        RequestHandler.getInstance(self).handleError(error);
-                    }
-                })
-
-        {
+        final IntentService ctx = this;
+        RequestHandler.getInstance(ctx).post("Check In", Const.API_CHECKIN, body, new ResponseListener() {
             @Override
-            public Map<String, String> getHeaders() throws AuthFailureError {
-                HashMap<String, String> headers = new HashMap<String, String>();
-                headers.put("Authorization", "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789");
-                return headers;
+            public void onSuccess(JSONObject response) {
+                if (response != null) {
+                    try {
+                        if (response.has(Const.JSON_SERVER_MESSAGE)) {
+                            String message = response.getString(Const.JSON_SERVER_MESSAGE);
+                            if (message != null && getApplicationContext() != null)
+                                Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
+                        }
+                    }
+                    catch (JSONException ex) {
+                        Log.e(TAG, ex.getMessage());
+                        ex.printStackTrace();
+                        if (getApplicationContext() != null)
+                            Toast.makeText(getApplicationContext(), ex.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                }
             }
-        };
 
-        RequestHandler.getInstance(this).addToRequestQueue(request);
+            @Override
+            public void onError(VolleyError error) {
+                RequestHandler.getInstance(ctx).handleError(error);
+            }
+        });
     }
 
     /**
