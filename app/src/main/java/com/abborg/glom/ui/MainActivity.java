@@ -10,6 +10,8 @@ import android.content.IntentFilter;
 import android.database.SQLException;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -43,6 +45,7 @@ import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.adapter.EventRecyclerViewAdapter;
 import com.abborg.glom.model.Circle;
+import com.abborg.glom.model.CircleInfo;
 import com.abborg.glom.model.DataUpdater;
 import com.abborg.glom.model.Event;
 import com.abborg.glom.model.User;
@@ -54,8 +57,6 @@ import com.google.gson.Gson;
 import com.oguzdev.circularfloatingactionmenu.library.FloatingActionMenu;
 import com.oguzdev.circularfloatingactionmenu.library.SubActionButton;
 
-import net.danlew.android.joda.JodaTimeAndroid;
-
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 
@@ -64,7 +65,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity
-        implements DrawerFragment.FragmentDrawerListener, EventRecyclerViewAdapter.OnEventChangedListener {
+        implements DrawerFragment.FragmentDrawerListener, EventRecyclerViewAdapter.OnEventChangedListener, Handler.Callback {
 
     private Toolbar toolbar;
 
@@ -120,6 +121,8 @@ public class MainActivity extends AppCompatActivity
 
     FrameLayout.LayoutParams blueContentParams;
 
+    private Handler handler;
+
     /**
      * TODO set default state for DEMO purposes
      */
@@ -127,15 +130,14 @@ public class MainActivity extends AppCompatActivity
         // initialize app state
         appState = AppState.getInstance(this);
         dataUpdater = appState.getDataUpdater();
+        dataUpdater.setHandler(handler);
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // It's important to initialize the ResourceZoneInfoProvider; otherwise
-        // joda-time-android will not work.
-        JodaTimeAndroid.init(this);
+        handler = new Handler(this);
 
         loadData();
 
@@ -679,6 +681,22 @@ public class MainActivity extends AppCompatActivity
         viewPager.setAdapter(adapter);
     }
 
+    @Override
+    public boolean handleMessage(Message msg) {
+        switch (msg.what) {
+            case Const.MSG_GET_USERS:
+                Circle circle = appState.getCurrentCircle();
+                getSupportActionBar().setTitle(circle.getTitle() + " (" + circle.getUsers().size() + ")");
+                CircleFragment circleFragment = (CircleFragment) adapter.getItem(0);
+                circleFragment.update();
+                LocationFragment mapFragment = (LocationFragment) adapter.getItem(1);
+                mapFragment.updateUserMarkers(circle.getUsers());
+                break;
+        }
+
+        return false;
+    }
+
     class ViewPagerAdapter extends FragmentPagerAdapter {
         private final List<Fragment> mFragmentList = new ArrayList<>();
         private final List<String> mFragmentTitleList = new ArrayList<>();
@@ -738,12 +756,10 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    //TODO load everything from SQLite
     public void onDrawerItemSelected(View view, int position) {
-        TextView textView = (TextView) view.findViewById(R.id.circleTitle);
-        String displayTitle = textView.getText().toString();
-        displayTitle = displayTitle.substring(0, displayTitle.indexOf('(')).trim();
-        Circle selected = dataUpdater.getCircleByName(displayTitle);
+        List<CircleInfo> circles = appState.getCircleInfo();
+        CircleInfo c = circles.get(position);
+        Circle selected = dataUpdater.getCircleById(c.id);
 
         if (selected != null) {
             //TODO save date to SQLITE for this circle

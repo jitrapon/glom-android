@@ -8,12 +8,17 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.abborg.glom.AppState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.utils.DBHelper;
+import com.abborg.glom.utils.RequestHandler;
+import com.abborg.glom.utils.ResponseListener;
+import com.android.volley.VolleyError;
 
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -55,6 +60,8 @@ public class DataUpdater {
 
     private Context context;
 
+    private Handler handler;
+
     /**
      * Creates a new instance of the DataUpdater
      * Call set
@@ -64,6 +71,10 @@ public class DataUpdater {
     public DataUpdater(Context context) {
         this.context = context;
         dbHelper = new DBHelper(context);
+    }
+
+    public void setHandler(Handler handler) {
+        this.handler = handler;
     }
 
     /**
@@ -113,7 +124,7 @@ public class DataUpdater {
      * @param id
      * @return
      */
-    public User initCurrentUser(String id) {
+    public User getCurrentUser(String id) {
         User user = null;
         Cursor cursor = database.query(DBHelper.TABLE_USERS, null, DBHelper.USER_COLUMN_ID + " = '" + id + "'", null, null, null ,null);
         if (cursor.moveToFirst()) {
@@ -153,8 +164,8 @@ public class DataUpdater {
             values.put(DBHelper.CIRCLE_COLUMN_ID, circle.getId());
             values.put(DBHelper.CIRCLE_COLUMN_NAME, circle.getTitle());
             long insertId = database.insert(DBHelper.TABLE_CIRCLES, null, values);
-//            Log.d(TAG, "Inserted circle with _id: " + insertId + ", id: " + circle.getId() + ", name: " +
-//                    circle.getTitle() + ", userlist: " + circle.getUserListString());
+            Log.d(TAG, "Inserted circle with _id: " + insertId + ", id: " + circle.getId() + ", name: " +
+                    circle.getTitle() + ", userlist: " + circle.getUserListString());
 
             for (User user : circle.getUsers()) {
                 user.setCurrentCircle(circle);
@@ -165,7 +176,7 @@ public class DataUpdater {
                 values.put(DBHelper.USER_COLUMN_NAME, user.getName());
                 values.put(DBHelper.USER_COLUMN_AVATAR_ID, user.getAvatar());
                 insertId = database.insert(DBHelper.TABLE_USERS, null, values);
-//                Log.d(TAG, "Inserted user with _id: " +  insertId + ", id: " + user.getId() + " into " + DBHelper.TABLE_USERS);
+                Log.d(TAG, "Inserted user with _id: " +  insertId + ", id: " + user.getId() + " into " + DBHelper.TABLE_USERS);
 
                 // insert the user-circle association into the USERCIRCLE table (record is unique per association)
                 values.clear();
@@ -174,7 +185,8 @@ public class DataUpdater {
                 values.put(DBHelper.USERCIRCLE_COLUMN_LATITUDE, user.getLocation().getLatitude());
                 values.put(DBHelper.USERCIRCLE_COLUMN_LONGITUDE, user.getLocation().getLongitude());
                 insertId = database.insert(DBHelper.TABLE_USER_CIRCLE, null, values);
-//                Log.d(TAG, "Inserted user with _id: " + insertId + ", userId: " + user.getId() + ", circleId: " + circle.getId() + " into " + DBHelper.TABLE_USER_CIRCLE);
+                Log.d(TAG, "Inserted user with _id: " + insertId + ", userId: " + user.getId()
+                        + ", circleId: " + circle.getId() + " into " + DBHelper.TABLE_USER_CIRCLE);
             }
 
             database.setTransactionSuccessful();
@@ -227,7 +239,7 @@ public class DataUpdater {
      * @param circle
      * @return
      */
-    public List<User> getUsersInCircle(Circle circle) {
+    public List<User> getUsersInCircle(final Circle circle) {
         List<User> users = new ArrayList<User>();
 
         // get the user info from USERS table and the user location from USERCIRCLE table
@@ -249,7 +261,55 @@ public class DataUpdater {
         }
         userCursor.close();
 
-        //TODO sync with server to make sure the circle is updated
+        // sync with server to make sure the circle is updated
+        RequestHandler.getInstance(context).get("Get Users", String.format(Const.API_GET_USERS, circle.getId()),
+                new ResponseListener() {
+                    @Override
+                    public void onSuccess(JSONObject response) {
+                        try {
+                            if (response != null) {
+                                JSONArray users = response.getJSONArray(Const.JSON_SERVER_USERS);
+                                Toast.makeText(context, "Found " + users.length() + " user(s)", Toast.LENGTH_SHORT).show();
+
+                                for (int i = 0; i < users.length(); i++) {
+                                    JSONObject json = users.getJSONObject(i);
+                                    String id = json.getString(Const.JSON_SERVER_USERID);
+                                    String name = json.getString(Const.JSON_SERVER_USERNAME);
+                                    String avatar = json.getString(Const.JSON_SERVER_USER_AVATAR);
+                                    User user = circle.getUser(id);
+                                    if (user != null) {
+                                        user.setId(id);
+                                        user.setName(name);
+                                        user.setAvatar(avatar);
+                                    }
+                                    else {
+                                        Location location = new Location("");
+                                        location.setLatitude(Const.TEST_USER_LAT);
+                                        location.setLongitude(Const.TEST_USER_LONG);
+                                        user = new User(name, id, location);
+                                        user.setAvatar(avatar);
+                                        circle.addUser(user);
+
+                                        Log.d(TAG, "Added new user " + user.getId());
+
+                                        if (handler != null) {
+                                            handler.sendEmptyMessage(Const.MSG_GET_USERS);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ex) {
+                            ex.printStackTrace();
+                            Log.e(TAG, ex.getMessage());
+                        }
+                    }
+
+                    @Override
+                    public void onError(VolleyError error) {
+                        RequestHandler.getInstance(context).handleError(error);
+                    }
+                });
 
         return users;
     }
@@ -293,22 +353,6 @@ public class DataUpdater {
         return user;
     }
 
-    public List<Circle> getCircles() {
-        List<Circle> circles = new ArrayList<Circle>();
-
-        Cursor cursor = database.query(DBHelper.TABLE_CIRCLES,
-                circleColumns, null, null, null, null, null);
-
-        cursor.moveToFirst();
-        while (!cursor.isAfterLast()) {
-            Circle circle = serializeCircle(cursor);
-            circles.add(circle);
-            cursor.moveToNext();
-        }
-        cursor.close();
-        return circles;
-    }
-
     public List<CircleInfo> getCirclesInfo() {
         List<CircleInfo> circleInfo = new ArrayList<>();
 
@@ -327,9 +371,10 @@ public class DataUpdater {
 
     private CircleInfo serializeCircleInfo(Cursor cursor) {
         CircleInfo info = new CircleInfo();
+        info.id = cursor.getString(0);
         info.title = cursor.getString(1);
 
-        Cursor userListCursor = database.query(DBHelper.TABLE_USER_CIRCLE, userCircleColumns, DBHelper.USERCIRCLE_COLUMN_CIRCLE_ID + "='" + cursor.getString(0) + "'",
+        Cursor userListCursor = database.query(DBHelper.TABLE_USER_CIRCLE, userCircleColumns, DBHelper.USERCIRCLE_COLUMN_CIRCLE_ID + "='" + info.id + "'",
                 null, null, null, null);
         Log.e(TAG, info.title);
         info.numUsers = userListCursor.getCount();
@@ -337,20 +382,19 @@ public class DataUpdater {
         return info;
     }
 
-    public Circle getCircleByName(String name) {
+    public Circle getCircleById(String id) {
+        Circle circle = null;
         Cursor cursor = database.query(DBHelper.TABLE_CIRCLES,
-                circleColumns, DBHelper.CIRCLE_COLUMN_NAME + "='" + name + "'", null, null, null, null);
+                circleColumns, DBHelper.CIRCLE_COLUMN_ID + "='" + id + "'", null, null, null, null);
 
         if (cursor.moveToFirst()) {
-            Circle circle = serializeCircle(cursor);
+            circle = serializeCircle(cursor);
             cursor.close();
             Log.d(TAG, "Get circle (" + circle.getTitle() + ") with " + circle.getUsers().size() + " users, isBroadcastingLocation: " +
-                circle.isUserBroadcastingLocation());
-            return circle;
+                    circle.isUserBroadcastingLocation());
         }
-        else {
-            return null;
-        }
+
+        return circle;
     }
 
     public void updateCircleLocationBroadcast(Circle circle, boolean enabled) {
@@ -379,6 +423,7 @@ public class DataUpdater {
                 for (int i = 0; i < users.length(); i++) {
                     JSONObject user = users.getJSONObject(i);
                     String userId = user.getString(Const.JSON_SERVER_USERID);
+                    if (userId.equals(AppState.getInstance(context).getUser().getId())) continue;
 
                     // verify that the user is in a circle and the ID is valid
                     Cursor userInCircleCursor = database.query(DBHelper.TABLE_USER_CIRCLE,

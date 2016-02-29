@@ -6,7 +6,7 @@ package com.abborg.glom;
 public class Const {
 
 //    public static final String HOST_ADDRESS = "http://putsreq.com/KJVQCdWbHg0xXf2aHWf1";
-    public static final String HOST_ADDRESS = "http://10.11.3.202:8080";
+    public static String HOST_ADDRESS = "http://192.168.1.40:8080";
     public static final String SENT_TOKEN_TO_SERVER = "sentTokenToServer";
     public static final String REGISTRATION_COMPLETE = "registrationComplete";
 
@@ -24,7 +24,7 @@ public class Const {
     public static final String TEST_API_AUTHORIZATION_HEADER = "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789";
 
     public static final String TEST_USER_NAME_2 = "Nad";
-    public static final String TEST_USER_ID_2 = "sunadda_nv";
+    public static final String TEST_USER_ID_2 = "fatcat18";
     public static final String TEST_CIRCLE_ID_2 = "dev-test-circle-1";
     public static final double TEST_USER_LAT_2 = 1.3385674;
     public static final double TEST_USER_LONG_2 = 103.7059549;
@@ -48,9 +48,12 @@ public class Const {
     public static final String API_AUTHORIZATION_HEADER = "Authorization";
     public static final String API_CHECKIN = "/checkin";
     public static final String API_LOCATION = "/location";
+    public static final String API_GET_USERS = "/circle/%s/users";
 
     public static final String JSON_SERVER_MESSAGE = "message";
     public static final String JSON_SERVER_USERID = "user_id";
+    public static final String JSON_SERVER_USERNAME = "user_name";
+    public static final String JSON_SERVER_USER_AVATAR = "avatar";
     public static final String JSON_SERVER_USERIDS = "user_ids";
     public static final String JSON_SERVER_CIRCLEID = "circle_id";
     public static final String JSON_SERVER_GCM_TOKEN = "gcm_token";
@@ -58,4 +61,7 @@ public class Const {
     public static final String JSON_SERVER_LOCATION_LAT = "lat";
     public static final String JSON_SERVER_LOCATION_LONG = "long";
     public static final String JSON_SERVER_OP = "op";
+    public static final String JSON_SERVER_USERS = "users";
+
+    public static final int MSG_GET_USERS = 5000;
 }

@@ -19,6 +19,8 @@ import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.places.Places;
 
+import net.danlew.android.joda.JodaTimeAndroid;
+
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
@@ -126,10 +128,13 @@ public class AppState
 
     /**
      * This ctor supposedly is initialized once
-     * @param context
      */
-    private AppState(Context context) {
-        this.context = context;
+    private AppState(Context ctx) {
+        context = ctx;
+
+        // It's important to initialize the ResourceZoneInfoProvider; otherwise
+        // joda-time-android will not work.
+        JodaTimeAndroid.init(context);
 
         // make sure the phone has installed required Google Play Services version
         // if it's available, connect to Google API services
@@ -152,11 +157,11 @@ public class AppState
         // if user is not there, TODO sign in again
         dataUpdater = new DataUpdater(context);
         dataUpdater.open();
-        user = dataUpdater.initCurrentUser(Const.TEST_USER_ID);
+        user = dataUpdater.getCurrentUser(Const.TEST_USER_ID);
         if (user == null) {
             //TODO SIGN IN
-            user = createUser(Const.TEST_USER_NAME, Const.TEST_USER_ID, Const.TEST_USER_AVATAR, Const.TEST_USER_LAT, Const.TEST_USER_LONG);
-//            user = createUser(Const.TEST_USER_NAME_2, Const.TEST_USER_ID_2, Const.TEST_USER_AVATAR_2 Const.TEST_USER_LAT_2, Const.TEST_USER_LONG_2);
+//            user = createUser(Const.TEST_USER_NAME, Const.TEST_USER_ID, Const.TEST_USER_AVATAR, Const.TEST_USER_LAT, Const.TEST_USER_LONG);
+            user = createUser(Const.TEST_USER_NAME_2, Const.TEST_USER_ID_2, Const.TEST_USER_AVATAR_2, Const.TEST_USER_LAT_2, Const.TEST_USER_LONG_2);
         }
         dataUpdater.setCurrentUser(user);
 
@@ -185,7 +190,7 @@ public class AppState
         }
 
         circles = dataUpdater.getCirclesInfo();
-        currentCircle = dataUpdater.getCircleByName(context.getResources().getString(R.string.friends_circle_title));
+        currentCircle = dataUpdater.getCircleById(Const.TEST_CIRCLE_ID);
     }
 
     public DateTimeFormatter getDateTimeFormatter() {
