@@ -1,4 +1,4 @@
-package com.abborg.glom.ui;
+package com.abborg.glom.fragments;
 
 import android.app.Activity;
 import android.content.Context;
@@ -18,8 +18,10 @@ import android.widget.Toast;
 
 import com.abborg.glom.AppState;
 import com.abborg.glom.R;
-import com.abborg.glom.adapter.UserAvatarAdapter;
-import com.abborg.glom.model.DataUpdater;
+import com.abborg.glom.activities.MainActivity;
+import com.abborg.glom.adapters.UserAvatarAdapter;
+import com.abborg.glom.data.DataUpdater;
+import com.abborg.glom.interfaces.BroadcastLocationListener;
 import com.abborg.glom.model.User;
 import com.abborg.glom.service.CirclePushService;
 import com.abborg.glom.utils.LayoutUtils;
@@ -115,7 +117,7 @@ public class CircleFragment extends Fragment {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 User user = appState.getCurrentCircle().getUsers().get(position);
                 if (activity != null && activity instanceof MainActivity)
-                    ((MainActivity) activity).showMenuOptions(user);
+                    ((MainActivity) activity).showRadialMenuOptions(user);
             }
         });
 
@@ -191,19 +193,13 @@ public class CircleFragment extends Fragment {
         }
     }
 
-    private void setOnBroadcastLocationListener(boolean enabled, OnBroadcastLocationListener listener) {
+    private void setOnBroadcastLocationListener(boolean enabled, BroadcastLocationListener listener) {
         if (listener != null) {
             if (enabled)
                 listener.onBroadcastLocationEnabled();
             else
                 listener.onBroadcastLocationDisabled();
         }
-    }
-
-    public interface OnBroadcastLocationListener {
-        void onBroadcastLocationEnabled();
-
-        void onBroadcastLocationDisabled();
     }
 
     private void setAvatarBroadcastingAnimation(boolean isBroadcasting) {

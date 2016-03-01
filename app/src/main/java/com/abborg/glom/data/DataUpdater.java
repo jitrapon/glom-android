@@ -1,4 +1,4 @@
-package com.abborg.glom.model;
+package com.abborg.glom.data;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -15,9 +15,13 @@ import android.widget.Toast;
 import com.abborg.glom.AppState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
-import com.abborg.glom.utils.DBHelper;
+import com.abborg.glom.model.Circle;
+import com.abborg.glom.model.CircleInfo;
+import com.abborg.glom.model.Event;
+import com.abborg.glom.model.FeedAction;
+import com.abborg.glom.model.User;
 import com.abborg.glom.utils.RequestHandler;
-import com.abborg.glom.utils.ResponseListener;
+import com.abborg.glom.interfaces.ResponseListener;
 import com.android.volley.VolleyError;
 
 import org.joda.time.DateTime;
@@ -33,9 +37,6 @@ import java.util.List;
 /**
  * Class that wraps around model to perform CRUD operations on database and 
  * make necessary network operations
- *
- * Most operation functions in this class will call runOnUiThread() to ease off operations
- * off the main thread for optimization
  *
  * Created by Boat on 22/9/58.
  */
@@ -62,12 +63,6 @@ public class DataUpdater {
 
     private Handler handler;
 
-    /**
-     * Creates a new instance of the DataUpdater
-     * Call set
-     *
-     * @param context
-     */
     public DataUpdater(Context context) {
         this.context = context;
         dbHelper = new DBHelper(context);
@@ -77,26 +72,14 @@ public class DataUpdater {
         this.handler = handler;
     }
 
-    /**
-     * Call this method to start performing operations to the database
-     * //TODO don't call this on main thread
-     *
-     * @throws SQLException
-     */
     public void open() throws SQLException {
         database = dbHelper.getWritableDatabase();
     }
 
-    /**
-     * Close operation on the database
-     */
     public void close() {
         dbHelper.close();
     }
 
-    /**
-     * Deletes all record from all table in order to start fresh. The method does re-create the table however
-     */
     public void resetCircles() {
         try {
             database.beginTransaction();
@@ -118,12 +101,6 @@ public class DataUpdater {
         }
     }
 
-    /**
-     * Retrieves main user from DB. The user is a generic instance whose location and circle may not be set.
-     * TODO may need to check from server to sync info.
-     * @param id
-     * @return
-     */
     public User getCurrentUser(String id) {
         User user = null;
         Cursor cursor = database.query(DBHelper.TABLE_USERS, null, DBHelper.USER_COLUMN_ID + " = '" + id + "'", null, null, null ,null);
@@ -143,14 +120,6 @@ public class DataUpdater {
         this.currentUser = user;
     }
 
-    /**
-     * Creates a new circle, with the current user, and the specified users in it.
-     *
-     * @param name The name or title of the circle to create with
-     * @param users The list of users to add at the time of creation along with current user
-     * @param id The id of this circle. Leave null to randomly generate one
-     * @return The created circle
-     */
     public Circle createCircle(String name, List<User> users, String id) {
         Circle circle = Circle.createCircle(name, currentUser);
         if (id != null) circle.setId(id);
@@ -203,12 +172,6 @@ public class DataUpdater {
         return circle;
     }
 
-    /**
-     * Delete the circle and remove all association of users within this circle
-     * TODO
-     *
-     * @param circle
-     */
     public void deleteCircle(Circle circle) {
         String id = circle.getId();
         database.delete(DBHelper.TABLE_CIRCLES, DBHelper.CIRCLE_COLUMN_ID + " = " + id, null);
@@ -216,29 +179,10 @@ public class DataUpdater {
         //TODO send request to GCM and server to delete group
     }
 
-    /**
-     * TODO
-     *
-     * @param circle
-     * @param users
-     */
     public Circle addUsersToCircle(Circle circle, List<User> users) { return null; }
 
-    /**
-     * TODO
-     *
-     * @param circle
-     * @param users
-     * @return
-     */
     public Circle removeUsersFromCircle(Circle circle, List<User> users) { return null; }
 
-    /**
-     * Retrieves the list of users in the specified circle
-     *
-     * @param circle
-     * @return
-     */
     public List<User> getUsersInCircle(final Circle circle) {
         List<User> users = new ArrayList<User>();
 
@@ -278,16 +222,24 @@ public class DataUpdater {
                                     String avatar = json.getString(Const.JSON_SERVER_USER_AVATAR);
                                     User user = circle.getUser(id);
                                     if (user != null) {
+                                        if (user.getId().equals(AppState.getInstance(context).getUser().getId())) {
+                                            AppState.getInstance(context).getUser().setId(id);
+                                            AppState.getInstance(context).getUser().setName(name);
+                                            AppState.getInstance(context).getUser().setAvatar(avatar);
+                                        }
+
                                         user.setId(id);
                                         user.setName(name);
-                                        user.setAvatar(avatar);
+                                        if (user.getAvatar() == null || !user.getAvatar().equals(avatar))
+                                            user.setAvatar(avatar);
                                     }
                                     else {
                                         Location location = new Location("");
                                         location.setLatitude(Const.TEST_USER_LAT);
                                         location.setLongitude(Const.TEST_USER_LONG);
                                         user = new User(name, id, location);
-                                        user.setAvatar(avatar);
+                                        if (user.getAvatar() == null || !user.getAvatar().equals(avatar))
+                                            user.setAvatar(avatar);
                                         circle.addUser(user);
 
                                         Log.d(TAG, "Added new user " + user.getId());

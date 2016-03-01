@@ -1,4 +1,4 @@
-package com.abborg.glom.ui;
+package com.abborg.glom.fragments;
 
 
 import android.app.Activity;
@@ -17,8 +17,10 @@ import android.view.animation.OvershootInterpolator;
 import com.abborg.glom.AppState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
-import com.abborg.glom.adapter.EventRecyclerViewAdapter;
-import com.abborg.glom.model.DataUpdater;
+import com.abborg.glom.activities.EventActivity;
+import com.abborg.glom.activities.MainActivity;
+import com.abborg.glom.adapters.EventRecyclerViewAdapter;
+import com.abborg.glom.data.DataUpdater;
 import com.abborg.glom.model.Event;
 
 import java.util.List;

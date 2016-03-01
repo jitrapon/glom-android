@@ -1,4 +1,4 @@
-package com.abborg.glom.ui;
+package com.abborg.glom.activities;
 
 import android.app.DatePickerDialog;
 import android.app.Dialog;
@@ -25,8 +25,8 @@ import android.widget.TimePicker;
 
 import com.abborg.glom.AppState;
 import com.abborg.glom.R;
-import com.abborg.glom.adapter.PlaceArrayAdapter;
-import com.abborg.glom.model.DataUpdater;
+import com.abborg.glom.adapters.PlaceArrayAdapter;
+import com.abborg.glom.data.DataUpdater;
 import com.abborg.glom.model.Event;
 import com.abborg.glom.model.User;
 import com.google.android.gms.common.api.PendingResult;

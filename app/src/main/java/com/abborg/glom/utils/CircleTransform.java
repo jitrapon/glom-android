@@ -9,9 +9,6 @@ import android.graphics.Paint;
 import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool;
 import com.bumptech.glide.load.resource.bitmap.BitmapTransformation;
 
-/**
- * Created by Boat on 17/9/58.
- */
 public class CircleTransform extends BitmapTransformation {
 
     public CircleTransform(Context context) {

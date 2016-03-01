@@ -1,8 +1,6 @@
-package com.abborg.glom.ui;
+package com.abborg.glom.activities;
 
 import android.app.Activity;
-import android.app.ActivityManager;
-import android.app.ActivityManager.RunningServiceInfo;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -43,17 +41,21 @@ import android.widget.Toast;
 import com.abborg.glom.AppState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
-import com.abborg.glom.adapter.EventRecyclerViewAdapter;
+import com.abborg.glom.adapters.EventRecyclerViewAdapter;
+import com.abborg.glom.data.DataUpdater;
+import com.abborg.glom.fragments.CircleFragment;
+import com.abborg.glom.fragments.DiscoverFragment;
+import com.abborg.glom.fragments.DrawerFragment;
+import com.abborg.glom.fragments.EventFragment;
+import com.abborg.glom.fragments.LocationFragment;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CircleInfo;
-import com.abborg.glom.model.DataUpdater;
 import com.abborg.glom.model.Event;
 import com.abborg.glom.model.User;
 import com.abborg.glom.service.RegistrationIntentService;
 import com.abborg.glom.utils.CircleTransform;
 import com.bumptech.glide.Glide;
 import com.flipboard.bottomsheet.BottomSheetLayout;
-import com.google.gson.Gson;
 import com.oguzdev.circularfloatingactionmenu.library.FloatingActionMenu;
 import com.oguzdev.circularfloatingactionmenu.library.SubActionButton;
 
@@ -67,71 +69,54 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity
         implements DrawerFragment.FragmentDrawerListener, EventRecyclerViewAdapter.OnEventChangedListener, Handler.Callback {
 
-    private Toolbar toolbar;
+    protected static final String TAG = "MainActivity";
 
-    private TabLayout tabLayout;
+    /**
+     * The global class at the application context level
+     */
+    private AppState appState;
 
-    private ViewPager viewPager;
-
+    /**
+     * Abstracts data management via SQLite and network operations
+     */
     public DataUpdater dataUpdater;
 
+    /**
+     * A receiver for incoming location updates and other various GCM push updates
+     */
+    private BroadcastReceiver broadcastReceiver;
+
+    /**
+     * Adapter for the tab view
+     */
+    private ViewPagerAdapter adapter;
+
+    /**
+     * Handler that indicates when asynchronous events are completed to update UI
+     */
+    private Handler handler;
+
+    // UI elements
+    private TabLayout tabLayout;
     private int[] tabIcons = {
             R.drawable.ic_tab_circle,
             R.drawable.ic_tab_location,
             R.drawable.ic_tab_event,
             R.drawable.ic_tab_discover
     };
-
-    private AppState appState;
-
-    private BroadcastReceiver broadcastReceiver;
-
-    private static final String TAG = "MainActivity";
-
-    /* GSON java-to-JSON converter */
-    private Gson gson;
-
-    private ViewPagerAdapter adapter;
-
-    private DrawerFragment drawerFragment;
-
     private BottomSheetLayout bottomSheet;
-
     private View broadcastLocationSheetLayout;
-
     private SwitchCompat broadcastLocationToggle;
-
-    private android.support.design.widget.FloatingActionButton fab;
-
     private CoordinatorLayout mainCoordinatorLayout;
-
-    FloatingActionMenu avatarActionMenu;
-
-    Animation fadeInAnim;
-
-    Animation fadeOutAnim;
-
-    RelativeLayout overlayLayout;
-
-    ImageView menuOverlay;
-
-    ImageView avatarIcon;
-
-    SubActionButton.Builder lCSubBuilder;
-
-    FrameLayout.LayoutParams blueContentParams;
-
-    private Handler handler;
-
-    /**
-     * TODO set default state for DEMO purposes
-     */
-    private void loadData() {
-        // initialize app state
-        appState = AppState.getInstance(this);
-        dataUpdater = appState.getDataUpdater();
-        dataUpdater.setHandler(handler);
-    }
+    private FloatingActionMenu avatarActionMenu;
+    private Animation fadeInAnim;
+    private Animation fadeOutAnim;
+    private RelativeLayout overlayLayout;
+    private ImageView menuOverlay;
+    private ImageView avatarIcon;
+    private SubActionButton.Builder lCSubBuilder;
+    private FrameLayout.LayoutParams blueContentParams;
+    private boolean isRadialMenuOptionsOpening;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -145,14 +130,14 @@ public class MainActivity extends AppCompatActivity
 
         mainCoordinatorLayout = (CoordinatorLayout) findViewById(R.id.parentView);
 
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setTitle(appState.getCurrentCircle().getTitle() + " (" + appState.getCurrentCircle().getUsers().size() + ")");
 //        getSupportActionBar().setDisplayShowHomeEnabled(true);
 
-        viewPager = (ViewPager) findViewById(R.id.viewpager);
+        ViewPager viewPager = (ViewPager) findViewById(R.id.viewpager);
         setupViewPager(viewPager);
 
         tabLayout = (TabLayout) findViewById(R.id.tabs);
@@ -161,7 +146,7 @@ public class MainActivity extends AppCompatActivity
         setupTabIcons();
 
         // set up the navigation drawer
-        drawerFragment = (DrawerFragment)
+        DrawerFragment drawerFragment = (DrawerFragment)
                 getSupportFragmentManager().findFragmentById(R.id.fragment_navigation_drawer);
         drawerFragment.setUp(R.id.fragment_navigation_drawer, (DrawerLayout) findViewById(R.id.drawer_layout), toolbar);
         drawerFragment.setDrawerListener(this);
@@ -317,7 +302,7 @@ public class MainActivity extends AppCompatActivity
         };
 
         // set up FAB
-        fab = (FloatingActionButton) findViewById(R.id.fab);
+        android.support.design.widget.FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
 
             @Override
@@ -333,13 +318,13 @@ public class MainActivity extends AppCompatActivity
                 }
 
                 if (circleFragment != null && circleFragment.isFragmentVisible) {
-                    showMenuOptions(currentUser);
+                    showRadialMenuOptions(currentUser);
                 }
                 else if (mapFragment != null && mapFragment.isFragmentVisible) {
                     Toast.makeText(getApplicationContext(), "Map fragment action button clicked", Toast.LENGTH_SHORT).show();
                 }
                 else if (eventFragment != null && eventFragment.isFragmentVisible) {
-                    showMenuOptions(currentUser);
+                    showRadialMenuOptions(currentUser);
                 }
             }
         });
@@ -362,14 +347,6 @@ public class MainActivity extends AppCompatActivity
                 getResources().getDimensionPixelSize(R.dimen.avatar_menu_size));
         avatarIconParams.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
         avatarIcon.setLayoutParams(avatarIconParams);
-//        avatarIcon.setOnClickListener(new View.OnClickListener() {
-//
-//            @Override
-//            public void onClick(View v) {
-//                //TODO show user profile activity
-//                Log.d(TAG, "Clicked avatar icon");
-//            }
-//        });
 
         // add fade-in / fade-out animation when visibilty changes
         fadeInAnim = AnimationUtils.loadAnimation(this, android.R.anim.fade_in);
@@ -381,7 +358,7 @@ public class MainActivity extends AppCompatActivity
 
             @Override
             public void onClick(View v) {
-                hideMenuOverlay(true);
+                if (!isRadialMenuOptionsOpening) hideMenuOverlay(true);
             }
         });
 
@@ -410,15 +387,19 @@ public class MainActivity extends AppCompatActivity
         FrameLayout.LayoutParams blueParams = new FrameLayout.LayoutParams(blueSubActionButtonSize, blueSubActionButtonSize);
         lCSubBuilder.setLayoutParams(blueParams);
 
-        gson = new Gson();
-
         // start IntentService to register this application with GCM
         Intent intent = new Intent(this, RegistrationIntentService.class);
         intent.putExtra(getResources().getString(R.string.EXTRA_SEND_TOKEN_USER_ID), appState.getUser().getId());
         startService(intent);
     }
 
-    public void showMenuOptions(User user) {
+    private void loadData() {
+        appState = AppState.getInstance(this);
+        dataUpdater = appState.getDataUpdater();
+        dataUpdater.setHandler(handler);
+    }
+
+    public void showRadialMenuOptions(User user) {
         showMenuOverlay(true);
 
         // load the avatar picture
@@ -434,6 +415,14 @@ public class MainActivity extends AppCompatActivity
 
         // load the menu based on user permission list
         avatarActionMenu = setupAvatarOptionMenu(this, lCSubBuilder, blueContentParams, user, avatarIcon);
+        handler.postDelayed(new Runnable() {
+
+            @Override
+            public void run() {
+                if (!avatarActionMenu.isOpen())
+                    avatarActionMenu.open(true);
+            }
+        }, 50);
     }
 
     private SubActionButton setIconFromPermission(final Activity activity, SubActionButton.Builder builder,
@@ -547,12 +536,18 @@ public class MainActivity extends AppCompatActivity
         menuBuilder.setStateChangeListener(new FloatingActionMenu.MenuStateChangeListener() {
             @Override
             public void onMenuOpened(FloatingActionMenu floatingActionMenu) {
-                Log.d(TAG, "Menu is opened");
+                isRadialMenuOptionsOpening = true;
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        isRadialMenuOptionsOpening = false;
+                    }
+                }, 700);
             }
 
             @Override
             public void onMenuClosed(FloatingActionMenu floatingActionMenu) {
-                Log.d(TAG, "Menu is closed");
+                isRadialMenuOptionsOpening = false;
             }
         });
 
@@ -651,19 +646,6 @@ public class MainActivity extends AppCompatActivity
     protected void onPause() {
         super.onPause();
     }
-
-
-
-    private boolean isServiceRunning(Class<?> serviceClass) {
-        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        for (RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
 
     private void setupTabIcons() {
         tabLayout.getTabAt(0).setIcon(tabIcons[0]);
@@ -788,16 +770,13 @@ public class MainActivity extends AppCompatActivity
         broadcastLocationToggle.setChecked(appState.getCurrentCircle().isUserBroadcastingLocation());
 
         // only update the locations when the map is visible
-        LocationFragment mapFragment = (LocationFragment) adapter.getItem(1);
-        mapFragment.update(true);    //TODO this needs to be retrieved from SQLite
+        getMapFragment().update(true);
 
         // refresh the circle fragment
-        CircleFragment circleFragment = (CircleFragment) adapter.getItem(0);
-        circleFragment.update();
+        getCircleFragment().update();
 
         // refresh the event lists
-        EventFragment eventFragment = (EventFragment) adapter.getItem(2);
-        eventFragment.update();
+        getEventFragment().update();
     }
 
     @Override

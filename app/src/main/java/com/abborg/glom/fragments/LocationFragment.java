@@ -1,4 +1,4 @@
-package com.abborg.glom.ui;
+package com.abborg.glom.fragments;
 
 
 import android.animation.Animator;
@@ -31,6 +31,8 @@ import android.widget.TextView;
 import com.abborg.glom.AppState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
+import com.abborg.glom.activities.EventActivity;
+import com.abborg.glom.interfaces.BroadcastLocationListener;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.Event;
 import com.abborg.glom.model.User;
@@ -69,7 +71,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class LocationFragment extends SupportMapFragment implements OnMapReadyCallback, CircleFragment.OnBroadcastLocationListener {
+public class LocationFragment extends SupportMapFragment implements OnMapReadyCallback, BroadcastLocationListener {
     
     /* Might be null if Google Play services APK is not available. */
     private GoogleMap googleMap;
@@ -756,6 +758,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
                         userMarkerAvatar.setImageBitmap(bitmap);
                         Bitmap userMarker = createDrawableFromView(userMarkerView);
                         marker.setIcon(BitmapDescriptorFactory.fromBitmap(userMarker));
+                        Log.d(TAG, "Set icon for marker " + marker.getId());
                     }
                 });
     }

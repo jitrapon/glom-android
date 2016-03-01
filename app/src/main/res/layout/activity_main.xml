@@ -22,7 +22,7 @@
             android:paddingRight="0dp"
             android:paddingTop="0dp"
             android:paddingBottom="0dp"
-            tools:context="com.abborg.glom.ui.MainActivity">
+            tools:context=".activities.MainActivity">
 
             <android.support.design.widget.AppBarLayout
                 android:layout_width="match_parent"
@@ -65,7 +65,7 @@
 
         <fragment
             android:id="@+id/fragment_navigation_drawer"
-            android:name="com.abborg.glom.ui.DrawerFragment"
+            android:name="com.abborg.glom.fragments.DrawerFragment"
             android:layout_width="@dimen/nav_drawer_width"
             android:layout_height="match_parent"
             android:layout_gravity="start"

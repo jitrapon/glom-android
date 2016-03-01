@@ -16,6 +16,7 @@
         android:layout_marginLeft="@dimen/marker_margin"
         android:layout_marginTop="@dimen/marker_margin"
         android:layout_gravity="center"
+        android:src="@drawable/ic_profile"
         android:scaleType="fitXY"/>
 
 </RelativeLayout>

@@ -1,4 +1,4 @@
-package com.abborg.glom.utils;
+package com.abborg.glom.data;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;

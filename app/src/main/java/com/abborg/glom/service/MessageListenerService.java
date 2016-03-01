@@ -14,7 +14,7 @@ import android.util.Log;
 import com.abborg.glom.AppState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
-import com.abborg.glom.ui.MainActivity;
+import com.abborg.glom.activities.MainActivity;
 import com.google.android.gms.gcm.GcmListenerService;
 
 /**

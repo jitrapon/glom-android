@@ -1,4 +1,4 @@
-package com.abborg.glom.adapter;
+package com.abborg.glom.adapters;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -17,7 +17,6 @@ import com.abborg.glom.AppState;
 import com.abborg.glom.R;
 import com.abborg.glom.model.Event;
 import com.abborg.glom.model.FeedAction;
-import com.abborg.glom.ui.RecyclerHeaderViewHolder;
 import com.abborg.glom.utils.CircleTransform;
 import com.bumptech.glide.Glide;
 import com.google.android.gms.common.api.GoogleApiClient;

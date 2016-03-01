@@ -7,9 +7,6 @@ import com.bumptech.glide.GlideBuilder;
 import com.bumptech.glide.load.DecodeFormat;
 import com.bumptech.glide.module.GlideModule;
 
-/**
- * Created by Boat on 29/9/58.
- */
 public class GlideConfiguration implements GlideModule {
 
     @Override

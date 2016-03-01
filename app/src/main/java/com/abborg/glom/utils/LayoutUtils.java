@@ -3,9 +3,6 @@ package com.abborg.glom.utils;
 import android.content.Context;
 import android.util.DisplayMetrics;
 
-/**
- * Created by Boat on 30/9/58.
- */
 public class LayoutUtils {
 
     public static int dpToPx(Context context, float dp) {

@@ -12,7 +12,7 @@ import android.widget.Toast;
 
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CircleInfo;
-import com.abborg.glom.model.DataUpdater;
+import com.abborg.glom.data.DataUpdater;
 import com.abborg.glom.model.User;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -126,11 +126,8 @@ public class AppState
         }
     }
 
-    /**
-     * This ctor supposedly is initialized once
-     */
     private AppState(Context ctx) {
-        context = ctx;
+        context = ctx.getApplicationContext();
 
         // It's important to initialize the ResourceZoneInfoProvider; otherwise
         // joda-time-android will not work.
@@ -160,8 +157,8 @@ public class AppState
         user = dataUpdater.getCurrentUser(Const.TEST_USER_ID);
         if (user == null) {
             //TODO SIGN IN
-//            user = createUser(Const.TEST_USER_NAME, Const.TEST_USER_ID, Const.TEST_USER_AVATAR, Const.TEST_USER_LAT, Const.TEST_USER_LONG);
-            user = createUser(Const.TEST_USER_NAME_2, Const.TEST_USER_ID_2, Const.TEST_USER_AVATAR_2, Const.TEST_USER_LAT_2, Const.TEST_USER_LONG_2);
+            user = createUser(Const.TEST_USER_NAME, Const.TEST_USER_ID, Const.TEST_USER_AVATAR, Const.TEST_USER_LAT, Const.TEST_USER_LONG);
+//            user = createUser(Const.TEST_USER_NAME_2, Const.TEST_USER_ID_2, Const.TEST_USER_AVATAR_2, Const.TEST_USER_LAT_2, Const.TEST_USER_LONG_2);
         }
         dataUpdater.setCurrentUser(user);
 

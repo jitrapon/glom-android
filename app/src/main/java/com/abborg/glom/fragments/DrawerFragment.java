@@ -1,4 +1,4 @@
-package com.abborg.glom.ui;
+package com.abborg.glom.fragments;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -16,15 +16,13 @@ import android.view.ViewGroup;
 
 import com.abborg.glom.AppState;
 import com.abborg.glom.R;
-import com.abborg.glom.adapter.NavigationDrawerAdapter;
+import com.abborg.glom.adapters.NavigationDrawerAdapter;
+import com.abborg.glom.interfaces.ClickListener;
 import com.abborg.glom.model.CircleInfo;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class DrawerFragment extends Fragment {
 
     private static String TAG = DrawerFragment.class.getSimpleName();
@@ -125,12 +123,6 @@ public class DrawerFragment extends Fragment {
 
     }
 
-    public static interface ClickListener {
-        public void onClick(View view, int position);
-
-        public void onLongClick(View view, int position);
-    }
-
     static class RecyclerTouchListener implements RecyclerView.OnItemTouchListener {
 
         private GestureDetector gestureDetector;
@@ -177,6 +169,6 @@ public class DrawerFragment extends Fragment {
     }
 
     public interface FragmentDrawerListener {
-        public void onDrawerItemSelected(View view, int position);
+        void onDrawerItemSelected(View view, int position);
     }
 }

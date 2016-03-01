@@ -1,4 +1,4 @@
-package com.abborg.glom.ui;
+package com.abborg.glom.fragments;
 
 
 import android.os.Bundle;
