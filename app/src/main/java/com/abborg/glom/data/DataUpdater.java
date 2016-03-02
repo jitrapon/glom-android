@@ -42,13 +42,13 @@ import java.util.List;
  */
 public class DataUpdater {
 
-    private User currentUser;
+    private static final String TAG = "DATA PROVIDER";
+
+    private User activeUser;
 
     private SQLiteDatabase database;
     
     private DBHelper dbHelper;
-
-    private static final String TAG = "DATA PROVIDER";
     
     private String[] circleColumns = { DBHelper.CIRCLE_COLUMN_ID,
             DBHelper.CIRCLE_COLUMN_NAME, DBHelper.CIRCLE_COLUMN_BROADCAST_LOCATION };
@@ -101,7 +101,7 @@ public class DataUpdater {
         }
     }
 
-    public User getCurrentUser(String id) {
+    public User getActiveUser(String id) {
         User user = null;
         Cursor cursor = database.query(DBHelper.TABLE_USERS, null, DBHelper.USER_COLUMN_ID + " = '" + id + "'", null, null, null ,null);
         if (cursor.moveToFirst()) {
@@ -110,18 +110,28 @@ public class DataUpdater {
             String avatar = cursor.getString(cursor.getColumnIndex(DBHelper.USER_COLUMN_AVATAR_ID));
             user = new User(name, userId, null);
             user.setAvatar(avatar);
+
+            List<Integer> userPerm = new ArrayList<>();
+            userPerm.add(User.MEDIA_IMAGE_RECEIVE);
+            userPerm.add(User.MEDIA_AUDIO_RECEIVE);
+            userPerm.add(User.MEDIA_VIDEO_RECEIVE);
+            userPerm.add(User.ALARM_RECEIVE);
+            userPerm.add(User.NOTE_RECEIVE);
+            userPerm.add(User.LOCATION_REQUEST_RECEIVE);
+            userPerm.add(User.CREATE_EVENT);
+            user.setUserPermission(userPerm);
         }
         cursor.close();
 
         return user;
     }
 
-    public void setCurrentUser(User user) {
-        this.currentUser = user;
+    public void setActiveUser(User user) {
+        activeUser = user;
     }
 
     public Circle createCircle(String name, List<User> users, String id) {
-        Circle circle = Circle.createCircle(name, currentUser);
+        Circle circle = Circle.createCircle(name, activeUser);
         if (id != null) circle.setId(id);
         if (users != null && !users.isEmpty()) circle.addUsers(users);
 
@@ -222,12 +232,11 @@ public class DataUpdater {
                                     String avatar = json.getString(Const.JSON_SERVER_USER_AVATAR);
                                     User user = circle.getUser(id);
                                     if (user != null) {
-                                        if (user.getId().equals(AppState.getInstance(context).getUser().getId())) {
-                                            AppState.getInstance(context).getUser().setId(id);
-                                            AppState.getInstance(context).getUser().setName(name);
-                                            AppState.getInstance(context).getUser().setAvatar(avatar);
+                                        if (user.getId().equals(AppState.getInstance(context).getActiveUser().getId())) {
+                                            AppState.getInstance(context).getActiveUser().setId(id);
+                                            AppState.getInstance(context).getActiveUser().setName(name);
+                                            AppState.getInstance(context).getActiveUser().setAvatar(avatar);
                                         }
-
                                         user.setId(id);
                                         user.setName(name);
                                         if (user.getAvatar() == null || !user.getAvatar().equals(avatar))
@@ -278,14 +287,14 @@ public class DataUpdater {
         user.setLocation(location);
 
         //TODO set all user permission to receive everything
-        List<Integer> userPerm = new ArrayList<Integer>();
+        List<Integer> userPerm = new ArrayList<>();
         userPerm.add(User.MEDIA_IMAGE_RECEIVE);
         userPerm.add(User.MEDIA_AUDIO_RECEIVE);
         userPerm.add(User.MEDIA_VIDEO_RECEIVE);
         userPerm.add(User.ALARM_RECEIVE);
         userPerm.add(User.NOTE_RECEIVE);
         userPerm.add(User.LOCATION_REQUEST_RECEIVE);
-        if (currentUser.getId().equals(user.getId())) {
+        if (activeUser.getId().equals(user.getId())) {
             userPerm.add(User.CREATE_EVENT);
 //            userPerm.add(User.CREATE_TODO);
 //             userPerm.add(User.CREATE_CALENDAR);
@@ -375,7 +384,7 @@ public class DataUpdater {
                 for (int i = 0; i < users.length(); i++) {
                     JSONObject user = users.getJSONObject(i);
                     String userId = user.getString(Const.JSON_SERVER_USERID);
-                    if (userId.equals(AppState.getInstance(context).getUser().getId())) continue;
+                    if (userId.equals(AppState.getInstance(context).getActiveUser().getId())) continue;
 
                     // verify that the user is in a circle and the ID is valid
                     Cursor userInCircleCursor = database.query(DBHelper.TABLE_USER_CIRCLE,
@@ -415,7 +424,7 @@ public class DataUpdater {
     }
 
     private Circle serializeCircle(Cursor cursor) {
-        Circle circle = Circle.createCircle(null, currentUser);
+        Circle circle = Circle.createCircle(null, activeUser);
         circle.setId(cursor.getString(0));
         circle.setTitle(cursor.getString(1));
         circle.setBroadcastingLocation((cursor.getInt(cursor.getColumnIndex(DBHelper.CIRCLE_COLUMN_BROADCAST_LOCATION)) == 1));
@@ -450,7 +459,7 @@ public class DataUpdater {
 
         //TODO retrieve last action and action timestamp from server
         //TODO for now hardcode this
-        event.setLastAction(new FeedAction(FeedAction.CREATE_EVENT, currentUser, new DateTime()));
+        event.setLastAction(new FeedAction(FeedAction.CREATE_EVENT, activeUser, new DateTime()));
         circle.addEvent(event);     // this add event to the circle, automatically updating the recyclerview adapter
 
         database.beginTransaction();
@@ -511,7 +520,7 @@ public class DataUpdater {
         if (updatedEvent != null) {
             //TODO retrieve last action and action timestamp from server
             //TODO for now hardcode this
-            updatedEvent.setLastAction(new FeedAction(FeedAction.UPDATE_EVENT, currentUser, new DateTime()));
+            updatedEvent.setLastAction(new FeedAction(FeedAction.UPDATE_EVENT, activeUser, new DateTime()));
             updatedEvent.setName(newName);
             updatedEvent.setHosts(newHosts);
             updatedEvent.setDateTime(newStartTime);
@@ -602,7 +611,7 @@ public class DataUpdater {
 
             //TODO retrieve last action and action timestamp from server
             //TODO for now hardcode this
-            event.setLastAction(new FeedAction(FeedAction.CREATE_EVENT, currentUser, postTime));
+            event.setLastAction(new FeedAction(FeedAction.CREATE_EVENT, activeUser, postTime));
             events.add(event);
             cursor.moveToNext();
         }
@@ -662,7 +671,7 @@ public class DataUpdater {
                 // don't update if it's the user's own location
                 for (User s : circle.getUsers()) {
                     String userId = user.getString(Const.JSON_SERVER_USERID);
-                    if (userId.equals(AppState.getInstance(context).getUser().getId())) {
+                    if (userId.equals(AppState.getInstance(context).getActiveUser().getId())) {
                         Log.d(TAG, "Skipping updating user's own location");
                         continue;
                     }

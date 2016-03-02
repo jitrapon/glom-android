@@ -33,6 +33,7 @@ import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.activities.EventActivity;
 import com.abborg.glom.interfaces.BroadcastLocationListener;
+import com.abborg.glom.interfaces.EventChangeListener;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.Event;
 import com.abborg.glom.model.User;
@@ -71,7 +72,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class LocationFragment extends SupportMapFragment implements OnMapReadyCallback, BroadcastLocationListener {
+public class LocationFragment extends SupportMapFragment implements OnMapReadyCallback, BroadcastLocationListener,
+        EventChangeListener {
     
     /* Might be null if Google Play services APK is not available. */
     private GoogleMap googleMap;
@@ -215,9 +217,9 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
 
             updateMarkersInfo();
 
-            if (userMarkers != null && broadcastCircle == null && appState.getCurrentCircle().isUserBroadcastingLocation()) {
-                Marker userMarker = userMarkers.get(appState.getUser().getId());
-                if (userMarker != null && appState.getCurrentCircle().isUserBroadcastingLocation()) {
+            if (userMarkers != null && broadcastCircle == null && appState.getActiveCircle().isUserBroadcastingLocation()) {
+                Marker userMarker = userMarkers.get(appState.getActiveUser().getId());
+                if (userMarker != null && appState.getActiveCircle().isUserBroadcastingLocation()) {
                     addBroadcastLocationCircle(userMarker);
                 }
             }
@@ -318,12 +320,9 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         update(false);
     }
 
-    /**
-     * Called when the UI is to be updated when an event is added
-     * @param id
-     */
+    @Override
     public void onEventAdded(String id) {
-        List<Event> events = appState.getCurrentCircle().getEvents();
+        List<Event> events = appState.getActiveCircle().getEvents();
         Event newEvent = null;
         for (Event event : events) {
             if (event.getId().equals(id)) newEvent = event;
@@ -333,43 +332,9 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         addMarker(newEvent);
     }
 
-    private void addMarker(Event event) {
-        if (event.getLocation() != null || event.getPlace() != null) {
-            MarkerOptions options = new MarkerOptions()
-                    .title(event.getName())
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_meetup))
-                    .position(new LatLng(0, 0));
-            Marker eventMarker = googleMap.addMarker(options);
-
-            StringBuffer dateLocation = new StringBuffer();
-            if (event.getDateTime() != null) {
-                dateLocation.append(formatter.print(event.getDateTime()) + "\n");
-            }
-            if (event.getPlace() != null) {
-                staleEvents.add(event);
-            }
-            if (event.getLocation() != null) {
-                dateLocation.append(event.getLocation().getLatitude() + ", " + event.getLocation().getLongitude());
-                LatLng eventLocation = new LatLng(event.getLocation().getLatitude(), event.getLocation().getLongitude());
-                eventMarker.setPosition(eventLocation);
-            }
-
-            eventMarker.setSnippet(dateLocation.toString());
-            eventMarkers.put(event.getId(), eventMarker);
-
-            Log.d(TAG, "Marker for event " + event.getName() + " added");
-        }
-        else {
-            Log.d(TAG, "Marker for event " + event.getName() + " NOT added because a place or a coordinate has not been set");
-        }
-    }
-
-    /**
-     * Called when the UI is to be updated when an event is to be changed
-     * @param id
-     */
-    public void onEventChanged(String id) {
-        List<Event> events = appState.getCurrentCircle().getEvents();
+    @Override
+    public void onEventModified(String id) {
+        List<Event> events = appState.getActiveCircle().getEvents();
         Event event = null;
         for (Event e : events) {
             if (e.getId().equals(id)) event = e;
@@ -413,10 +378,8 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         }
     }
 
-    /**
-     * Called when the UI is to be updated when an event is to be removed
-     */
-    public void onEventRemoved(String id) {
+    @Override
+    public void onEventDeleted(String id) {
         Marker removedEventMarker = eventMarkers.get(id);
         if (removedEventMarker == null) return;
         else {
@@ -426,6 +389,36 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         Log.d(TAG, "Marker for event " + id + " removed");
     }
 
+    private void addMarker(Event event) {
+        if (event.getLocation() != null || event.getPlace() != null) {
+            MarkerOptions options = new MarkerOptions()
+                    .title(event.getName())
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_meetup))
+                    .position(new LatLng(0, 0));
+            Marker eventMarker = googleMap.addMarker(options);
+
+            StringBuffer dateLocation = new StringBuffer();
+            if (event.getDateTime() != null) {
+                dateLocation.append(formatter.print(event.getDateTime()) + "\n");
+            }
+            if (event.getPlace() != null) {
+                staleEvents.add(event);
+            }
+            if (event.getLocation() != null) {
+                dateLocation.append(event.getLocation().getLatitude() + ", " + event.getLocation().getLongitude());
+                LatLng eventLocation = new LatLng(event.getLocation().getLatitude(), event.getLocation().getLongitude());
+                eventMarker.setPosition(eventLocation);
+            }
+
+            eventMarker.setSnippet(dateLocation.toString());
+            eventMarkers.put(event.getId(), eventMarker);
+
+            Log.d(TAG, "Marker for event " + event.getName() + " added");
+        }
+        else {
+            Log.d(TAG, "Marker for event " + event.getName() + " NOT added because a place or a coordinate has not been set");
+        }
+    }
 
     /**
      * Called when the UI is to be updated when broadcasting location is enabled
@@ -435,8 +428,8 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         Log.d(TAG, "Broadcast location is enabled");
 
         if (userMarkers != null && broadcastCircle == null) {
-            Marker userMarker = userMarkers.get(appState.getUser().getId());
-            if (userMarker != null && appState.getCurrentCircle().isUserBroadcastingLocation()) {
+            Marker userMarker = userMarkers.get(appState.getActiveUser().getId());
+            if (userMarker != null && appState.getActiveCircle().isUserBroadcastingLocation()) {
                 addBroadcastLocationCircle(userMarker);
             }
         }
@@ -529,21 +522,21 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
             Marker marker = null;
 
             // initialize other markers in the circle
-            Circle circle = appState.getCurrentCircle();
+            Circle circle = appState.getActiveCircle();
             for (User user : circle.getUsers()) {
 
                 // for current user
-                if ( user.getId().equals(appState.getUser().getId()) ) {
+                if ( user.getId().equals(appState.getActiveUser().getId()) ) {
                     options = new MarkerOptions()
                             .title(user.getId())
                             .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_red))
                             .position(new LatLng(user.getLocation().getLatitude(), user.getLocation().getLongitude()));
                     marker = googleMap.addMarker(options);
-                    setUserMarkerIconAvatar(appState.getUser().getAvatar(), marker, "red");
+                    setUserMarkerIconAvatar(appState.getActiveUser().getAvatar(), marker, "red");
                     marker.showInfoWindow();
 
                     // if the user is currently broadcasting location, animate circle around the marker
-                    if (appState.getCurrentCircle().isUserBroadcastingLocation()) {
+                    if (appState.getActiveCircle().isUserBroadcastingLocation()) {
                         if (broadcastCircle == null) {
                             addBroadcastLocationCircle(marker);
                         }
@@ -609,7 +602,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
             // center the camera around the built boundary of markers
             // if there is only one user in the circle, zoom instead
             if (userMarkers.size() == 1) {
-                marker = userMarkers.get(appState.getUser().getId());
+                marker = userMarkers.get(appState.getActiveUser().getId());
                 googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(marker.getPosition(), CAMERA_ZOOM_LEVEL));
             }
             else {
@@ -661,7 +654,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
 
             @Override
             public void onAnimationEnd(Animator animation) {
-                if (appState.getCurrentCircle().isUserBroadcastingLocation()) {
+                if (appState.getActiveCircle().isUserBroadcastingLocation()) {
                     animator.setIntValues(0, Math.round(CIRCLE_TO_MAP_RATIO * visibleMapRadius));
                     animator.setStartDelay(1000);
                     animator.start();
@@ -785,7 +778,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         // TODO marker snippet shows options of time-since-last-update, status message, nearby-place, time-to-destination (ongoing events)
         // show nearby-place for this user
         if (true) {
-            if (userMarkers.get(appState.getUser().getId()).getId().equals(marker.getId())) {
+            if (userMarkers.get(appState.getActiveUser().getId()).getId().equals(marker.getId())) {
                 GoogleApiClient apiClient = AppState.getInstance(getContext()).getGoogleApiClient();
                 if (apiClient != null && apiClient.isConnected()) {
                     PendingResult<PlaceLikelihoodBuffer> placeResult = Places.PlaceDetectionApi.getCurrentPlace(apiClient, null);
@@ -820,7 +813,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         else if (false) {
             // find the user
             User markerUser = null;
-            for (User user : appState.getCurrentCircle().getUsers()) {
+            for (User user : appState.getActiveCircle().getUsers()) {
                 if (userMarkers.get(user.getId()).getId().equals(marker.getId()))
                    markerUser = user;
             }
@@ -870,7 +863,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
                 LatLng latLng = new LatLng(currentLatitude, currentLongitude);
 
                 // update broadcast circle location if this is the current user
-                if (id.equals(appState.getUser().getId()) && broadcastCircle != null) {
+                if (id.equals(appState.getActiveUser().getId()) && broadcastCircle != null) {
                     broadcastCircle.setCenter(latLng);
                 }
 
@@ -897,7 +890,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
             // animate the camera to center around all markers
             // if there is only one then zoom instead
             Log.d(TAG, "Total user markers in the map is " + userMarkers.size());
-            Marker userMarker = userMarkers.get(appState.getUser().getId());
+            Marker userMarker = userMarkers.get(appState.getActiveUser().getId());
             if (userMarkers.size() == 1) {
                 googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(userMarker.getPosition(), CAMERA_ZOOM_LEVEL));
             }

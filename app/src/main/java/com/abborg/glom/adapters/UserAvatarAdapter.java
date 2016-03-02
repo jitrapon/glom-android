@@ -139,8 +139,8 @@ public class UserAvatarAdapter extends BaseAdapter {
 
         // start any animation regarding the user state
         AppState appState = AppState.getInstance(context);
-        if (user.getId().equals(appState.getUser().getId())) {
-            setUserIsBroadcastingLocation(convertView, appState.getCurrentCircle().isUserBroadcastingLocation());
+        if (user.getId().equals(appState.getActiveUser().getId())) {
+            setUserIsBroadcastingLocation(convertView, appState.getActiveCircle().isUserBroadcastingLocation());
         }
 
         return convertView;

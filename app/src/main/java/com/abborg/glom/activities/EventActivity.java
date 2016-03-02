@@ -226,10 +226,10 @@ public class EventActivity extends AppCompatActivity {
         // set up Google Api auto-suggest places
         locationText = (AutoCompleteTextView) findViewById(R.id.input_event_location);
         locationText.setThreshold(3);   // user has to type at least 3 characters for place suggestions to display
-        List<User> users = appState.getCurrentCircle().getUsers();
+        List<User> users = appState.getActiveCircle().getUsers();
         Location userLocation = null;
         for (User user : users) {
-            if (user.getId().equals(appState.getUser().getId())) {
+            if (user.getId().equals(appState.getActiveUser().getId())) {
                 userLocation = user.getLocation();
             }
         }
@@ -264,7 +264,7 @@ public class EventActivity extends AppCompatActivity {
             case UPDATE_EVENT:
                 //TODO contact server to get more information
                 // only display information stored in DB, which is name, time, and place
-                List<Event> events = appState.getCurrentCircle().getEvents();
+                List<Event> events = appState.getActiveCircle().getEvents();
                 String id = intent.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_ID));
                 if (id != null && !events.isEmpty()) {
                     for (Event event : events) {
@@ -454,11 +454,11 @@ public class EventActivity extends AppCompatActivity {
             // verify that the event name is provided
             // verify that datetime is input correctly
             if (validateName() && validateDateTime()) {
-                User user = appState.getUser();
+                User user = appState.getActiveUser();
                 dataUpdater.open();
 
                 if (mode.equals(Mode.CREATE_EVENT)) {
-                    editEvent = dataUpdater.createEvent(nameText.getText().toString(), appState.getCurrentCircle(),
+                    editEvent = dataUpdater.createEvent(nameText.getText().toString(), appState.getActiveCircle(),
                             new ArrayList<>(Arrays.asList(user)), startDateTime, endDateTime, place, location, Event.IN_CIRCLE,
                             new ArrayList<User>(), true, true, true, null
                     );
@@ -475,7 +475,7 @@ public class EventActivity extends AppCompatActivity {
                             Log.d(TAG, "Location is empty");
                         }
 
-                        editEvent = dataUpdater.updateEvent(editEvent.getId(), appState.getCurrentCircle(), nameText.getText().toString(),
+                        editEvent = dataUpdater.updateEvent(editEvent.getId(), appState.getActiveCircle(), nameText.getText().toString(),
                                 new ArrayList<>(Arrays.asList(user)), startDateTime, endDateTime, place, location, Event.IN_CIRCLE,
                                 new ArrayList<User>(), true, true, true, null
                         );

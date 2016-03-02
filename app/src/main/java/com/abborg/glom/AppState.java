@@ -24,6 +24,7 @@ import net.danlew.android.joda.JodaTimeAndroid;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -45,7 +46,7 @@ public class AppState
     private User user;
 
     /* The currently active circle */
-    private Circle currentCircle;
+    private Circle activeCircle;
 
     /* List of circle info */
     private List<CircleInfo> circles;
@@ -154,13 +155,15 @@ public class AppState
         // if user is not there, TODO sign in again
         dataUpdater = new DataUpdater(context);
         dataUpdater.open();
-        user = dataUpdater.getCurrentUser(Const.TEST_USER_ID);
+        user = dataUpdater.getActiveUser(Const.TEST_USER_ID);
         if (user == null) {
             //TODO SIGN IN
-            user = createUser(Const.TEST_USER_NAME, Const.TEST_USER_ID, Const.TEST_USER_AVATAR, Const.TEST_USER_LAT, Const.TEST_USER_LONG);
-//            user = createUser(Const.TEST_USER_NAME_2, Const.TEST_USER_ID_2, Const.TEST_USER_AVATAR_2, Const.TEST_USER_LAT_2, Const.TEST_USER_LONG_2);
+            user = createUser(Const.TEST_USER_NAME, Const.TEST_USER_ID, Const.TEST_USER_AVATAR,
+                    Const.TEST_USER_LAT, Const.TEST_USER_LONG);
+//            user = createUser(Const.TEST_USER_NAME_2, Const.TEST_USER_ID_2,
+//                    Const.TEST_USER_AVATAR_2, Const.TEST_USER_LAT_2, Const.TEST_USER_LONG_2);
         }
-        dataUpdater.setCurrentUser(user);
+        dataUpdater.setActiveUser(user);
 
         // determine if the user has launched the app before and what version
         init(checkAppStart());
@@ -187,7 +190,7 @@ public class AppState
         }
 
         circles = dataUpdater.getCirclesInfo();
-        currentCircle = dataUpdater.getCircleById(Const.TEST_CIRCLE_ID);
+        activeCircle = dataUpdater.getCircleById(Const.TEST_CIRCLE_ID);
     }
 
     public DateTimeFormatter getDateTimeFormatter() {
@@ -200,6 +203,16 @@ public class AppState
         location.setLongitude(longitude);
         User user = new User(name, id, location);
         user.setAvatar(avatar);
+
+        List<Integer> userPerm = new ArrayList<>();
+        userPerm.add(User.MEDIA_IMAGE_RECEIVE);
+        userPerm.add(User.MEDIA_AUDIO_RECEIVE);
+        userPerm.add(User.MEDIA_VIDEO_RECEIVE);
+        userPerm.add(User.ALARM_RECEIVE);
+        userPerm.add(User.NOTE_RECEIVE);
+        userPerm.add(User.LOCATION_REQUEST_RECEIVE);
+        userPerm.add(User.CREATE_EVENT);
+        user.setUserPermission(userPerm);
         return user;
     }
 
@@ -265,15 +278,13 @@ public class AppState
         Log.e("Google API Client", "Google Places API connection suspended.");
     }
 
-    public User getUser() { return user; }
+    public User getActiveUser() { return user; }
 
-    public void setCurrentCircle(Circle circle) { this.currentCircle = circle; }
+    public void setActiveCircle(Circle circle) { activeCircle = circle; }
 
-    public Circle getCurrentCircle() { return currentCircle; }
+    public Circle getActiveCircle() { return activeCircle; }
 
-    public List<CircleInfo> getCircleInfo() { return circles; }
-
-    public SharedPreferences getSharedPreferences() { return sharedPref; }
+    public List<CircleInfo> getAllCircleInfo() { return circles; }
 
     public DataUpdater getDataUpdater() { return dataUpdater; }
 

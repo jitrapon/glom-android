@@ -18,10 +18,8 @@ import android.widget.Toast;
 
 import com.abborg.glom.AppState;
 import com.abborg.glom.R;
-import com.abborg.glom.activities.MainActivity;
 import com.abborg.glom.adapters.UserAvatarAdapter;
 import com.abborg.glom.data.DataUpdater;
-import com.abborg.glom.interfaces.BroadcastLocationListener;
 import com.abborg.glom.model.User;
 import com.abborg.glom.service.CirclePushService;
 import com.abborg.glom.utils.LayoutUtils;
@@ -53,7 +51,7 @@ public class CircleFragment extends Fragment {
 
     private GridView gridView;
 
-    private Activity activity;
+    private AdapterView.OnItemClickListener listener;
 
     @Override
     public void setUserVisibleHint(boolean isVisibleToUser) {
@@ -74,11 +72,11 @@ public class CircleFragment extends Fragment {
 
         appState = AppState.getInstance(getContext());
 
-        users = appState.getCurrentCircle().getUsers();
+        users = appState.getActiveCircle().getUsers();
     }
 
     public void update() {
-        users = appState.getCurrentCircle().getUsers();
+        users = appState.getActiveCircle().getUsers();
         avatarAdapter.update(users);
     }
 
@@ -111,15 +109,7 @@ public class CircleFragment extends Fragment {
         // set callback for each avatar
         // here we display the radial menu for user and show overlay
         // show menu based on user permission
-        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                User user = appState.getCurrentCircle().getUsers().get(position);
-                if (activity != null && activity instanceof MainActivity)
-                    ((MainActivity) activity).showRadialMenuOptions(user);
-            }
-        });
+        gridView.setOnItemClickListener(listener);
 
         // add the layout
         rootView.addView(gridView, 0);
@@ -129,20 +119,20 @@ public class CircleFragment extends Fragment {
 
     public boolean toggleBroadcastingLocation(long duration) {
         Intent intent = new Intent(getActivity(), CirclePushService.class);
-        intent.putExtra(getResources().getString(R.string.EXTRA_BROADCAST_LOCATION_USER_ID), appState.getUser().getId());
-        intent.putExtra(getResources().getString(R.string.EXTRA_BROADCAST_LOCATION_CIRCLE_ID), appState.getCurrentCircle().getId());
+        intent.putExtra(getResources().getString(R.string.EXTRA_BROADCAST_LOCATION_USER_ID), appState.getActiveUser().getId());
+        intent.putExtra(getResources().getString(R.string.EXTRA_BROADCAST_LOCATION_CIRCLE_ID), appState.getActiveCircle().getId());
         intent.putExtra(getResources().getString(R.string.EXTRA_BROADCAST_LOCATION_DURATION), duration);
 
         DataUpdater dataUpdater = appState.getDataUpdater();
 
-        if (!appState.getCurrentCircle().isUserBroadcastingLocation()) {
+        if (!appState.getActiveCircle().isUserBroadcastingLocation()) {
             // update DB telling it that this circle is broadcasting
-            Toast.makeText(getActivity(), "Broadcasting location updates to " + appState.getCurrentCircle().getTitle(), Toast.LENGTH_LONG).show();
-            appState.getCurrentCircle().setBroadcastingLocation(true);
+            Toast.makeText(getActivity(), "Broadcasting location updates to " + appState.getActiveCircle().getTitle(), Toast.LENGTH_LONG).show();
+            appState.getActiveCircle().setBroadcastingLocation(true);
 
             // update DB about broadcast location change to this circle
             //TODO update time of broadcast to in DB
-            dataUpdater.updateCircleLocationBroadcast(appState.getCurrentCircle(), true);
+            dataUpdater.updateCircleLocationBroadcast(appState.getActiveCircle(), true);
 
             // start the push service, telling it to add the user's current circle to start broadcasting location to it
             intent.setAction(getResources().getString(R.string.ACTION_CIRCLE_ENABLE_LOCATION_BROADCAST));
@@ -150,22 +140,15 @@ public class CircleFragment extends Fragment {
 
             // update icon avatar of the current user and in the map
             setAvatarBroadcastingAnimation(true);
-
-            // notify map fragment about the broadcast enabling
-            if (activity != null && activity instanceof MainActivity) {
-                LocationFragment mapFragment = ((MainActivity) activity).getMapFragment();
-                setOnBroadcastLocationListener(true, mapFragment);
-            }
-
             return true;
         }
         else {
             // update DB telling it that this circle is no longer broadcasting
-            Toast.makeText(getActivity(), "Stopped broadcasting location updates to " + appState.getCurrentCircle().getTitle(), Toast.LENGTH_LONG).show();
-            appState.getCurrentCircle().setBroadcastingLocation(false);
+            Toast.makeText(getActivity(), "Stopped broadcasting location updates to " + appState.getActiveCircle().getTitle(), Toast.LENGTH_LONG).show();
+            appState.getActiveCircle().setBroadcastingLocation(false);
 
             // update DB about broadcast location change to this cirlce
-            dataUpdater.updateCircleLocationBroadcast(appState.getCurrentCircle(), false);
+            dataUpdater.updateCircleLocationBroadcast(appState.getActiveCircle(), false);
 
             // informs the push service to remove the user's current circle to stop broadcasting location to it
             intent.setAction(getResources().getString(R.string.ACTION_CIRCLE_DISABLE_LOCATION_BROADCAST));
@@ -173,13 +156,6 @@ public class CircleFragment extends Fragment {
 
             // update icon avatar of the user and in the map
             setAvatarBroadcastingAnimation(false);
-
-            // notify map fragment about the broadcast disabling
-            if (activity != null && activity instanceof MainActivity) {
-                LocationFragment mapFragment = ((MainActivity) activity).getMapFragment();
-                setOnBroadcastLocationListener(false, mapFragment);
-            }
-
             return false;
         }
     }
@@ -189,23 +165,19 @@ public class CircleFragment extends Fragment {
         super.onAttach(context);
 
         if (context instanceof Activity){
-            activity = (Activity) context;
-        }
-    }
-
-    private void setOnBroadcastLocationListener(boolean enabled, BroadcastLocationListener listener) {
-        if (listener != null) {
-            if (enabled)
-                listener.onBroadcastLocationEnabled();
-            else
-                listener.onBroadcastLocationDisabled();
+            try {
+                listener = (AdapterView.OnItemClickListener) context;
+            }
+            catch (ClassCastException ex) {
+                Log.e(TAG, "The attached activity does not implement listener for GridView!");
+            }
         }
     }
 
     private void setAvatarBroadcastingAnimation(boolean isBroadcasting) {
         int avatarIndex = 0;
         for (User user : users) {
-            if (user.getId().equals(AppState.getInstance(getContext()).getUser().getId())) {
+            if (user.getId().equals(AppState.getInstance(getContext()).getActiveUser().getId())) {
                 View avatar = getAvatarByPosition(avatarIndex);
                 avatarAdapter.setUserIsBroadcastingLocation(avatar, isBroadcasting);
             }

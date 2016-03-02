@@ -3,6 +3,7 @@ package com.abborg.glom.adapters;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.os.Handler;
 import android.support.v7.widget.RecyclerView;
 import android.text.Html;
 import android.util.Log;
@@ -14,6 +15,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.abborg.glom.AppState;
+import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.model.Event;
 import com.abborg.glom.model.FeedAction;
@@ -57,7 +59,7 @@ public class EventRecyclerViewAdapter
 
     private View.OnClickListener onClickListener;
 
-    private OnEventChangedListener eventChangedListener;
+    private Handler handler;
 
     public static class EventHolder extends RecyclerView.ViewHolder {
         ImageView menuButton;
@@ -93,15 +95,12 @@ public class EventRecyclerViewAdapter
         }
     }
 
-    public EventRecyclerViewAdapter(Context context, List<Event> events, View.OnClickListener onClickListener) {
+    public EventRecyclerViewAdapter(Context context, List<Event> events, View.OnClickListener onClickListener, Handler handler) {
         this.context = context;
         this.events = events;
         this.onClickListener = onClickListener;
         staleEvents = new ArrayList<>();
-    }
-
-    public void setEventChangedListener(OnEventChangedListener listener) {
-        eventChangedListener = listener;
+        this.handler = handler;
     }
 
     public void update(List<Event> events) {
@@ -137,10 +136,6 @@ public class EventRecyclerViewAdapter
             return null;
     }
 
-    public interface OnEventChangedListener {
-        void onItemDeleted(String id);
-    }
-
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder recyclerViewHolder, int position) {
         if (!isPositionHeader(position) && recyclerViewHolder instanceof EventHolder) {
@@ -164,9 +159,7 @@ public class EventRecyclerViewAdapter
                         public void onClick(DialogInterface dialog, int item) {
                             switch (item) {
                                 case 0:
-                                    if (eventChangedListener != null) {
-                                        eventChangedListener.onItemDeleted(id);
-                                    }
+                                    if (handler != null) handler.sendMessage(handler.obtainMessage(Const.MSG_EVENT_DELETED, id));
                                     break;
                                 case 1:
 

@@ -63,5 +63,9 @@ public class Const {
     public static final String JSON_SERVER_OP = "op";
     public static final String JSON_SERVER_USERS = "users";
 
+    /**
+     * HANDLER WHAT CONSTANTS
+     */
     public static final int MSG_GET_USERS = 5000;
+    public static final int MSG_EVENT_DELETED = 5001;
 }

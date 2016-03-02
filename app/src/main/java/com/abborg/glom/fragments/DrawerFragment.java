@@ -65,7 +65,7 @@ public class DrawerFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        circles = AppState.getInstance(getContext()).getCircleInfo();
+        circles = AppState.getInstance(getContext()).getAllCircleInfo();
 
         // Inflating view layout
         View layout = inflater.inflate(R.layout.fragment_navigation_drawer, container, false);

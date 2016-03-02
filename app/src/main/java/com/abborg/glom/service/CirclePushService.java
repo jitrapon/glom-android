@@ -117,7 +117,7 @@ public class CirclePushService extends Service implements LocationListener,
                 appState.getDataUpdater().open();
                 for (String circleId : circles) {
                     sendLocationUpdateRequest(circleId, userLocation);
-                    appState.getDataUpdater().updateUserLocation(appState.getUser().getId(), circleId, location.getLatitude(), location.getLongitude());
+                    appState.getDataUpdater().updateUserLocation(appState.getActiveUser().getId(), circleId, location.getLatitude(), location.getLongitude());
                     Log.d(TAG, "Sending location info of " + location.getLatitude() + ", " + location.getLongitude());
                 }
             }
