@@ -2,7 +2,7 @@ package com.abborg.glom.interfaces;
 
 public interface BroadcastLocationListener {
 
-    void onBroadcastLocationEnabled();
+    void onBroadcastLocationEnabled(long duration);
 
     void onBroadcastLocationDisabled();
 }

@@ -358,12 +358,12 @@ public class DataUpdater {
         return circle;
     }
 
-    public void updateCircleLocationBroadcast(Circle circle, boolean enabled) {
+    public void updateCircleLocationBroadcast(String circleId, boolean enabled) {
         ContentValues values = new ContentValues();
         int broadcastingLocation = enabled ? 1 : 0;
         values.put(DBHelper.CIRCLE_COLUMN_BROADCAST_LOCATION, broadcastingLocation);
         int rowAffected = database.update(DBHelper.TABLE_CIRCLES, values,
-                DBHelper.CIRCLE_COLUMN_ID + "='" + circle.getId() + "'", null);
+                DBHelper.CIRCLE_COLUMN_ID + "='" + circleId + "'", null);
         Log.d(TAG, "Updated " + rowAffected + " row(s) in " + DBHelper.TABLE_USER_CIRCLE);
     }
 

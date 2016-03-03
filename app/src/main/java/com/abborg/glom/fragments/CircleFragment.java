@@ -2,7 +2,6 @@ package com.abborg.glom.fragments;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -14,14 +13,12 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.GridView;
 import android.widget.RelativeLayout;
-import android.widget.Toast;
 
 import com.abborg.glom.AppState;
 import com.abborg.glom.R;
 import com.abborg.glom.adapters.UserAvatarAdapter;
-import com.abborg.glom.data.DataUpdater;
+import com.abborg.glom.interfaces.BroadcastLocationListener;
 import com.abborg.glom.model.User;
-import com.abborg.glom.service.CirclePushService;
 import com.abborg.glom.utils.LayoutUtils;
 import com.nhaarman.listviewanimations.appearance.simple.ScaleInAnimationAdapter;
 
@@ -33,7 +30,7 @@ import java.util.List;
  * The fragment can show group of users in grid style, circle style,
  * or a traditional scroll view style.
  * */
-public class CircleFragment extends Fragment {
+public class CircleFragment extends Fragment implements BroadcastLocationListener {
 
     private static final String TAG = "CIRCLE_FRAGMENT";
 
@@ -117,47 +114,14 @@ public class CircleFragment extends Fragment {
         return rootView;
     }
 
-    public boolean toggleBroadcastingLocation(long duration) {
-        Intent intent = new Intent(getActivity(), CirclePushService.class);
-        intent.putExtra(getResources().getString(R.string.EXTRA_BROADCAST_LOCATION_USER_ID), appState.getActiveUser().getId());
-        intent.putExtra(getResources().getString(R.string.EXTRA_BROADCAST_LOCATION_CIRCLE_ID), appState.getActiveCircle().getId());
-        intent.putExtra(getResources().getString(R.string.EXTRA_BROADCAST_LOCATION_DURATION), duration);
+    @Override
+    public void onBroadcastLocationEnabled(long duration) {
+        setAvatarBroadcastingAnimation(true);
+    }
 
-        DataUpdater dataUpdater = appState.getDataUpdater();
-
-        if (!appState.getActiveCircle().isUserBroadcastingLocation()) {
-            // update DB telling it that this circle is broadcasting
-            Toast.makeText(getActivity(), "Broadcasting location updates to " + appState.getActiveCircle().getTitle(), Toast.LENGTH_LONG).show();
-            appState.getActiveCircle().setBroadcastingLocation(true);
-
-            // update DB about broadcast location change to this circle
-            //TODO update time of broadcast to in DB
-            dataUpdater.updateCircleLocationBroadcast(appState.getActiveCircle(), true);
-
-            // start the push service, telling it to add the user's current circle to start broadcasting location to it
-            intent.setAction(getResources().getString(R.string.ACTION_CIRCLE_ENABLE_LOCATION_BROADCAST));
-            getActivity().startService(intent);
-
-            // update icon avatar of the current user and in the map
-            setAvatarBroadcastingAnimation(true);
-            return true;
-        }
-        else {
-            // update DB telling it that this circle is no longer broadcasting
-            Toast.makeText(getActivity(), "Stopped broadcasting location updates to " + appState.getActiveCircle().getTitle(), Toast.LENGTH_LONG).show();
-            appState.getActiveCircle().setBroadcastingLocation(false);
-
-            // update DB about broadcast location change to this cirlce
-            dataUpdater.updateCircleLocationBroadcast(appState.getActiveCircle(), false);
-
-            // informs the push service to remove the user's current circle to stop broadcasting location to it
-            intent.setAction(getResources().getString(R.string.ACTION_CIRCLE_DISABLE_LOCATION_BROADCAST));
-            getActivity().startService(intent);
-
-            // update icon avatar of the user and in the map
-            setAvatarBroadcastingAnimation(false);
-            return false;
-        }
+    @Override
+    public void onBroadcastLocationDisabled() {
+        setAvatarBroadcastingAnimation(false);
     }
 
     @Override

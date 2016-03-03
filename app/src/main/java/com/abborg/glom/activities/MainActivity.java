@@ -53,6 +53,7 @@ import com.abborg.glom.interfaces.EventChangeListener;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CircleInfo;
 import com.abborg.glom.model.User;
+import com.abborg.glom.service.CirclePushService;
 import com.abborg.glom.service.RegistrationIntentService;
 import com.abborg.glom.utils.CircleTransform;
 import com.bumptech.glide.Glide;
@@ -103,6 +104,11 @@ public class MainActivity extends AppCompatActivity
      */
     private List<EventChangeListener> eventChangeListeners;
 
+    /**
+     * Broadcast location listeners
+     */
+    private List<BroadcastLocationListener> broadcastLocationListeners;
+
     // UI elements
     private TabLayout tabLayout;
     private int[] tabIcons = {
@@ -124,6 +130,7 @@ public class MainActivity extends AppCompatActivity
     private SubActionButton.Builder lCSubBuilder;
     private FrameLayout.LayoutParams blueContentParams;
     private boolean isRadialMenuOptionsOpening;
+    private static final int MENU_OVERLAY_ANIM_TIME = 150;
 
     /**
      * View pager adapter that controls the pages
@@ -175,8 +182,7 @@ public class MainActivity extends AppCompatActivity
 
         setupBroadcastReceiver();
 
-        addEventChangeListener((LocationFragment) adapter.getItem(1));
-        addEventChangeListener((EventFragment) adapter.getItem(2));
+        setupEventListeners();
 
         setupService();
     }
@@ -241,6 +247,14 @@ public class MainActivity extends AppCompatActivity
         appState = AppState.getInstance(this);
         dataUpdater = appState.getDataUpdater();
         dataUpdater.setHandler(handler);
+    }
+
+    private void setupEventListeners() {
+        addEventChangeListener((LocationFragment) adapter.getItem(1));
+        addEventChangeListener((EventFragment) adapter.getItem(2));
+
+        addBroadcastLocationListener((CircleFragment) adapter.getItem(0));
+        addBroadcastLocationListener((LocationFragment) adapter.getItem(1));
     }
 
     private void setupView() {
@@ -327,13 +341,19 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
+        // set up broadcast location toggle
+        final Context context = this;
         broadcastLocationToggle.setOnClickListener(new CompoundButton.OnClickListener() {
 
             @Override
             public void onClick(View buttonView) {
-                CircleFragment circleFragment = (CircleFragment) adapter.getItem(0);
-                LocationFragment locationFragment = (LocationFragment) adapter.getItem(1);
-                if (circleFragment != null) {
+
+                Intent intent = new Intent(context, CirclePushService.class);
+                intent.putExtra(getResources().getString(R.string.EXTRA_BROADCAST_LOCATION_USER_ID), appState.getActiveUser().getId());
+                intent.putExtra(getResources().getString(R.string.EXTRA_BROADCAST_LOCATION_CIRCLE_ID), appState.getActiveCircle().getId());
+
+                // enabling broadcast location
+                if (broadcastLocationToggle.isChecked()) {
                     DateTime now = new DateTime();
 
                     // if end hour - start hour is negative, add 24 to get the duration from current hour
@@ -356,9 +376,47 @@ public class MainActivity extends AppCompatActivity
                     Duration durationFromNow = new Duration(now, endTime);
                     Long duration = durationFromNow.getMillis();
 
-                    // update UI
-                    circleFragment.toggleBroadcastingLocation(duration);
-                    setBroadcastLocationListener(appState.getActiveCircle().isUserBroadcastingLocation(), locationFragment);
+                    // tell all listeners to update their UI accordingly
+                    if (broadcastLocationListeners != null) {
+                        for (BroadcastLocationListener listener : broadcastLocationListeners) {
+                            listener.onBroadcastLocationEnabled(duration);
+                        }
+                    }
+
+                    // update DB telling it that this circle is broadcasting
+                    Toast.makeText(context, "Broadcasting location updates to "
+                            + appState.getActiveCircle().getTitle(), Toast.LENGTH_LONG).show();
+                    appState.getActiveCircle().setBroadcastingLocation(true);
+
+                    // update DB about broadcast location change to this circle
+                    //TODO update time of broadcast to in DB
+                    dataUpdater.updateCircleLocationBroadcast(appState.getActiveCircle().getId(), true);
+
+                    // start the push service, telling it to add the user's current circle to start broadcasting location to it
+                    intent.putExtra(getResources().getString(R.string.EXTRA_BROADCAST_LOCATION_DURATION), duration);
+                    intent.setAction(getResources().getString(R.string.ACTION_CIRCLE_ENABLE_LOCATION_BROADCAST));
+                    startService(intent);
+                }
+
+                // disabling broadcast location
+                else {
+                    if (broadcastLocationListeners != null) {
+                        for (BroadcastLocationListener listener : broadcastLocationListeners) {
+                            listener.onBroadcastLocationDisabled();
+                        }
+                    }
+
+                    // update DB telling it that this circle is no longer broadcasting
+                    Toast.makeText(context, "Stopped broadcasting location updates to "
+                            + appState.getActiveCircle().getTitle(), Toast.LENGTH_LONG).show();
+                    appState.getActiveCircle().setBroadcastingLocation(false);
+
+                    // update DB about broadcast location change to this cirlce
+                    dataUpdater.updateCircleLocationBroadcast(appState.getActiveCircle().getId(), false);
+
+                    // informs the push service to remove the user's current circle to stop broadcasting location to it
+                    intent.setAction(getResources().getString(R.string.ACTION_CIRCLE_DISABLE_LOCATION_BROADCAST));
+                    startService(intent);
                 }
             }
         });
@@ -405,8 +463,8 @@ public class MainActivity extends AppCompatActivity
         // add fade-in / fade-out animation when visibilty changes
         fadeInAnim = AnimationUtils.loadAnimation(this, android.R.anim.fade_in);
         fadeOutAnim = AnimationUtils.loadAnimation(this, android.R.anim.fade_out);
-        fadeInAnim.setDuration(10);
-        fadeOutAnim.setDuration(10);
+        fadeInAnim.setDuration(MENU_OVERLAY_ANIM_TIME);
+        fadeOutAnim.setDuration(MENU_OVERLAY_ANIM_TIME);
 
         menuOverlay.setOnClickListener(new View.OnClickListener() {
 
@@ -510,15 +568,6 @@ public class MainActivity extends AppCompatActivity
         startService(intent);
     }
 
-    private void setBroadcastLocationListener(boolean enabled, BroadcastLocationListener listener) {
-        if (listener != null) {
-            if (enabled)
-                listener.onBroadcastLocationEnabled();
-            else
-                listener.onBroadcastLocationDisabled();
-        }
-    }
-
     private void addEventChangeListener(EventChangeListener listener) {
         if (listener != null) {
             if (eventChangeListeners == null) {
@@ -526,6 +575,16 @@ public class MainActivity extends AppCompatActivity
                 eventChangeListeners.add(listener);
             }
             else eventChangeListeners.add(listener);
+        }
+    }
+
+    private void addBroadcastLocationListener(BroadcastLocationListener listener) {
+        if (listener != null) {
+            if (broadcastLocationListeners == null) {
+                broadcastLocationListeners = new ArrayList<>();
+                broadcastLocationListeners.add(listener);
+            }
+            else broadcastLocationListeners.add(listener);
         }
     }
 
@@ -746,7 +805,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void updateView(Circle circle) {
-        AppState.getInstance(this).setActiveCircle(circle);
+        appState.setActiveCircle(circle);
 
         if (getSupportActionBar() != null) getSupportActionBar().setTitle(circle.getTitle() + " (" + circle.getUsers().size() + ")");
 
@@ -777,8 +836,10 @@ public class MainActivity extends AppCompatActivity
                 break;
             case Const.MSG_EVENT_DELETED:
                 String id = (String) msg.obj;
-                for (EventChangeListener listener : eventChangeListeners) {
-                    listener.onEventDeleted(id);
+                if (eventChangeListeners != null) {
+                    for (EventChangeListener listener : eventChangeListeners) {
+                        listener.onEventDeleted(id);
+                    }
                 }
 
                 dataUpdater.deleteEvent(id, appState.getActiveCircle());
@@ -851,8 +912,10 @@ public class MainActivity extends AppCompatActivity
             case Const.CREATE_EVENT_RESULT_CODE:
                 if (resultCode == RESULT_OK) {
                     String id = data.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_ID));
-                    for (EventChangeListener listener : eventChangeListeners) {
-                        listener.onEventAdded(id);
+                    if (eventChangeListeners != null) {
+                        for (EventChangeListener listener : eventChangeListeners) {
+                            listener.onEventAdded(id);
+                        }
                     }
                 }
                 break;
@@ -860,8 +923,10 @@ public class MainActivity extends AppCompatActivity
             case Const.UPDATE_EVENT_RESULT_CODE:
                 if (resultCode == RESULT_OK) {
                     String id = data.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_ID));
-                    for (EventChangeListener listener : eventChangeListeners) {
-                        listener.onEventModified(id);
+                    if (eventChangeListeners != null) {
+                        for (EventChangeListener listener : eventChangeListeners) {
+                            listener.onEventModified(id);
+                        }
                     }
                 }
                 break;

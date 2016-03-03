@@ -34,11 +34,15 @@ public class UserAvatarAdapter extends BaseAdapter {
 
     private static String TAG = "UserAvatarAdapter";
 
+    private Animation broadcastLocationAnimation;
+
     public UserAvatarAdapter(Context context, List<User> users) {
         this.context = context;
         this.users = users;
 
         inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+        broadcastLocationAnimation = AnimationUtils.loadAnimation(context, R.anim.blink);
     }
 
     public void update(List<User> users) {
@@ -84,7 +88,6 @@ public class UserAvatarAdapter extends BaseAdapter {
         if (avatarImage != null) {
             if (isBroadcasting) {
                 if (avatarImage.getAnimation() == null) {
-                    Animation broadcastLocationAnimation = AnimationUtils.loadAnimation(context, R.anim.blink);
                     avatarImage.startAnimation(broadcastLocationAnimation);
                     Log.d(TAG, "Setting user avatar to broadcast location");
                 }
@@ -134,11 +137,13 @@ public class UserAvatarAdapter extends BaseAdapter {
                 .error(R.drawable.ic_profile)
                 .crossFade(1000)
                 .into(holder.avatar);
-        holder.primaryText.setText(users.get(position).getName());
-        holder.secondaryText.setText(users.get(position).getId());
+        holder.primaryText.setText(user.getName());
+        holder.secondaryText.setText(user.getId());
 
         // start any animation regarding the user state
         AppState appState = AppState.getInstance(context);
+        Log.d(TAG, "Setting broadcasting location for avatar " + position);
+        Log.d(TAG, "Current user avatar is " + user.getId());
         if (user.getId().equals(appState.getActiveUser().getId())) {
             setUserIsBroadcastingLocation(convertView, appState.getActiveCircle().isUserBroadcastingLocation());
         }

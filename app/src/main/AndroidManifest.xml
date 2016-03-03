@@ -76,10 +76,6 @@
             android:value="@string/google_maps_key" />
 
         <activity
-            android:name=".ui.LocationActivity"
-            android:label="@string/app_name" >
-        </activity>
-        <activity
             android:name=".activities.MainActivity"
             android:label="@string/app_name" >
             <intent-filter>

@@ -20,7 +20,7 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String TABLE_CIRCLES = "circles";
     public static final String CIRCLE_COLUMN_ID = "id";
     public static final String CIRCLE_COLUMN_NAME = "name";
-    public static final String CIRCLE_COLUMN_BROADCAST_LOCATION = "broadcastLocation";
+    public static final String CIRCLE_COLUMN_BROADCAST_LOCATION = "broadcast_location";
 
     // User table columns
     public static final String TABLE_USERS = "users";
@@ -29,20 +29,20 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String USER_COLUMN_AVATAR_ID = "avatar";
 
     // UserCircle table - mapping userId to circleId to location (x,y) columns
-    public static final String TABLE_USER_CIRCLE = "userCircle";
-    public static final String USERCIRCLE_COLUMN_USER_ID = "userId";
-    public static final String USERCIRCLE_COLUMN_CIRCLE_ID = "circleId";
+    public static final String TABLE_USER_CIRCLE = "user_circle";
+    public static final String USERCIRCLE_COLUMN_USER_ID = "user_id";
+    public static final String USERCIRCLE_COLUMN_CIRCLE_ID = "circle_id";
     public static final String USERCIRCLE_COLUMN_LATITUDE = "latitude";
     public static final String USERCIRCLE_COLUMN_LONGITUDE = "longitude";
 
     // Event table
     public static final String TABLE_EVENTS = "events";
     public static final String EVENT_COLUMN_ID = "id";
-    public static final String EVENT_COLUMN_CIRCLE_ID = "circle";
+    public static final String EVENT_COLUMN_CIRCLE_ID = "circle_id";
     public static final String EVENT_COLUMN_NAME = "name";
-    public static final String EVENT_COLUMN_DATETIME = "time";
-    public static final String EVENT_COLUMN_ENDTIME = "endTime";
-    public static final String EVENT_COLUMN_PLACE = "place";
+    public static final String EVENT_COLUMN_DATETIME = "start_time";
+    public static final String EVENT_COLUMN_ENDTIME = "end_time";
+    public static final String EVENT_COLUMN_PLACE = "place_id";
     public static final String EVENT_COLUMN_LATITUDE = "latitude";
     public static final String EVENT_COLUMN_LONGITUDE = "longitude";
     public static final String EVENT_COLUMN_NOTE = "note";

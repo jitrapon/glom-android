@@ -49,6 +49,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
@@ -395,7 +396,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
      * Called when the UI is to be updated when broadcasting location is enabled
      */
     @Override
-    public void onBroadcastLocationEnabled() {
+    public void onBroadcastLocationEnabled(long duration) {
         Log.d(TAG, "Broadcast location is enabled");
     }
 
@@ -463,8 +464,23 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         // initialize the default user's marker from sqlite
         if (googleMap != null) {
             if (clear) {
-                userMarkers.clear();
-                eventMarkers.clear();
+
+                // make sure all marker references are set to null
+                if (userMarkers != null) {
+                    for (Marker marker : userMarkers.values()) {
+                        marker.remove();
+                        marker = null;
+                    }
+                    userMarkers.clear();
+                }
+                if (eventMarkers != null) {
+                    for (Marker marker : eventMarkers.values()) {
+                        marker.remove();
+                        marker = null;
+                    }
+                    eventMarkers.clear();
+                }
+
                 googleMap.clear();
             }
 
@@ -624,8 +640,12 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
                         ImageView userMarkerAvatar = (ImageView) userMarkerView.findViewById(R.id.markerAvatar);
                         userMarkerAvatar.setImageBitmap(bitmap);
                         Bitmap userMarker = createDrawableFromView(userMarkerView);
-                        marker.setIcon(BitmapDescriptorFactory.fromBitmap(userMarker));
-                        Log.d(TAG, "Set icon for marker " + marker.getId());
+                        BitmapDescriptor icon = BitmapDescriptorFactory.fromBitmap(userMarker);
+                        if (marker != null && userMarker != null) {
+                            marker.setIcon(icon);
+                            Log.d(TAG, "Set icon for marker " + marker.getId());
+                        }
+
                     }
                 });
     }

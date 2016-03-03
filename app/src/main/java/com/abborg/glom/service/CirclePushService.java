@@ -7,7 +7,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.support.v4.app.NotificationCompat;
@@ -19,8 +18,8 @@ import com.abborg.glom.AppState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.activities.MainActivity;
-import com.abborg.glom.utils.RequestHandler;
 import com.abborg.glom.interfaces.ResponseListener;
+import com.abborg.glom.utils.RequestHandler;
 import com.android.volley.VolleyError;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -29,7 +28,6 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
-import org.joda.time.Duration;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -117,7 +115,8 @@ public class CirclePushService extends Service implements LocationListener,
                 appState.getDataUpdater().open();
                 for (String circleId : circles) {
                     sendLocationUpdateRequest(circleId, userLocation);
-                    appState.getDataUpdater().updateUserLocation(appState.getActiveUser().getId(), circleId, location.getLatitude(), location.getLongitude());
+                    appState.getDataUpdater().updateUserLocation(appState.getActiveUser().getId(),
+                            circleId, location.getLatitude(), location.getLongitude());
                     Log.d(TAG, "Sending location info of " + location.getLatitude() + ", " + location.getLongitude());
                 }
             }
@@ -264,16 +263,7 @@ public class CirclePushService extends Service implements LocationListener,
                     // if we receive a duration that's not -1, we set an alarm to stop broadcasting
                     //TODO
                     if (duration != -1) {
-                        Duration broadcastDuration = new Duration(duration);
-                        Handler handler = new Handler();
-                        duration = 7000;
-                        handler.postDelayed(new Runnable() {
 
-                            @Override
-                            public void run() {
-                                Toast.makeText(getApplicationContext(), "TIME TO CUT OFF BROADCAST!", Toast.LENGTH_SHORT).show();
-                            }
-                        }, duration);
                     }
                 }
 
@@ -389,5 +379,22 @@ public class CirclePushService extends Service implements LocationListener,
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
         Log.i(TAG, "Location services failed.");
+    }
+
+    @Override
+    public void onTaskRemoved(Intent intent) {
+        Log.d(TAG, "Service is about to be stopped because app has been removed from the task list");
+
+        hideNotification();
+
+        // make sure to remove all broadcasting circles accordingly before closing
+        AppState appState = AppState.getInstance(this);
+        appState.getDataUpdater().open();
+        if (circles != null && !circles.isEmpty()) {
+            for (String circleId : circles) {
+                appState.getDataUpdater().updateCircleLocationBroadcast(circleId, false);
+            }
+            circles.clear();
+        }
     }
 }

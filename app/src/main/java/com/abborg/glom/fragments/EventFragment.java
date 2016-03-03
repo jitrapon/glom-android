@@ -66,6 +66,10 @@ public class EventFragment extends Fragment implements View.OnClickListener, Eve
     private static final long ITEM_MOVE_ANIM_TIME = 350;
     private static final long ITEM_CHANGE_ANIM_TIME = 350;
 
+    /**********************************************************
+     * View Initializations
+     **********************************************************/
+
     public EventFragment() {
     }
 
@@ -114,10 +118,26 @@ public class EventFragment extends Fragment implements View.OnClickListener, Eve
         recyclerView.getItemAnimator().setMoveDuration(ITEM_MOVE_ANIM_TIME);
         recyclerView.getItemAnimator().setChangeDuration(ITEM_CHANGE_ANIM_TIME);
 
-        Log.d(TAG, "OnCreateView " + events.size() + " events");
-
         return root;
     }
+
+    @Override
+    public void setUserVisibleHint(boolean isVisibleToUser) {
+        super.setUserVisibleHint(isVisibleToUser);
+        if (isVisibleToUser) {
+            isFragmentVisible = true;
+            adapter.update(null);   // force re-updating of events
+            Log.i(TAG, "Event is now visible to user");
+        }
+        else {
+            isFragmentVisible = false;
+            Log.i(TAG, "Event is now INVISIBLE to user");
+        }
+    }
+
+    /**********************************************************
+     * Item Click Handler
+     **********************************************************/
 
     @Override
     public void onClick(View view) {
@@ -132,6 +152,10 @@ public class EventFragment extends Fragment implements View.OnClickListener, Eve
             getActivity().startActivityForResult(intent, Const.UPDATE_EVENT_RESULT_CODE);
         }
     }
+
+    /**********************************************************
+     * Item Change Handler
+     **********************************************************/
 
     @Override
     public void onEventAdded(String id) {
@@ -181,19 +205,9 @@ public class EventFragment extends Fragment implements View.OnClickListener, Eve
         }
     }
 
-    @Override
-    public void setUserVisibleHint(boolean isVisibleToUser) {
-        super.setUserVisibleHint(isVisibleToUser);
-        if (isVisibleToUser) {
-            isFragmentVisible = true;
-            adapter.update(null);   // force re-updating of events
-            Log.i(TAG, "Event is now visible to user");
-        }
-        else {
-            isFragmentVisible = false;
-            Log.i(TAG, "Event is now INVISIBLE to user");
-        }
-    }
+    /**********************************************************
+     * Helpers
+     **********************************************************/
 
     public List<Event> getEvents() {
         events = AppState.getInstance(getContext()).getActiveCircle().getEvents();
