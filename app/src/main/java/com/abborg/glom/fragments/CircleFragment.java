@@ -87,7 +87,7 @@ public class CircleFragment extends Fragment implements BroadcastLocationListene
         gridView = new GridView(getActivity());
 //        gridView.setId();
         gridView.setLayoutParams(new GridView.LayoutParams(
-                GridView.LayoutParams.MATCH_PARENT, GridView.LayoutParams.WRAP_CONTENT));
+                GridView.LayoutParams.MATCH_PARENT, GridView.LayoutParams.MATCH_PARENT));
         gridView.setBackgroundColor(Color.TRANSPARENT);
         gridView.setNumColumns(3);
         gridView.setColumnWidth(GridView.AUTO_FIT);
@@ -143,6 +143,7 @@ public class CircleFragment extends Fragment implements BroadcastLocationListene
         for (User user : users) {
             if (user.getId().equals(AppState.getInstance(getContext()).getActiveUser().getId())) {
                 View avatar = getAvatarByPosition(avatarIndex);
+                Log.d(TAG, "Setting broadcast animation for " + avatarIndex);
                 avatarAdapter.setUserIsBroadcastingLocation(avatar, isBroadcasting);
             }
             avatarIndex++;

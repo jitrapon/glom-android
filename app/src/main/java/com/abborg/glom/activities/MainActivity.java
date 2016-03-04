@@ -804,6 +804,9 @@ public class MainActivity extends AppCompatActivity
         if (avatarActionMenu != null) avatarActionMenu.close(animated);
     }
 
+    /**
+     * Forces updates of all fragments and UI. Use only if selecting a new circle to display.
+     */
     private void updateView(Circle circle) {
         appState.setActiveCircle(circle);
 
@@ -826,6 +829,9 @@ public class MainActivity extends AppCompatActivity
         switch (msg.what) {
             case Const.MSG_GET_USERS:
                 Circle circle = appState.getActiveCircle();
+                Toast.makeText(this, "Displaying circle " + circle.getTitle() + " with "
+                        + circle.getUsers().size() + " user(s)", Toast.LENGTH_LONG).show();
+
                 if (getSupportActionBar() != null)
                     getSupportActionBar().setTitle(circle.getTitle() + " (" + circle.getUsers().size() + ")");
                 CircleFragment circleFragment = (CircleFragment) adapter.getItem(0);
@@ -898,8 +904,6 @@ public class MainActivity extends AppCompatActivity
 
             // update the view
             updateView(selected);
-            Toast.makeText(this, "Select circle ID: " + selected.getId() + ", title: " + selected.getTitle() +
-                    ", users: " + selected.getUsers().size(), Toast.LENGTH_SHORT).show();
         }
     }
 

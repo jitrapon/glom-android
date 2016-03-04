@@ -1,7 +1,6 @@
 package com.abborg.glom.adapters;
 
 import android.content.Context;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -89,12 +88,10 @@ public class UserAvatarAdapter extends BaseAdapter {
             if (isBroadcasting) {
                 if (avatarImage.getAnimation() == null) {
                     avatarImage.startAnimation(broadcastLocationAnimation);
-                    Log.d(TAG, "Setting user avatar to broadcast location");
                 }
                 broadcastLocationIcon.setVisibility(View.VISIBLE);
             }
             else {
-                Log.d(TAG, "Setting user avatar to default");
                 avatarImage.clearAnimation();
                 broadcastLocationIcon.setVisibility(View.INVISIBLE);
             }
@@ -142,8 +139,6 @@ public class UserAvatarAdapter extends BaseAdapter {
 
         // start any animation regarding the user state
         AppState appState = AppState.getInstance(context);
-        Log.d(TAG, "Setting broadcasting location for avatar " + position);
-        Log.d(TAG, "Current user avatar is " + user.getId());
         if (user.getId().equals(appState.getActiveUser().getId())) {
             setUserIsBroadcastingLocation(convertView, appState.getActiveCircle().isUserBroadcastingLocation());
         }

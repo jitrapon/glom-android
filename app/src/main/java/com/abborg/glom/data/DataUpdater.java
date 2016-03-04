@@ -9,19 +9,19 @@ import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
+import android.text.TextUtils;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.abborg.glom.AppState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
+import com.abborg.glom.interfaces.ResponseListener;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CircleInfo;
 import com.abborg.glom.model.Event;
 import com.abborg.glom.model.FeedAction;
 import com.abborg.glom.model.User;
 import com.abborg.glom.utils.RequestHandler;
-import com.abborg.glom.interfaces.ResponseListener;
 import com.android.volley.VolleyError;
 
 import org.joda.time.DateTime;
@@ -32,6 +32,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -54,7 +55,7 @@ public class DataUpdater {
             DBHelper.CIRCLE_COLUMN_NAME, DBHelper.CIRCLE_COLUMN_BROADCAST_LOCATION };
     
     private String[] userColumns = { DBHelper.USER_COLUMN_ID, DBHelper.USER_COLUMN_NAME,
-            DBHelper.USER_COLUMN_AVATAR_ID };
+            DBHelper.USER_COLUMN_AVATAR};
 
     private String[] userCircleColumns = { DBHelper.USERCIRCLE_COLUMN_USER_ID, DBHelper.USERCIRCLE_COLUMN_CIRCLE_ID,
             DBHelper.USERCIRCLE_COLUMN_LATITUDE, DBHelper.USERCIRCLE_COLUMN_LONGITUDE };
@@ -63,8 +64,11 @@ public class DataUpdater {
 
     private Handler handler;
 
-    public DataUpdater(Context context) {
+    private AppState appState;
+
+    public DataUpdater(Context context, AppState appState) {
         this.context = context;
+        this.appState = appState;
         dbHelper = new DBHelper(context);
     }
 
@@ -107,7 +111,7 @@ public class DataUpdater {
         if (cursor.moveToFirst()) {
             String name = cursor.getString(cursor.getColumnIndex(DBHelper.USER_COLUMN_NAME));
             String userId = cursor.getString(cursor.getColumnIndex(DBHelper.USER_COLUMN_ID));
-            String avatar = cursor.getString(cursor.getColumnIndex(DBHelper.USER_COLUMN_AVATAR_ID));
+            String avatar = cursor.getString(cursor.getColumnIndex(DBHelper.USER_COLUMN_AVATAR));
             user = new User(name, userId, null);
             user.setAvatar(avatar);
 
@@ -153,7 +157,7 @@ public class DataUpdater {
                 values.clear();
                 values.put(DBHelper.USER_COLUMN_ID, user.getId());
                 values.put(DBHelper.USER_COLUMN_NAME, user.getName());
-                values.put(DBHelper.USER_COLUMN_AVATAR_ID, user.getAvatar());
+                values.put(DBHelper.USER_COLUMN_AVATAR, user.getAvatar());
                 insertId = database.insert(DBHelper.TABLE_USERS, null, values);
                 Log.d(TAG, "Inserted user with _id: " +  insertId + ", id: " + user.getId() + " into " + DBHelper.TABLE_USERS);
 
@@ -189,16 +193,95 @@ public class DataUpdater {
         //TODO send request to GCM and server to delete group
     }
 
-    public Circle addUsersToCircle(Circle circle, List<User> users) { return null; }
+    public void addUsersToCircle(Circle circle, List<User> users) {
+        if (circle != null && users != null) {
+            database.beginTransaction();
 
-    public Circle removeUsersFromCircle(Circle circle, List<User> users) { return null; }
+            try {
+                ContentValues values = new ContentValues();
+                for (User user : users) {
+                    user.setCurrentCircle(circle);
+
+                    values.put(DBHelper.USER_COLUMN_ID, user.getId());
+                    values.put(DBHelper.USER_COLUMN_NAME, user.getName());
+                    values.put(DBHelper.USER_COLUMN_AVATAR, user.getAvatar());
+                    database.insert(DBHelper.TABLE_USERS, null, values);
+                    values.clear();
+
+                    values.put(DBHelper.USERCIRCLE_COLUMN_USER_ID, user.getId());
+                    values.put(DBHelper.USERCIRCLE_COLUMN_CIRCLE_ID, circle.getId());
+                    if (user.getLocation() != null) {
+                        values.put(DBHelper.USERCIRCLE_COLUMN_LATITUDE, user.getLocation().getLatitude());
+                        values.put(DBHelper.USERCIRCLE_COLUMN_LONGITUDE, user.getLocation().getLongitude());
+                    }
+                    database.insert(DBHelper.TABLE_USER_CIRCLE, null, values);
+                    values.clear();
+                }
+
+                database.setTransactionSuccessful();
+            }
+            catch (SQLException ex) {
+                Log.e(TAG, ex.getMessage());
+            }
+            finally {
+                database.endTransaction();
+            }
+        }
+    }
+
+    public void modifyUsersInCircle(Circle circle, List<User> users) {
+        if (circle != null && users != null) {
+            database.beginTransaction();
+
+            try {
+                ContentValues values = new ContentValues();
+                for (User user : users) {
+                    user.setCurrentCircle(circle);
+
+                    values.put(DBHelper.USER_COLUMN_NAME, user.getName());
+                    values.put(DBHelper.USER_COLUMN_AVATAR, user.getAvatar());
+                    database.update(DBHelper.TABLE_USERS, values, DBHelper.USER_COLUMN_ID + "='" + user.getId() + "'", null);
+                    values.clear();
+                }
+
+                database.setTransactionSuccessful();
+            }
+            catch (SQLException ex) {
+                Log.e(TAG, ex.getMessage());
+            }
+            finally {
+                database.endTransaction();
+            }
+        }
+    }
+
+    public void removeUsersFromCircle(Circle circle, List<User> users) {
+        if (circle != null && users != null) {
+            database.beginTransaction();
+
+            try {
+                for (User user : users) {
+                    database.delete(DBHelper.TABLE_USER_CIRCLE, DBHelper.USERCIRCLE_COLUMN_USER_ID + "='" + user.getId() + "' AND "
+                            + DBHelper.USERCIRCLE_COLUMN_CIRCLE_ID + "='" + circle.getId() + "'", null);
+                }
+
+                database.setTransactionSuccessful();
+            }
+            catch (SQLException ex) {
+                Log.e(TAG, ex.getMessage());
+            }
+            finally {
+                database.endTransaction();
+            }
+        }
+    }
 
     public List<User> getUsersInCircle(final Circle circle) {
         List<User> users = new ArrayList<User>();
 
         // get the user info from USERS table and the user location from USERCIRCLE table
         // SELECT id,name,avatarId,location
-        String selectColumns = DBHelper.USER_COLUMN_ID + "," + DBHelper.USER_COLUMN_NAME + "," + DBHelper.USER_COLUMN_AVATAR_ID + "," +
+        String selectColumns = DBHelper.USER_COLUMN_ID + "," + DBHelper.USER_COLUMN_NAME + "," + DBHelper.USER_COLUMN_AVATAR + "," +
                 DBHelper.USERCIRCLE_COLUMN_LATITUDE + "," + DBHelper.USERCIRCLE_COLUMN_LONGITUDE;
 
         String query = "SELECT " + selectColumns + " FROM " + DBHelper.TABLE_USERS + ", " + DBHelper.TABLE_USER_CIRCLE + " WHERE " +
@@ -210,6 +293,7 @@ public class DataUpdater {
         userCursor.moveToFirst();
         while (!userCursor.isAfterLast()) {
             User user = serializeUser(userCursor, circle);
+            user.setDirty(true);    // mark this user as 'dirty' to indicate that the user may be deleted
             users.add(user);
             userCursor.moveToNext();
         }
@@ -222,42 +306,79 @@ public class DataUpdater {
                     public void onSuccess(JSONObject response) {
                         try {
                             if (response != null) {
-                                JSONArray users = response.getJSONArray(Const.JSON_SERVER_USERS);
-                                Toast.makeText(context, "Found " + users.length() + " user(s)", Toast.LENGTH_SHORT).show();
+                                JSONArray jsonArray = response.getJSONArray(Const.JSON_SERVER_USERS);
+                                List<User> toModify = new ArrayList<>();        // list of users to modify in DB
+                                List<User> toAdd = new ArrayList<>();       // list of users to update in DB
+                                List<User> toDelete = new ArrayList<>();    // list of users to be deleted from DB
+                                int unchanged = 0;
 
-                                for (int i = 0; i < users.length(); i++) {
-                                    JSONObject json = users.getJSONObject(i);
+                                for (int i = 0; i < jsonArray.length(); i++) {
+                                    JSONObject json = jsonArray.getJSONObject(i);
                                     String id = json.getString(Const.JSON_SERVER_USERID);
                                     String name = json.getString(Const.JSON_SERVER_USERNAME);
                                     String avatar = json.getString(Const.JSON_SERVER_USER_AVATAR);
+                                    id = TextUtils.isEmpty(id) ? "" : id;
+                                    name = TextUtils.isEmpty(name) ? "" : name;
+                                    avatar = TextUtils.isEmpty(avatar) ? "" : avatar;
+
                                     User user = circle.getUser(id);
+
+                                    // if the user already exists in this circle, modify them
                                     if (user != null) {
-                                        if (user.getId().equals(AppState.getInstance(context).getActiveUser().getId())) {
-                                            AppState.getInstance(context).getActiveUser().setId(id);
-                                            AppState.getInstance(context).getActiveUser().setName(name);
-                                            AppState.getInstance(context).getActiveUser().setAvatar(avatar);
+
+                                        // update only if necessary
+                                        if (!name.equals(user.getName()) || !avatar.equals(user.getAvatar())) {
+                                            if (id.equals(appState.getActiveUser().getId())) {
+                                                appState.getActiveUser().setName(name);
+                                                appState.getActiveUser().setAvatar(avatar);
+                                            }
+                                            user.setName(name);
+                                            user.setAvatar(avatar);
+
+                                            // add to the list of ones to be modified;
+                                            toModify.add(user);
                                         }
-                                        user.setId(id);
-                                        user.setName(name);
-                                        if (user.getAvatar() == null || !user.getAvatar().equals(avatar))
-                                            user.setAvatar(avatar);
+                                        else unchanged += 1;
+
+                                        // mark user to be stable
+                                        user.setDirty(false);
                                     }
+
+                                    // if there's a new user, add them
                                     else {
-                                        Location location = new Location("");
-                                        location.setLatitude(Const.TEST_USER_LAT);
-                                        location.setLongitude(Const.TEST_USER_LONG);
-                                        user = new User(name, id, location);
-                                        if (user.getAvatar() == null || !user.getAvatar().equals(avatar))
-                                            user.setAvatar(avatar);
-                                        circle.addUser(user);
+                                        if (!TextUtils.isEmpty(id)) {
+                                            Location location = new Location("");
+                                            location.setLatitude(0);
+                                            location.setLongitude(0);
+                                            user = new User(name, id, location);
+                                            user.setDirty(false);
+                                            if (user.getAvatar() == null || !user.getAvatar().equals(avatar)) user.setAvatar(avatar);
 
-                                        Log.d(TAG, "Added new user " + user.getId());
+                                            circle.addUser(user);
 
-                                        if (handler != null) {
-                                            handler.sendEmptyMessage(Const.MSG_GET_USERS);
+                                            // add to the list of ones to be added
+                                            toAdd.add(user);
                                         }
                                     }
                                 }
+
+                                if (!toModify.isEmpty()) modifyUsersInCircle(circle, toModify);
+                                if (!toAdd.isEmpty()) addUsersToCircle(circle, toAdd);
+                                for (Iterator<User> iter = circle.getUsers().iterator(); iter.hasNext();) {
+                                    User user = iter.next();
+                                    if (user.isDirty()) {
+                                        toDelete.add(user);
+                                        iter.remove();
+                                    }
+                                }
+                                if (!toDelete.isEmpty()) removeUsersFromCircle(circle, toDelete);
+                                Log.d(TAG, "Added " + toModify.size() + " new user(s)");
+                                Log.d(TAG, "Modified " + toModify.size() + " user(s)");
+                                Log.d(TAG, "Removed " + toDelete.size() + " user(s)");
+                                Log.d(TAG, unchanged + " user(s) remained unchanged");
+
+                                // alert UI that we may have some changes to user list
+                                if (handler != null) handler.sendEmptyMessage(Const.MSG_GET_USERS);
                             }
                         }
                         catch (Exception ex) {
@@ -306,10 +427,7 @@ public class DataUpdater {
 //        userPerm.add(User.SONG_SNIPPET_RECEIVE);
 //        userPerm.add(User.POLL_RECEIVE);
         user.setUserPermission(userPerm);
-
         user.setCurrentCircle(circle);
-//        Log.d(TAG, "Query user for circle(" + circle.getId() + ") id: " + user.getId() + ", name: " + user.getName() + ", avatarId: " + cursor.getString(2)
-//                + ", location: " + user.getLocation().getLatitude() + ", " + user.getLocation().getLongitude());
 
         return user;
     }
@@ -384,7 +502,7 @@ public class DataUpdater {
                 for (int i = 0; i < users.length(); i++) {
                     JSONObject user = users.getJSONObject(i);
                     String userId = user.getString(Const.JSON_SERVER_USERID);
-                    if (userId.equals(AppState.getInstance(context).getActiveUser().getId())) continue;
+                    if (userId.equals(appState.getActiveUser().getId())) continue;
 
                     // verify that the user is in a circle and the ID is valid
                     Cursor userInCircleCursor = database.query(DBHelper.TABLE_USER_CIRCLE,
@@ -671,7 +789,7 @@ public class DataUpdater {
                 // don't update if it's the user's own location
                 for (User s : circle.getUsers()) {
                     String userId = user.getString(Const.JSON_SERVER_USERID);
-                    if (userId.equals(AppState.getInstance(context).getActiveUser().getId())) {
+                    if (userId.equals(appState.getActiveUser().getId())) {
                         Log.d(TAG, "Skipping updating user's own location");
                         continue;
                     }

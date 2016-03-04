@@ -153,15 +153,12 @@ public class AppState
 
         // initialize the user info
         // if user is not there, TODO sign in again
-        dataUpdater = new DataUpdater(context);
+        dataUpdater = new DataUpdater(context, this);
         dataUpdater.open();
         user = dataUpdater.getActiveUser(Const.TEST_USER_ID);
         if (user == null) {
             //TODO SIGN IN
-            user = createUser(Const.TEST_USER_NAME, Const.TEST_USER_ID, Const.TEST_USER_AVATAR,
-                    Const.TEST_USER_LAT, Const.TEST_USER_LONG);
-//            user = createUser(Const.TEST_USER_NAME_2, Const.TEST_USER_ID_2,
-//                    Const.TEST_USER_AVATAR_2, Const.TEST_USER_LAT_2, Const.TEST_USER_LONG_2);
+            user = createUser(Const.TEST_USER_ID);
         }
         dataUpdater.setActiveUser(user);
 
@@ -197,12 +194,12 @@ public class AppState
         return dateTimeFormatter;
     }
 
-    private User createUser(String name, String id, String avatar, double latitude, double longitude) {
+    private User createUser(String id) {
         Location location = new Location("");
-        location.setLatitude(latitude);
-        location.setLongitude(longitude);
-        User user = new User(name, id, location);
-        user.setAvatar(avatar);
+        location.setLatitude(0);
+        location.setLongitude(0);
+        User user = new User("", id, location);
+        user.setAvatar("");
 
         List<Integer> userPerm = new ArrayList<>();
         userPerm.add(User.MEDIA_IMAGE_RECEIVE);

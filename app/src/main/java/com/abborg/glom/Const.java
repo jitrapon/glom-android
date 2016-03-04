@@ -1,8 +1,5 @@
 package com.abborg.glom;
 
-/**
- * Created by Boat on 8/9/58.
- */
 public class Const {
 
 //    public static final String HOST_ADDRESS = "http://putsreq.com/KJVQCdWbHg0xXf2aHWf1";
@@ -13,22 +10,10 @@ public class Const {
     /**
      * TEST INFO
      * **/
-    public static final String TEST_USER_NAME = "Jitrapon";
-    public static final String TEST_USER_ID = "yoshi3003";
+//    public static final String TEST_USER_ID = "yoshi3003";
+    public static final String TEST_USER_ID = "fatcat18";
     public static final String TEST_CIRCLE_ID = "dev-test-circle-1";
-    public static final double TEST_USER_LAT = 1.3385674;
-    public static final double TEST_USER_LONG = 103.7059549;
-    public static final boolean TEST_USER_BROADCAST_LOCATION = true;
-    public static final boolean TEST_USER_DISCOVERABLE = true;
-    public static final String TEST_USER_AVATAR = "https://media.licdn.com/mpr/mpr/shrinknp_200_200/AAEAAQAAAAAAAAUbAAAAJDY5ZDhhMDhhLTFkNDEtNDU5Ni1hNzEzLTVlNDhlZTlkNzg3ZA.jpg";
     public static final String TEST_API_AUTHORIZATION_HEADER = "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789";
-
-    public static final String TEST_USER_NAME_2 = "Nad";
-    public static final String TEST_USER_ID_2 = "fatcat18";
-    public static final String TEST_CIRCLE_ID_2 = "dev-test-circle-1";
-    public static final double TEST_USER_LAT_2 = 1.3385674;
-    public static final double TEST_USER_LONG_2 = 103.7059549;
-    public static final String TEST_USER_AVATAR_2 = "";
 
     /**
      * NOTIFICATIONS ID

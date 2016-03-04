@@ -141,7 +141,7 @@ public class Circle implements Parcelable {
 
     public User getUser(String id) {
         for (User user : users) {
-            if (user.getId().equals(id)) return user;
+            if (user.getId().equalsIgnoreCase(id)) return user;
         }
 
         return null;

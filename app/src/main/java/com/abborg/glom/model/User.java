@@ -29,6 +29,8 @@ public class User implements Parcelable {
 
     private String status;
 
+    private boolean dirty;
+
     public static final int MEDIA_IMAGE_RECEIVE = 1;
 
     public static final int MEDIA_AUDIO_RECEIVE = 2;
@@ -139,8 +141,23 @@ public class User implements Parcelable {
 
     public String getStatus() { return status; }
 
+    public boolean isDirty() { return dirty; }
+
+    public void setDirty(boolean isDirty) { dirty = isDirty; }
+
     @Override
     public String toString() {
         return id;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) return true;
+        if (!(other instanceof User)) return false;
+        User otherUser = (User) other;
+        if (this.id != null && otherUser.id != null) {
+            return this.id.equalsIgnoreCase(otherUser.id);
+        }
+        else return false;
     }
 }
