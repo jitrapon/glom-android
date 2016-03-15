@@ -4,6 +4,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
@@ -16,6 +17,7 @@ import com.abborg.glom.AppState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.interfaces.ResponseListener;
+import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CircleInfo;
 import com.abborg.glom.model.Event;
@@ -25,8 +27,6 @@ import com.abborg.glom.utils.RequestHandler;
 import com.android.volley.VolleyError;
 
 import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -39,31 +39,30 @@ import java.util.List;
  * Class that wraps around model to perform CRUD operations on database and 
  * make necessary network operations
  *
- * Created by Boat on 22/9/58.
+ * Created by Jitrapon Tiachunpun on 22/9/58.
  */
 public class DataUpdater {
 
     private static final String TAG = "DATA PROVIDER";
+    private Context context;
 
+    /* Currently active user */
     private User activeUser;
 
+    /* Database stuff */
     private SQLiteDatabase database;
-    
     private DBHelper dbHelper;
-    
     private String[] circleColumns = { DBHelper.CIRCLE_COLUMN_ID,
             DBHelper.CIRCLE_COLUMN_NAME, DBHelper.CIRCLE_COLUMN_BROADCAST_LOCATION };
-    
     private String[] userColumns = { DBHelper.USER_COLUMN_ID, DBHelper.USER_COLUMN_NAME,
             DBHelper.USER_COLUMN_AVATAR};
-
     private String[] userCircleColumns = { DBHelper.USERCIRCLE_COLUMN_USER_ID, DBHelper.USERCIRCLE_COLUMN_CIRCLE_ID,
             DBHelper.USERCIRCLE_COLUMN_LATITUDE, DBHelper.USERCIRCLE_COLUMN_LONGITUDE };
 
-    private Context context;
-
+    /* Handler from main UI thread to pass messages back to main thread */
     private Handler handler;
 
+    /* Global app states */
     private AppState appState;
 
     public DataUpdater(Context context, AppState appState) {
@@ -77,61 +76,32 @@ public class DataUpdater {
     }
 
     public void open() throws SQLException {
+        Log.d(TAG, "Opening database");
         database = dbHelper.getWritableDatabase();
     }
 
     public void close() {
+        Log.d(TAG, "Closing database");
         dbHelper.close();
     }
 
+    /*************************************************
+     * CIRCLE OPERATIONS
+     *************************************************/
     public void resetCircles() {
         try {
             database.beginTransaction();
 
+            database.execSQL("DELETE FROM " + DBHelper.TABLE_USER_CIRCLE);
             database.execSQL("DELETE FROM " + DBHelper.TABLE_CIRCLES);
             database.execSQL("DELETE FROM " + DBHelper.TABLE_USERS);
-            database.execSQL("DELETE FROM " + DBHelper.TABLE_USER_CIRCLE);
             database.execSQL("DELETE FROM " + DBHelper.TABLE_EVENTS);
-
-//            database.execSQL("DROP TABLE IF EXISTS " + DBHelper.TABLE_CIRCLES);
-//            database.execSQL("DROP TABLE IF EXISTS " + DBHelper.TABLE_USERS);
-//            database.execSQL("DROP TABLE IF EXISTS " + DBHelper.TABLE_USER_CIRCLE);
-//            database.execSQL("DROP TABLE IF EXISTS " + DBHelper.TABLE_EVENTS);
 
             database.setTransactionSuccessful();
         }
         finally {
             database.endTransaction();
         }
-    }
-
-    public User getActiveUser(String id) {
-        User user = null;
-        Cursor cursor = database.query(DBHelper.TABLE_USERS, null, DBHelper.USER_COLUMN_ID + " = '" + id + "'", null, null, null ,null);
-        if (cursor.moveToFirst()) {
-            String name = cursor.getString(cursor.getColumnIndex(DBHelper.USER_COLUMN_NAME));
-            String userId = cursor.getString(cursor.getColumnIndex(DBHelper.USER_COLUMN_ID));
-            String avatar = cursor.getString(cursor.getColumnIndex(DBHelper.USER_COLUMN_AVATAR));
-            user = new User(name, userId, null);
-            user.setAvatar(avatar);
-
-            List<Integer> userPerm = new ArrayList<>();
-            userPerm.add(User.MEDIA_IMAGE_RECEIVE);
-            userPerm.add(User.MEDIA_AUDIO_RECEIVE);
-            userPerm.add(User.MEDIA_VIDEO_RECEIVE);
-            userPerm.add(User.ALARM_RECEIVE);
-            userPerm.add(User.NOTE_RECEIVE);
-            userPerm.add(User.LOCATION_REQUEST_RECEIVE);
-            userPerm.add(User.CREATE_EVENT);
-            user.setUserPermission(userPerm);
-        }
-        cursor.close();
-
-        return user;
-    }
-
-    public void setActiveUser(User user) {
-        activeUser = user;
     }
 
     public Circle createCircle(String name, List<User> users, String id) {
@@ -186,11 +156,101 @@ public class DataUpdater {
         return circle;
     }
 
+    @SuppressWarnings("unused")
     public void deleteCircle(Circle circle) {
         String id = circle.getId();
         database.delete(DBHelper.TABLE_CIRCLES, DBHelper.CIRCLE_COLUMN_ID + " = " + id, null);
 
         //TODO send request to GCM and server to delete group
+    }
+
+    public List<CircleInfo> getCirclesInfo() {
+        List<CircleInfo> circleInfo = new ArrayList<>();
+
+        Cursor cursor = database.query(DBHelper.TABLE_CIRCLES,
+                circleColumns, null, null, null, null, null);
+
+        cursor.moveToFirst();
+        while (!cursor.isAfterLast()) {
+            CircleInfo info = serializeCircleInfo(cursor);
+            circleInfo.add(info);
+            cursor.moveToNext();
+        }
+        cursor.close();
+        return circleInfo;
+    }
+
+    private Circle serializeCircle(Cursor cursor) {
+        Circle circle = Circle.createCircle(null, activeUser);
+        circle.setId(cursor.getString(0));
+        circle.setTitle(cursor.getString(1));
+        circle.setBroadcastingLocation((cursor.getInt(cursor.getColumnIndex(DBHelper.CIRCLE_COLUMN_BROADCAST_LOCATION)) == 1));
+
+        List<User> users = getUsersInCircle(circle);
+        List<BoardItem> items = getCircleItems(circle);
+        circle.setUsers(users);
+        circle.setItems(items);
+        return circle;
+    }
+
+    private CircleInfo serializeCircleInfo(Cursor cursor) {
+        CircleInfo info = new CircleInfo();
+        info.id = cursor.getString(0);
+        info.title = cursor.getString(1);
+
+        Cursor userListCursor = database.query(DBHelper.TABLE_USER_CIRCLE, userCircleColumns, DBHelper.USERCIRCLE_COLUMN_CIRCLE_ID + "='" + info.id + "'",
+                null, null, null, null);
+        info.numUsers = userListCursor.getCount();
+        userListCursor.close();
+        return info;
+    }
+
+    public Circle getCircleById(String id) {
+        Circle circle = null;
+        Cursor cursor = database.query(DBHelper.TABLE_CIRCLES,
+                circleColumns, DBHelper.CIRCLE_COLUMN_ID + "='" + id + "'", null, null, null, null);
+
+        if (cursor.moveToFirst()) {
+            circle = serializeCircle(cursor);
+            cursor.close();
+            Log.d(TAG, "Get circle (" + circle.getTitle() + ") with " + circle.getUsers().size() + " users, isBroadcastingLocation: " +
+                    circle.isUserBroadcastingLocation());
+        }
+
+        return circle;
+    }
+
+    /*************************************************
+     * USER OPERATIONS
+     *************************************************/
+
+    public User getActiveUser(String id) {
+        User user = null;
+        Cursor cursor = database.query(DBHelper.TABLE_USERS, null, DBHelper.USER_COLUMN_ID + " = '" + id + "'", null, null, null ,null);
+        if (cursor.moveToFirst()) {
+            String name = cursor.getString(cursor.getColumnIndex(DBHelper.USER_COLUMN_NAME));
+            String userId = cursor.getString(cursor.getColumnIndex(DBHelper.USER_COLUMN_ID));
+            String avatar = cursor.getString(cursor.getColumnIndex(DBHelper.USER_COLUMN_AVATAR));
+            user = new User(name, userId, null);
+            user.setAvatar(avatar);
+
+            List<Integer> userPerm = new ArrayList<>();
+            userPerm.add(User.MEDIA_IMAGE_RECEIVE);
+            userPerm.add(User.MEDIA_AUDIO_RECEIVE);
+            userPerm.add(User.MEDIA_VIDEO_RECEIVE);
+            userPerm.add(User.ALARM_RECEIVE);
+            userPerm.add(User.NOTE_RECEIVE);
+            userPerm.add(User.LOCATION_REQUEST_RECEIVE);
+            userPerm.add(User.CREATE_EVENT);
+            user.setUserPermission(userPerm);
+        }
+        cursor.close();
+
+        return user;
+    }
+
+    public void setActiveUser(User user) {
+        activeUser = user;
     }
 
     public void addUsersToCircle(Circle circle, List<User> users) {
@@ -277,7 +337,7 @@ public class DataUpdater {
     }
 
     public List<User> getUsersInCircle(final Circle circle) {
-        List<User> users = new ArrayList<User>();
+        List<User> users = new ArrayList<>();
 
         // get the user info from USERS table and the user location from USERCIRCLE table
         // SELECT id,name,avatarId,location
@@ -337,8 +397,7 @@ public class DataUpdater {
 
                                             // add to the list of ones to be modified;
                                             toModify.add(user);
-                                        }
-                                        else unchanged += 1;
+                                        } else unchanged += 1;
 
                                         // mark user to be stable
                                         user.setDirty(false);
@@ -352,7 +411,8 @@ public class DataUpdater {
                                             location.setLongitude(0);
                                             user = new User(name, id, location);
                                             user.setDirty(false);
-                                            if (user.getAvatar() == null || !user.getAvatar().equals(avatar)) user.setAvatar(avatar);
+                                            if (user.getAvatar() == null || !user.getAvatar().equals(avatar))
+                                                user.setAvatar(avatar);
 
                                             circle.addUser(user);
 
@@ -364,7 +424,7 @@ public class DataUpdater {
 
                                 if (!toModify.isEmpty()) modifyUsersInCircle(circle, toModify);
                                 if (!toAdd.isEmpty()) addUsersToCircle(circle, toAdd);
-                                for (Iterator<User> iter = circle.getUsers().iterator(); iter.hasNext();) {
+                                for (Iterator<User> iter = circle.getUsers().iterator(); iter.hasNext(); ) {
                                     User user = iter.next();
                                     if (user.isDirty()) {
                                         toDelete.add(user);
@@ -380,8 +440,7 @@ public class DataUpdater {
                                 // alert UI that we may have some changes to user list
                                 if (handler != null) handler.sendEmptyMessage(Const.MSG_GET_USERS);
                             }
-                        }
-                        catch (Exception ex) {
+                        } catch (Exception ex) {
                             ex.printStackTrace();
                             Log.e(TAG, ex.getMessage());
                         }
@@ -432,49 +491,9 @@ public class DataUpdater {
         return user;
     }
 
-    public List<CircleInfo> getCirclesInfo() {
-        List<CircleInfo> circleInfo = new ArrayList<>();
-
-        Cursor cursor = database.query(DBHelper.TABLE_CIRCLES,
-                circleColumns, null, null, null, null, null);
-
-        cursor.moveToFirst();
-        while (!cursor.isAfterLast()) {
-            CircleInfo info = serializeCircleInfo(cursor);
-            circleInfo.add(info);
-            cursor.moveToNext();
-        }
-        cursor.close();
-        return circleInfo;
-    }
-
-    private CircleInfo serializeCircleInfo(Cursor cursor) {
-        CircleInfo info = new CircleInfo();
-        info.id = cursor.getString(0);
-        info.title = cursor.getString(1);
-
-        Cursor userListCursor = database.query(DBHelper.TABLE_USER_CIRCLE, userCircleColumns, DBHelper.USERCIRCLE_COLUMN_CIRCLE_ID + "='" + info.id + "'",
-                null, null, null, null);
-        Log.e(TAG, info.title);
-        info.numUsers = userListCursor.getCount();
-        userListCursor.close();
-        return info;
-    }
-
-    public Circle getCircleById(String id) {
-        Circle circle = null;
-        Cursor cursor = database.query(DBHelper.TABLE_CIRCLES,
-                circleColumns, DBHelper.CIRCLE_COLUMN_ID + "='" + id + "'", null, null, null, null);
-
-        if (cursor.moveToFirst()) {
-            circle = serializeCircle(cursor);
-            cursor.close();
-            Log.d(TAG, "Get circle (" + circle.getTitle() + ") with " + circle.getUsers().size() + " users, isBroadcastingLocation: " +
-                    circle.isUserBroadcastingLocation());
-        }
-
-        return circle;
-    }
+    /*************************************************
+     * LOCATION OPERATIONS
+     *************************************************/
 
     public void updateCircleLocationBroadcast(String circleId, boolean enabled) {
         ContentValues values = new ContentValues();
@@ -541,19 +560,6 @@ public class DataUpdater {
         circleCursor.close();
     }
 
-    private Circle serializeCircle(Cursor cursor) {
-        Circle circle = Circle.createCircle(null, activeUser);
-        circle.setId(cursor.getString(0));
-        circle.setTitle(cursor.getString(1));
-        circle.setBroadcastingLocation((cursor.getInt(cursor.getColumnIndex(DBHelper.CIRCLE_COLUMN_BROADCAST_LOCATION)) == 1));
-
-        List<User> users = getUsersInCircle(circle);
-        List<Event> events = getCircleEvents(circle);
-        circle.setUsers(users);
-        circle.setEvents(events);
-        return circle;
-    }
-
     public void updateUserLocation(String userId, String circleId, Double lat, Double lng) {
         ContentValues values = new ContentValues();
         values.put(DBHelper.USERCIRCLE_COLUMN_LATITUDE, lat);
@@ -562,213 +568,6 @@ public class DataUpdater {
                 DBHelper.USERCIRCLE_COLUMN_USER_ID + "='" + userId + "' AND " +
                         DBHelper.USERCIRCLE_COLUMN_CIRCLE_ID + "='" + circleId + "'", null);
         Log.d(TAG, "Updated " + rowAffected + " row(s) in " + DBHelper.TABLE_USER_CIRCLE);
-    }
-
-    /**
-     * Create a new event under an optionally specified circle
-     */
-    public Event createEvent(String name, Circle circle, List<User> hosts, DateTime time, DateTime endTime, String place, Location location,
-                             int discoverType, List<User> invitees, boolean showHosts,
-                             boolean showInvitees, boolean showAttendees, String note) {
-        // TODO notify server
-        Event event = Event.createEvent(name, circle, hosts, time, place, location, discoverType, invitees, showHosts,  showInvitees,
-                showAttendees, note);
-        event.setEndTime(endTime);
-
-        //TODO retrieve last action and action timestamp from server
-        //TODO for now hardcode this
-        event.setLastAction(new FeedAction(FeedAction.CREATE_EVENT, activeUser, new DateTime()));
-        circle.addEvent(event);     // this add event to the circle, automatically updating the recyclerview adapter
-
-        database.beginTransaction();
-
-        try {
-            ContentValues values = new ContentValues();
-            values.put(DBHelper.EVENT_COLUMN_ID, event.getId());
-            if (circle != null) values.put(DBHelper.EVENT_COLUMN_CIRCLE_ID, circle.getId());
-            values.put(DBHelper.EVENT_COLUMN_NAME, event.getName());
-            if (event.getDateTime() != null) {
-                values.put(DBHelper.EVENT_COLUMN_DATETIME, event.getDateTime().getMillis());
-            }
-            if (event.getEndTime() != null) {
-                values.put(DBHelper.EVENT_COLUMN_ENDTIME, event.getEndTime().getMillis());
-            }
-            values.put(DBHelper.EVENT_COLUMN_PLACE, event.getPlace());
-            if (event.getLocation() != null) {
-                values.put(DBHelper.EVENT_COLUMN_LATITUDE, event.getLocation().getLatitude());
-                values.put(DBHelper.EVENT_COLUMN_LONGITUDE, event.getLocation().getLongitude());
-            }
-            else {
-                values.put(DBHelper.EVENT_COLUMN_LATITUDE, -1.0);
-                values.put(DBHelper.EVENT_COLUMN_LONGITUDE, -1.0);
-            }
-            values.put(DBHelper.EVENT_COLUMN_NOTE, event.getNote());
-            long insertId = database.insert(DBHelper.TABLE_EVENTS, null, values);
-//            Log.d(TAG, "Inserted event with _id: " + insertId + ", id: " + event.getId() + ", name: " +
-//                    event.getName() + ", time: " + event.getDateTime() + ", place: " + event.getPlace());
-
-            database.setTransactionSuccessful();
-        }
-        catch (SQLException ex) {
-            Log.e(TAG, ex.getMessage());
-        }
-        finally {
-            database.endTransaction();
-        }
-
-        //TODO send update to server of the created event
-
-        return event;
-    }
-
-    public Event updateEvent(String eventId, Circle eventCircle, String newName, List<User> newHosts, DateTime newStartTime, DateTime newEndTime,
-                             String newPlace, Location newLocation, int newDiscoverType, List<User> newInvitees, boolean newShowHosts,
-                             boolean newShowInvitees, boolean newShowAttendees, String newNote) {
-        //TODO update server
-
-        List<Event> events = eventCircle.getEvents();
-        Event updatedEvent = null;
-        for (Event event : events) {
-            if (event.getId().equals(eventId)) {
-                updatedEvent = event;
-                break;
-            }
-        }
-
-        if (updatedEvent != null) {
-            //TODO retrieve last action and action timestamp from server
-            //TODO for now hardcode this
-            updatedEvent.setLastAction(new FeedAction(FeedAction.UPDATE_EVENT, activeUser, new DateTime()));
-            updatedEvent.setName(newName);
-            updatedEvent.setHosts(newHosts);
-            updatedEvent.setDateTime(newStartTime);
-            updatedEvent.setEndTime(newEndTime);
-            updatedEvent.setPlace(newPlace);
-            updatedEvent.setLocation(newLocation);
-            updatedEvent.setDiscoverType(newDiscoverType);
-            updatedEvent.setInvitees(newInvitees);
-            updatedEvent.setHostsShown(newShowHosts);
-            updatedEvent.setInviteesShown(newShowInvitees);
-            updatedEvent.setAttendeesShown(newShowAttendees);
-            updatedEvent.setNote(newNote);
-
-            database.beginTransaction();
-
-            try {
-                ContentValues values = new ContentValues();
-                values.put(DBHelper.EVENT_COLUMN_NAME, updatedEvent.getName());
-                if (updatedEvent.getDateTime() != null) {
-                    values.put(DBHelper.EVENT_COLUMN_DATETIME, updatedEvent.getDateTime().getMillis());
-                }
-                if (updatedEvent.getEndTime() != null) {
-                    values.put(DBHelper.EVENT_COLUMN_ENDTIME, updatedEvent.getEndTime().getMillis());
-                }
-                values.put(DBHelper.EVENT_COLUMN_PLACE, updatedEvent.getPlace());
-                if (updatedEvent.getLocation() != null) {
-                    values.put(DBHelper.EVENT_COLUMN_LATITUDE, updatedEvent.getLocation().getLatitude());
-                    values.put(DBHelper.EVENT_COLUMN_LONGITUDE, updatedEvent.getLocation().getLongitude());
-                }
-                else {
-                    values.put(DBHelper.EVENT_COLUMN_LATITUDE, -1.0);
-                    values.put(DBHelper.EVENT_COLUMN_LONGITUDE, -1.0);
-                }
-                values.put(DBHelper.EVENT_COLUMN_NOTE, updatedEvent.getNote());
-                long updateId = database.update(DBHelper.TABLE_EVENTS, values,
-                        DBHelper.EVENT_COLUMN_ID + "='" + updatedEvent.getId() + "'", null);
-                Log.d(TAG, "Updated event with _id: " + updateId + ", id: " + updatedEvent.getId() + ", name: " +
-                    updatedEvent.getName() + ", time: " + updatedEvent.getDateTime() + ", place: " + updatedEvent.getPlace());
-
-                database.setTransactionSuccessful();
-            }
-            catch (SQLException ex) {
-                Log.e(TAG, ex.getMessage());
-            }
-            finally {
-                database.endTransaction();
-            }
-        }
-
-        return updatedEvent;
-    }
-
-    public void deleteEvent(String id, Circle circle) {
-        List<Event> events = circle.getEvents();
-        Event deleted = null;
-        for (int index = 0; index < events.size(); index++) {
-            if (events.get(index).getId().equals(id)) {
-                deleted = events.remove(index);
-            }
-        }
-        if (deleted != null) id = deleted.getId();
-
-        database.delete(DBHelper.TABLE_EVENTS, DBHelper.EVENT_COLUMN_ID + "='" + id + "'", null);
-    }
-
-    /**
-     * Retrieves list of events within this circle that are cached
-     *
-     * @param circle
-     * @return
-     */
-    public List<Event> getCircleEvents(Circle circle) {
-        //TODO send request to server
-        List<Event> events = new ArrayList<>();
-
-        DateTimeFormatter formatter = DateTimeFormat.forPattern(context.getResources().getString(R.string.action_create_event_datetime_format));
-        DateTime postTime = formatter.parseDateTime("20/11/2015 12:00:00");
-
-        // default sorting is order by event start time ascending
-        String query = "SELECT * FROM " + DBHelper.TABLE_EVENTS + " WHERE " +
-                DBHelper.TABLE_EVENTS + "." + DBHelper.EVENT_COLUMN_CIRCLE_ID + "='" + circle.getId() + "' ORDER BY " +
-                DBHelper.TABLE_EVENTS + "." + DBHelper.EVENT_COLUMN_DATETIME + " ASC";
-        Cursor cursor = database.rawQuery(query, null);
-
-        cursor.moveToFirst();
-        while (!cursor.isAfterLast()) {
-            Event event = serializeEvent(cursor, circle);
-
-            //TODO retrieve last action and action timestamp from server
-            //TODO for now hardcode this
-            event.setLastAction(new FeedAction(FeedAction.CREATE_EVENT, activeUser, postTime));
-            events.add(event);
-            cursor.moveToNext();
-        }
-        cursor.close();
-
-        return events;
-    }
-
-    private Event serializeEvent(Cursor cursor, Circle circle) {
-        Log.d(TAG, "Serializing an event...");
-        int idColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_ID);
-        int nameColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_NAME);
-        int dateColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_DATETIME);
-        int endDateColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_ENDTIME);
-        int placeColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_PLACE);
-        int latColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_LATITUDE);
-        int longColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_LONGITUDE);
-        int noteColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_NOTE);
-
-        String id = cursor.getString(idColumn);
-        String name = cursor.getString(nameColumn);
-        DateTime time = null;
-        DateTime endTime = null;
-        if (cursor.getLong(dateColumn) != 0)
-           time = new DateTime(cursor.getLong(dateColumn));
-        if (cursor.getLong(endDateColumn) != 0)
-            endTime = new DateTime(cursor.getLong(endDateColumn));
-        String place = cursor.getString(placeColumn);
-        Location location = null;
-        if (cursor.getDouble(latColumn) != -1.0 && cursor.getDouble(longColumn) != -1.0) {
-            location = new Location("");
-            location.setLatitude(cursor.getDouble(latColumn));
-            location.setLongitude(cursor.getDouble(longColumn));
-        }
-        String note = cursor.getString(noteColumn);
-
-        Event event = Event.createEvent(id, circle, name, time, place, location, note);
-        event.setEndTime(endTime);
-        return event;
     }
 
     public List<User> getLocationUpdates(Intent intent, Circle circle) {
@@ -809,5 +608,403 @@ public class DataUpdater {
         }
 
         return userList;
+    }
+
+    /*************************************************
+     * CIRCLE ITEMS OPERATIONS
+     *************************************************/
+    public void requestBoardItems(final Circle circle) {
+        if (circle != null) {
+            RequestHandler.getInstance(context).get("Get Board", String.format(Const.API_BOARD, circle.getId()),
+                new ResponseListener() {
+                    @Override
+                    public void onSuccess(JSONObject response) {
+                        try {
+                            if (response != null) {
+                                JSONArray jsonArray = response.getJSONArray(Const.JSON_SERVER_ITEMS);
+                                int numItem = jsonArray.length();
+                                List<BoardItem> items = circle.getItems();
+                                if (items != null) {
+                                    for (BoardItem item : items) {
+                                        item.setDirty(true);
+                                    }
+                                }
+                                else return;
+
+                                if (numItem != 0) {
+                                    for (int i = 0; i < jsonArray.length(); i++) {
+                                        JSONObject json = jsonArray.getJSONObject(i);
+                                        String error = json.optString(Const.JSON_SERVER_ERROR);
+                                        if (TextUtils.isEmpty(error)) {
+                                            String id = json.getString(Const.JSON_SERVER_ITEM_ID);
+                                            int type = json.getInt(Const.JSON_SERVER_ITEM_TYPE);
+                                            Long createdMillis = json.getLong(Const.JSON_SERVER_CREATED_TIME);
+                                            Long updatedMillis = json.getLong(Const.JSON_SERVER_UPDATED_TIME);
+                                            JSONObject info = json.getJSONObject(Const.JSON_SERVER_INFO);
+
+                                            switch (type) {
+                                                case BoardItem.TYPE_EVENT:
+                                                    String name = info.getString(Const.JSON_SERVER_EVENT_NAME);
+                                                    long start = info.optLong(Const.JSON_SERVER_EVENT_START_TIME);
+                                                    long end = info.optLong(Const.JSON_SERVER_EVENT_END_TIME);
+                                                    String placeId = info.getString(Const.JSON_SERVER_EVENT_PLACE_ID);
+                                                    JSONObject locationJson = info.getJSONObject(Const.JSON_SERVER_LOCATION);
+                                                    double lat = locationJson.optDouble(Const.JSON_SERVER_LOCATION_LAT, -1);
+                                                    double lng = locationJson.optDouble(Const.JSON_SERVER_LOCATION_LONG, -1);
+                                                    String note = info.getString(Const.JSON_SERVER_EVENT_NOTE);
+
+                                                    name = name.equals("null") ? null : name;
+                                                    DateTime startTime = null;
+                                                    DateTime endTime = null;
+                                                    if (start != 0L)
+                                                        startTime = new DateTime(start);
+                                                    if (end != 0L) endTime = new DateTime(end);
+                                                    placeId = placeId.equals("null") ? null : placeId;
+                                                    Location location = null;
+                                                    if (lat != -1 && lng != -1) {
+                                                        location = new Location("");
+                                                        location.setLatitude(lat);
+                                                        location.setLongitude(lng);
+                                                    }
+                                                    note = note.equals("null") ? null : note;
+
+                                                    Event event = null;
+
+                                                    if (items != null) {
+                                                        for (BoardItem item : items) {
+                                                            if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_EVENT) {
+                                                                event = (Event) item;
+                                                            }
+                                                        }
+                                                        if (event == null) {
+                                                            DateTime createdTime = createdMillis==null ? null : new DateTime(createdMillis);
+                                                            createEvent(circle, createdTime, id, name, startTime, endTime, placeId, location,
+                                                                    note, false);
+                                                        }
+                                                        else {
+                                                            DateTime updatedTime = updatedMillis==null ? null : new DateTime(updatedMillis);
+                                                            updateEvent(circle, updatedTime, id, name, startTime, endTime, placeId, location, note);
+                                                            event.setDirty(false);
+                                                        }
+                                                    }
+                                                    break;
+                                                default:
+                                                    break;
+                                            }
+                                        }
+                                    }
+                                }
+                                Log.d(TAG, "Found " + numItem + " items");
+
+                                // remove dirty BoardItems
+                                Iterator<BoardItem> iterator = items.iterator();
+                                while (iterator.hasNext()) {
+                                    BoardItem item = iterator.next();
+                                    if (item.isDirty()) {
+                                        iterator.remove();
+                                        deleteItem(item);
+                                    }
+                                }
+
+                                // update UI
+                                if (handler != null)
+                                    handler.sendEmptyMessage(Const.MSG_GET_ITEMS);
+                            }
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                            if (handler != null) handler.sendEmptyMessage(Const.MSG_GET_ITEMS);
+                        }
+                    }
+
+                    @Override
+                    public void onError(VolleyError error) {
+                        RequestHandler.getInstance(context).handleError(error);
+                        if (handler != null) handler.sendEmptyMessage(Const.MSG_GET_ITEMS);
+                    }
+                }
+            );
+        }
+    }
+
+    public List<BoardItem> getCircleItems(Circle circle) {
+        List<BoardItem> items = new ArrayList<>();
+
+        // default sorting is order by event start time ascending
+        // credit http://stackoverflow.com/questions/2440448/sql-join-different-tables-depending-on-row-information
+        String query =
+                "SELECT * FROM " + DBHelper.TABLE_CIRCLE_ITEMS + " " +
+                "LEFT JOIN " + DBHelper.TABLE_EVENTS + " ON " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_ITEMID + "=" + DBHelper.TABLE_EVENTS + "." + DBHelper.EVENT_COLUMN_ID + " " +
+                "AND " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_CIRCLEID + "='" + circle.getId() + "' " +
+                "AND " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_TYPE + "=" + BoardItem.TYPE_EVENT + " " +
+                "ORDER BY " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME + " ASC";
+        Cursor cursor = database.rawQuery(query, null);
+        String result = DatabaseUtils.dumpCursorToString(cursor);
+        Log.d(TAG, "Result found is " + result);
+
+        cursor.moveToFirst();
+        while (!cursor.isAfterLast()) {
+            int type = cursor.getInt(cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_TYPE));
+            switch (type) {
+                case BoardItem.TYPE_EVENT:
+                    Event event = serializeEvent(cursor, circle);
+                    int action = event.getUpdatedTime().equals(event.getCreatedTime()) ? FeedAction.CREATE_EVENT :
+                            FeedAction.UPDATE_EVENT;
+                    event.setLastAction(new FeedAction(action, activeUser, event.getUpdatedTime()));
+                    items.add(event);
+                    break;
+                default: break;
+            }
+            cursor.moveToNext();
+        }
+        cursor.close();
+
+        return items;
+    }
+
+    /*************************************************
+     * EVENT OPERATIONS
+     *************************************************/
+    public Event createEvent(Circle circle, DateTime createdTime, String id, String name, DateTime startTime, DateTime endTime, String placeId,
+                             Location location, String note, boolean sync) {
+        createdTime = createdTime==null ? DateTime.now() : createdTime;
+        Event event = TextUtils.isEmpty(id) ? Event.createEvent(circle, createdTime, createdTime)
+                : Event.createEvent(id, circle, createdTime, createdTime);
+        event.setEventInfo(name, startTime, endTime, placeId, location, note);
+        event.setLastAction(new FeedAction(FeedAction.CREATE_EVENT, activeUser, createdTime));
+        circle.addItem(event);
+
+        if (!database.isOpen()) open();
+        database.beginTransaction();
+
+        try {
+            ContentValues values = new ContentValues();
+            values.put(DBHelper.CIRCLEITEM_COLUMN_CIRCLEID, circle.getId());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_ITEMID, event.getId());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_TYPE, event.getType());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_CREATED_TIME, createdTime.getMillis());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME, createdTime.getMillis());
+            long insertId = database.insert(DBHelper.TABLE_CIRCLE_ITEMS, null, values);
+            Log.d(TAG, "[" + insertId + "] Inserted new item to circle (" + circle.getId() + ") with id = " + event.getId());
+
+            values.clear();
+            values.put(DBHelper.EVENT_COLUMN_ID, event.getId());
+            values.put(DBHelper.EVENT_COLUMN_NAME, event.getName());
+            if (event.getStartTime() != null) {
+                values.put(DBHelper.EVENT_COLUMN_STARTTIME, event.getStartTime().getMillis());
+            }
+            if (event.getEndTime() != null) {
+                values.put(DBHelper.EVENT_COLUMN_ENDTIME, event.getEndTime().getMillis());
+            }
+            values.put(DBHelper.EVENT_COLUMN_PLACE, event.getPlace());
+            if (event.getLocation() != null) {
+                values.put(DBHelper.EVENT_COLUMN_LATITUDE, event.getLocation().getLatitude());
+                values.put(DBHelper.EVENT_COLUMN_LONGITUDE, event.getLocation().getLongitude());
+            }
+            else {
+                values.put(DBHelper.EVENT_COLUMN_LATITUDE, -1.0);
+                values.put(DBHelper.EVENT_COLUMN_LONGITUDE, -1.0);
+            }
+            values.put(DBHelper.EVENT_COLUMN_NOTE, event.getNote());
+            insertId = database.insert(DBHelper.TABLE_EVENTS, null, values);
+            Log.d(TAG, "[" + insertId + "] Inserted new event successfully");
+
+            database.setTransactionSuccessful();
+        }
+        catch (SQLException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
+        finally {
+            database.endTransaction();
+        }
+
+        // whether or not to sync with the server
+        if (sync) {
+            try {
+                JSONObject body = new JSONObject();
+                body.put(Const.JSON_SERVER_ITEM_TYPE, BoardItem.TYPE_EVENT);
+                body.put(Const.JSON_SERVER_TIME, createdTime.getMillis());
+                JSONObject info = new JSONObject();
+                info.put(Const.JSON_SERVER_EVENT_NAME, name);
+                if (startTime != null)
+                    info.put(Const.JSON_SERVER_EVENT_START_TIME, startTime.getMillis());
+                else
+                    info.put(Const.JSON_SERVER_EVENT_START_TIME, JSONObject.NULL);
+                if (endTime != null)
+                    info.put(Const.JSON_SERVER_EVENT_END_TIME, endTime.getMillis());
+                else
+                    info.put(Const.JSON_SERVER_EVENT_END_TIME, JSONObject.NULL);
+                if (!TextUtils.isEmpty(placeId))
+                    info.put(Const.JSON_SERVER_EVENT_PLACE_ID, placeId);
+                else
+                    info.put(Const.JSON_SERVER_EVENT_PLACE_ID, JSONObject.NULL);
+                JSONObject locationJson = new JSONObject();
+                if (location != null) {
+                    locationJson.put(Const.JSON_SERVER_LOCATION_LAT, location.getLatitude());
+                    locationJson.put(Const.JSON_SERVER_LOCATION_LONG, location.getLongitude());
+                }
+                else {
+                    locationJson.put(Const.JSON_SERVER_LOCATION_LAT, JSONObject.NULL);
+                    locationJson.put(Const.JSON_SERVER_LOCATION_LONG, JSONObject.NULL);
+                }
+                info.put(Const.JSON_SERVER_LOCATION, locationJson);
+                if (!TextUtils.isEmpty(note))
+                    info.put(Const.JSON_SERVER_EVENT_NOTE, note);
+                else
+                    info.put(Const.JSON_SERVER_EVENT_NOTE, JSONObject.NULL);
+                body.put(Const.JSON_SERVER_INFO, info);
+
+                RequestHandler.getInstance(context).post("Create Event", String.format(Const.API_BOARD, circle.getId()), body,
+                        new ResponseListener() {
+                            @Override
+                            public void onSuccess(JSONObject response) {
+                                if (handler != null) handler.sendEmptyMessage(Const.MSG_EVENT_CREATED_SUCCESS);
+                            }
+
+                            @Override
+                            public void onError(VolleyError error) {
+                                if (handler != null) handler.sendEmptyMessage(Const.MSG_EVENT_CREATED_FAILED);
+                            }
+                        });
+            }
+            catch (Exception ex) {
+                ex.printStackTrace();
+                if (handler != null) handler.sendEmptyMessage(Const.MSG_EVENT_CREATED_FAILED);
+            }
+        }
+
+        return event;
+    }
+
+    public Event updateEvent(Circle circle, DateTime updatedTime, String id, String name, DateTime startTime, DateTime endTime,
+                             String place, Location location, String note) {
+        List<BoardItem> events = circle.getItems();
+        Event event = null;
+        for (BoardItem item : events) {
+            if (item.getId().equals(id) && item instanceof Event) {
+                event = (Event) item;
+                break;
+            }
+        }
+
+        if (event != null) {
+            updatedTime = updatedTime==null? DateTime.now() : updatedTime;
+            event.setLastAction(new FeedAction(FeedAction.UPDATE_EVENT, activeUser, updatedTime));
+            event.setName(name);
+            event.setStartTime(startTime);
+            event.setEndTime(endTime);
+            event.setPlace(place);
+            event.setLocation(location);
+            event.setNote(note);
+
+            if (!database.isOpen()) open();
+            database.beginTransaction();
+
+            try {
+                ContentValues values = new ContentValues();
+                values.put(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME, updatedTime.getMillis());
+                int rows = database.update(DBHelper.TABLE_CIRCLE_ITEMS, values, DBHelper.CIRCLEITEM_COLUMN_ITEMID + "='" +
+                        event.getId() + "'", null);
+                Log.d(TAG, "Updated item with id " + event.getId() + ", " + rows + " row(s) affected");
+                values.clear();
+
+                values.put(DBHelper.EVENT_COLUMN_NAME, event.getName());
+                if (event.getStartTime() != null) {
+                    values.put(DBHelper.EVENT_COLUMN_STARTTIME, event.getStartTime().getMillis());
+                }
+                if (event.getEndTime() != null) {
+                    values.put(DBHelper.EVENT_COLUMN_ENDTIME, event.getEndTime().getMillis());
+                }
+                values.put(DBHelper.EVENT_COLUMN_PLACE, event.getPlace());
+                if (event.getLocation() != null) {
+                    values.put(DBHelper.EVENT_COLUMN_LATITUDE, event.getLocation().getLatitude());
+                    values.put(DBHelper.EVENT_COLUMN_LONGITUDE, event.getLocation().getLongitude());
+                }
+                else {
+                    values.put(DBHelper.EVENT_COLUMN_LATITUDE, -1.0);
+                    values.put(DBHelper.EVENT_COLUMN_LONGITUDE, -1.0);
+                }
+                values.put(DBHelper.EVENT_COLUMN_NOTE, event.getNote());
+                rows = database.update(DBHelper.TABLE_EVENTS, values,
+                        DBHelper.EVENT_COLUMN_ID + "='" + event.getId() + "'", null);
+                Log.d(TAG, "Updated event id: " + event.getId() + ", name: " +
+                    event.getName() + ", time: " + event.getStartTime() + ", place: " + event.getPlace() + ", " + rows + " row(s) affected");
+
+                database.setTransactionSuccessful();
+            }
+            catch (SQLException ex) {
+                Log.e(TAG, ex.getMessage());
+            }
+            finally {
+                database.endTransaction();
+            }
+        }
+
+        return event;
+    }
+
+    public void deleteItem(BoardItem item) {
+        if (item != null) {
+            String id = item.getId();
+            if (!database.isOpen()) open();
+
+            int rows = database.delete(DBHelper.TABLE_CIRCLE_ITEMS, DBHelper.CIRCLEITEM_COLUMN_ITEMID + "='" + id + "'", null);
+            Log.d(TAG, "Deleted item id " + id + " from circle items table, affected " + rows + " row(s)");
+
+            if (item.getType() == BoardItem.TYPE_EVENT) {
+                rows = database.delete(DBHelper.TABLE_EVENTS, DBHelper.EVENT_COLUMN_ID + "='" + id + "'", null);
+                Log.d(TAG, "Deleted event id " + id + " from event table, affected " + rows + " row(s)");
+            }
+        }
+    }
+
+    public void deleteItem(String id, Circle circle) {
+        List<BoardItem> items = circle.getItems();
+        BoardItem deleted = null;
+        for (int index = 0; index < items.size(); index++) {
+            if (items.get(index).getId().equals(id) && items.get(index).getType() == BoardItem.TYPE_EVENT) {
+                deleted = items.remove(index);
+                break;
+            }
+        }
+
+        deleteItem(deleted);
+    }
+
+    private Event serializeEvent(Cursor cursor, Circle circle) {
+        int createdTimeColumn = cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_CREATED_TIME);
+        int updatedTimeColumn = cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME);
+
+        int idColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_ID);
+        int nameColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_NAME);
+        int dateColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_STARTTIME);
+        int endDateColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_ENDTIME);
+        int placeColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_PLACE);
+        int latColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_LATITUDE);
+        int longColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_LONGITUDE);
+        int noteColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_NOTE);
+
+
+        DateTime createdTime = new DateTime(cursor.getLong(createdTimeColumn));
+        DateTime updatedTime = new DateTime(cursor.getLong(updatedTimeColumn));
+        String id = cursor.getString(idColumn);
+        String name = cursor.getString(nameColumn);
+        DateTime time = null;
+        DateTime endTime = null;
+        if (cursor.getLong(dateColumn) != 0)
+           time = new DateTime(cursor.getLong(dateColumn));
+        if (cursor.getLong(endDateColumn) != 0)
+            endTime = new DateTime(cursor.getLong(endDateColumn));
+        String place = cursor.getString(placeColumn);
+        Location location = null;
+        if (cursor.getDouble(latColumn) != -1.0 && cursor.getDouble(longColumn) != -1.0) {
+            location = new Location("");
+            location.setLatitude(cursor.getDouble(latColumn));
+            location.setLongitude(cursor.getDouble(longColumn));
+        }
+        String note = cursor.getString(noteColumn);
+
+        Event event = Event.createEvent(id, circle, createdTime, updatedTime);
+        event.setEventInfo(name, time, endTime, place,location, note);
+        return event;
     }
 }

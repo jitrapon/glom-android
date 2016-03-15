@@ -43,13 +43,13 @@ import com.abborg.glom.AppState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.data.DataUpdater;
+import com.abborg.glom.fragments.BoardFragment;
 import com.abborg.glom.fragments.CircleFragment;
 import com.abborg.glom.fragments.DiscoverFragment;
 import com.abborg.glom.fragments.DrawerFragment;
-import com.abborg.glom.fragments.EventFragment;
 import com.abborg.glom.fragments.LocationFragment;
 import com.abborg.glom.interfaces.BroadcastLocationListener;
-import com.abborg.glom.interfaces.EventChangeListener;
+import com.abborg.glom.interfaces.BoardItemChangeListener;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CircleInfo;
 import com.abborg.glom.model.User;
@@ -100,9 +100,9 @@ public class MainActivity extends AppCompatActivity
     private Handler handler;
 
     /**
-     * Event change listeners
+     * Board item change listeners
      */
-    private List<EventChangeListener> eventChangeListeners;
+    private List<BoardItemChangeListener> boardItemChangeListeners;
 
     /**
      * Broadcast location listeners
@@ -251,7 +251,7 @@ public class MainActivity extends AppCompatActivity
 
     private void setupEventListeners() {
         addEventChangeListener((LocationFragment) adapter.getItem(1));
-        addEventChangeListener((EventFragment) adapter.getItem(2));
+        addEventChangeListener((BoardFragment) adapter.getItem(2));
 
         addBroadcastLocationListener((CircleFragment) adapter.getItem(0));
         addBroadcastLocationListener((LocationFragment) adapter.getItem(1));
@@ -435,7 +435,7 @@ public class MainActivity extends AppCompatActivity
                 else if (adapter.getItem(viewPager.getCurrentItem()) instanceof LocationFragment) {
 
                 }
-                else if (adapter.getItem(viewPager.getCurrentItem()) instanceof EventFragment) {
+                else if (adapter.getItem(viewPager.getCurrentItem()) instanceof BoardFragment) {
                     showRadialMenuOptions(appState.getActiveUser());
                 }
             }
@@ -568,13 +568,13 @@ public class MainActivity extends AppCompatActivity
         startService(intent);
     }
 
-    private void addEventChangeListener(EventChangeListener listener) {
+    private void addEventChangeListener(BoardItemChangeListener listener) {
         if (listener != null) {
-            if (eventChangeListeners == null) {
-                eventChangeListeners = new ArrayList<>();
-                eventChangeListeners.add(listener);
+            if (boardItemChangeListeners == null) {
+                boardItemChangeListeners = new ArrayList<>();
+                boardItemChangeListeners.add(listener);
             }
-            else eventChangeListeners.add(listener);
+            else boardItemChangeListeners.add(listener);
         }
     }
 
@@ -599,7 +599,7 @@ public class MainActivity extends AppCompatActivity
         adapter = new ViewPagerAdapter(getSupportFragmentManager());
         adapter.addFragment(new CircleFragment(), "Circle");
         adapter.addFragment(new LocationFragment(), "Map");
-        adapter.addFragment(new EventFragment(), "Event");
+        adapter.addFragment(new BoardFragment(), "Board");
         adapter.addFragment(new DiscoverFragment(), "Discover");
         viewPager.setAdapter(adapter);
     }
@@ -817,8 +817,8 @@ public class MainActivity extends AppCompatActivity
 
         // refresh all fragments
         ((CircleFragment) adapter.getItem(0)).update();
-        ((LocationFragment) adapter.getItem(1)).update(true);
-        ((EventFragment) adapter.getItem(2)).update();
+        ((LocationFragment) adapter.getItem(1)).update(true, true);
+        ((BoardFragment) adapter.getItem(2)).update();
     }
 
     /**********************************************************
@@ -827,6 +827,8 @@ public class MainActivity extends AppCompatActivity
     @Override
     public boolean handleMessage(Message msg) {
         switch (msg.what) {
+
+            /* Request: get list of users in circle */
             case Const.MSG_GET_USERS:
                 Circle circle = appState.getActiveCircle();
                 Toast.makeText(this, "Displaying circle " + circle.getTitle() + " with "
@@ -840,24 +842,44 @@ public class MainActivity extends AppCompatActivity
                 LocationFragment mapFragment = (LocationFragment) adapter.getItem(1);
                 mapFragment.updateUserMarkers(circle.getUsers());
                 break;
-            case Const.MSG_EVENT_DELETED:
+
+            /* Request: delete board item from a circle */
+            case Const.MSG_ITEM_DELETED:
                 String id = (String) msg.obj;
-                if (eventChangeListeners != null) {
-                    for (EventChangeListener listener : eventChangeListeners) {
-                        listener.onEventDeleted(id);
+                if (boardItemChangeListeners != null) {
+                    for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                        listener.onItemDeleted(id);
                     }
                 }
 
-                dataUpdater.deleteEvent(id, appState.getActiveCircle());
+                dataUpdater.deleteItem(id, appState.getActiveCircle());
 
-                Snackbar.make(mainCoordinatorLayout, getResources().getQuantityString(R.plurals.notification_delete_item,
-                        1, 1), Snackbar.LENGTH_LONG)
+                Snackbar.make(mainCoordinatorLayout, getResources().getQuantityString(R.plurals.notification_delete_item, 1, 1),
+                        Snackbar.LENGTH_LONG)
                         .setAction(getResources().getString(R.string.menu_item_undo), new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
                                 //TODO
                             }
                         }).show();
+                break;
+
+            /* Request: get board item in a circle */
+            case Const.MSG_GET_ITEMS:
+                ((LocationFragment) adapter.getItem(1)).update(false, true);
+                ((BoardFragment) adapter.getItem(2)).update();
+                break;
+
+            /* Request: create event successfully synced with server */
+            case Const.MSG_EVENT_CREATED_SUCCESS:
+                Toast.makeText(getApplicationContext(), getResources().getString(R.string.notification_created_item_success),
+                        Toast.LENGTH_LONG).show();
+                break;
+
+            /* Request: create event failed to sync with server */
+            case Const.MSG_EVENT_CREATED_FAILED:
+                Toast.makeText(getApplicationContext(), getResources().getString(R.string.notification_created_item_failed),
+                        Toast.LENGTH_LONG).show();
                 break;
         }
 
@@ -916,9 +938,9 @@ public class MainActivity extends AppCompatActivity
             case Const.CREATE_EVENT_RESULT_CODE:
                 if (resultCode == RESULT_OK) {
                     String id = data.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_ID));
-                    if (eventChangeListeners != null) {
-                        for (EventChangeListener listener : eventChangeListeners) {
-                            listener.onEventAdded(id);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemAdded(id);
                         }
                     }
                 }
@@ -927,9 +949,9 @@ public class MainActivity extends AppCompatActivity
             case Const.UPDATE_EVENT_RESULT_CODE:
                 if (resultCode == RESULT_OK) {
                     String id = data.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_ID));
-                    if (eventChangeListeners != null) {
-                        for (EventChangeListener listener : eventChangeListeners) {
-                            listener.onEventModified(id);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(id);
                         }
                     }
                 }

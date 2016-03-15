@@ -49,9 +49,9 @@ public class Circle implements Parcelable {
     private boolean userIsDiscoverable;
 
     /**
-     * List of saved events in this circle
+     * List of saved items in this circle
      */
-    private List<Event> events;
+    private List<BoardItem> items;
 
 
     /**
@@ -126,7 +126,7 @@ public class Circle implements Parcelable {
         this.showNotify = false;
         this.userIsBroadcastingLocation = false;
         this.userIsDiscoverable = false;
-        this.events = new ArrayList<>();
+        this.items = new ArrayList<>();
     }
 
     public boolean isShowNotify() {
@@ -184,18 +184,14 @@ public class Circle implements Parcelable {
         return userIsBroadcastingLocation;
     }
 
-    public List<Event> getEvents() { return events; }
+    public List<BoardItem> getItems() { return items; }
 
-    /**
-     * Add a new event to the list of in-circle events according to the sort
-     * @param event
-     */
-    public void addEvent(Event event) {
-        events.add(0, event);
+    public void addItem(BoardItem item) {
+        items.add(0, item);
     }
 
-    public void setEvents(List<Event> events) {
-        this.events = events;
+    public void setItems(List<BoardItem> items) {
+        this.items = items;
     }
 
     @Override

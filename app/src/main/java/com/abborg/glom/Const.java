@@ -3,7 +3,7 @@ package com.abborg.glom;
 public class Const {
 
 //    public static final String HOST_ADDRESS = "http://putsreq.com/KJVQCdWbHg0xXf2aHWf1";
-    public static String HOST_ADDRESS = "http://10.11.3.202:8080";
+    public static String HOST_ADDRESS = "http://192.168.1.5:8080";
     public static final String SENT_TOKEN_TO_SERVER = "sentTokenToServer";
     public static final String REGISTRATION_COMPLETE = "registrationComplete";
 
@@ -34,6 +34,7 @@ public class Const {
     public static final String API_CHECKIN = "/checkin";
     public static final String API_LOCATION = "/location";
     public static final String API_GET_USERS = "/circle/%s/users";
+    public static final String API_BOARD = "/circle/%s/board";
 
     public static final String JSON_SERVER_MESSAGE = "message";
     public static final String JSON_SERVER_USERID = "user_id";
@@ -47,10 +48,26 @@ public class Const {
     public static final String JSON_SERVER_LOCATION_LONG = "long";
     public static final String JSON_SERVER_OP = "op";
     public static final String JSON_SERVER_USERS = "users";
+    public static final String JSON_SERVER_ITEMS = "items";
+    public static final String JSON_SERVER_ITEM_ID = "item_id";
+    public static final String JSON_SERVER_ITEM_TYPE = "item_type";
+    public static final String JSON_SERVER_CREATED_TIME = "created_time";
+    public static final String JSON_SERVER_UPDATED_TIME = "updated_time";
+    public static final String JSON_SERVER_INFO = "info";
+    public static final String JSON_SERVER_EVENT_NAME = "event_name";
+    public static final String JSON_SERVER_EVENT_START_TIME = "start_time";
+    public static final String JSON_SERVER_EVENT_END_TIME = "end_time";
+    public static final String JSON_SERVER_EVENT_PLACE_ID = "place_id";
+    public static final String JSON_SERVER_EVENT_NOTE = "note";
+    public static final String JSON_SERVER_ERROR = "error";
+    public static final String JSON_SERVER_TIME = "time";
 
     /**
      * HANDLER WHAT CONSTANTS
      */
     public static final int MSG_GET_USERS = 5000;
-    public static final int MSG_EVENT_DELETED = 5001;
+    public static final int MSG_ITEM_DELETED = 5001;
+    public static final int MSG_GET_ITEMS = 5002;
+    public static final int MSG_EVENT_CREATED_SUCCESS = 5003;
+    public static final int MSG_EVENT_CREATED_FAILED = 5004;
 }

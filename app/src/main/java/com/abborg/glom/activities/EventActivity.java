@@ -27,6 +27,7 @@ import com.abborg.glom.AppState;
 import com.abborg.glom.R;
 import com.abborg.glom.adapters.PlaceArrayAdapter;
 import com.abborg.glom.data.DataUpdater;
+import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Event;
 import com.abborg.glom.model.User;
 import com.google.android.gms.common.api.PendingResult;
@@ -45,8 +46,6 @@ import org.joda.time.MutableDateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class EventActivity extends AppCompatActivity {
@@ -259,28 +258,28 @@ public class EventActivity extends AppCompatActivity {
     private void init(Mode mode) {
         switch (mode) {
             case CREATE_EVENT:
-                getSupportActionBar().setTitle(getResources().getString(R.string.create_event_title));
+                if (getSupportActionBar() != null) getSupportActionBar().setTitle(getResources().getString(R.string.create_event_title));
                 break;
             case UPDATE_EVENT:
                 //TODO contact server to get more information
                 // only display information stored in DB, which is name, time, and place
-                List<Event> events = appState.getActiveCircle().getEvents();
+                List<BoardItem> items = appState.getActiveCircle().getItems();
                 String id = intent.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_ID));
-                if (id != null && !events.isEmpty()) {
-                    for (Event event : events) {
-                        if (event.getId().equals(id)) {
-                            editEvent = event;
+                if (id != null && !items.isEmpty()) {
+                    for (BoardItem item : items) {
+                        if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_EVENT) {
+                            editEvent = (Event) item;
                             break;
                         }
                     }
                     if (editEvent != null) {
-                        getSupportActionBar().setTitle(editEvent.getName());
+                        if (getSupportActionBar() != null) getSupportActionBar().setTitle(editEvent.getName());
                         DateTimeFormatter printDateFormat = DateTimeFormat.forPattern(getResources().getString(R.string.display_date_format));
                         DateTimeFormatter printTimeFormat = DateTimeFormat.forPattern(getResources().getString(R.string.display_time_format));
                         DateTimeFormatter dayFormat = DateTimeFormat.forPattern("EEEE");
                         DateTime now = new DateTime();
                         String name = editEvent.getName();
-                        startDateTime = editEvent.getDateTime();
+                        startDateTime = editEvent.getStartTime();
                         endDateTime = editEvent.getEndTime();
                         place = editEvent.getPlace();
                         location = editEvent.getLocation();
@@ -458,10 +457,8 @@ public class EventActivity extends AppCompatActivity {
                 dataUpdater.open();
 
                 if (mode.equals(Mode.CREATE_EVENT)) {
-                    editEvent = dataUpdater.createEvent(nameText.getText().toString(), appState.getActiveCircle(),
-                            new ArrayList<>(Arrays.asList(user)), startDateTime, endDateTime, place, location, Event.IN_CIRCLE,
-                            new ArrayList<User>(), true, true, true, null
-                    );
+                    editEvent = dataUpdater.createEvent(appState.getActiveCircle(), null, null, nameText.getText().toString(), startDateTime,
+                            endDateTime, place, location, null, true);
                 }
                 else if (mode.equals(Mode.UPDATE_EVENT)) {
                     if (editEvent != null) {
@@ -475,10 +472,8 @@ public class EventActivity extends AppCompatActivity {
                             Log.d(TAG, "Location is empty");
                         }
 
-                        editEvent = dataUpdater.updateEvent(editEvent.getId(), appState.getActiveCircle(), nameText.getText().toString(),
-                                new ArrayList<>(Arrays.asList(user)), startDateTime, endDateTime, place, location, Event.IN_CIRCLE,
-                                new ArrayList<User>(), true, true, true, null
-                        );
+                        editEvent = dataUpdater.updateEvent(appState.getActiveCircle(), null, editEvent.getId(), nameText.getText().toString(),
+                               startDateTime, endDateTime, place, location, null);
                     }
                 }
 

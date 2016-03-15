@@ -14,7 +14,7 @@
     <string name="error_network_timeout">The request has timed out, please try again later</string>
     <string name="error_no_connection">Could not connect to our server, please try again later</string>
     <string name="error_auth_failure">Failed to authenticate, please try again</string>
-    <string name="error_server_generic">Unable to connect to the server, please try again</string>
+    <string name="error_server_generic">There was a problem with the server, please try again later</string>
     <string name="error_network_generic">Network error, please try again</string>
     <string name="error_parse_generic">There was a problem in parsing the request, unable to proceed!</string>
 
@@ -97,7 +97,7 @@
     <string name="time_unit_before_noon">AM</string>
     <string name="time_unit_after_noon">PM</string>
 
-    <!-- Create events action -->
+    <!-- Create items action -->
     <string name="action_create_event_datetime_format">dd/MM/yyyy HH:mm:ss</string>
     <string name="create_event_title">New Event</string>
     <string name="menu_item_done">Done</string>
@@ -116,10 +116,12 @@
     <string name="duration_incoming_prefix">In</string>
     <string name="duration_started_prefix">Started</string>
     <plurals name="notification_delete_item">
-        <item quantity="one">Deleted $d item</item>
-        <item quantity="other">Deleted $d items</item>
+        <item quantity="one">Deleted %1$d item</item>
+        <item quantity="other">Deleted %1$d items</item>
     </plurals>
     <string name="notify_retrieving_place_info">Retrieving place...</string>
+    <string name="notification_created_item_success">Event created successfully!</string>
+    <string name="notification_created_item_failed">Failed to create event :(</string>
 
     <!-- Global menu items -->
     <string name="menu_item_delete">Delete</string>
