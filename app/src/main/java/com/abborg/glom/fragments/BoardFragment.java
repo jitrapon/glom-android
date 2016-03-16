@@ -206,7 +206,10 @@ public class BoardFragment extends Fragment implements View.OnClickListener, Boa
             Log.d(TAG, "Inserted item at " + 0);
         }
 
-        if (refreshView.isRefreshing()) refreshView.setRefreshing(false);
+        if (refreshView != null) {
+            if (refreshView.isRefreshing())
+                refreshView.setRefreshing(false);
+        }
     }
 
     @Override
@@ -228,7 +231,10 @@ public class BoardFragment extends Fragment implements View.OnClickListener, Boa
             Log.d(TAG, "Updated item at " + index);
         }
 
-        if (refreshView.isRefreshing()) refreshView.setRefreshing(false);
+        if (refreshView != null) {
+            if (refreshView.isRefreshing())
+                refreshView.setRefreshing(false);
+        }
     }
 
     @Override
@@ -249,7 +255,10 @@ public class BoardFragment extends Fragment implements View.OnClickListener, Boa
             adapter.notifyItemRemoved(index);
         }
 
-        if (refreshView.isRefreshing()) refreshView.setRefreshing(false);
+        if (refreshView != null) {
+            if (refreshView.isRefreshing())
+                refreshView.setRefreshing(false);
+        }
     }
 
     /**********************************************************

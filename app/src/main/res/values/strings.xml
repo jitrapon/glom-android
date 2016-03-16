@@ -83,6 +83,16 @@
     <string name="notification_title_location_update">Message from GlomServer</string>
     <string name="notification_title_broadcast_location">Broadcasting location</string>
     <string name="notification_action_cancel_broadcast_location">Stop</string>
+    <string name="notify_retrieving_place_info">Retrieving place...</string>
+    <string name="notification_created_item_success">Item is created successfully</string>
+    <string name="notification_created_item_failed">Failed to sync the created item, please try again</string>
+    <string name="notification_updated_item_success">Item is updated successfully</string>
+    <string name="notification_updated_item_failed">Failed to sync the update, please try again</string>
+    <plurals name="notification_delete_item">
+        <item quantity="one">Deleted %1$d item</item>
+        <item quantity="other">Deleted %1$d items</item>
+    </plurals>
+    <string name="notification_delete_item_failed">Failed to sync the delete, please try again</string>
 
     <!-- Broadcast location options -->
     <string name="bottom_sheet_broadcast_location_toggle">Broadcast my location</string>
@@ -115,13 +125,6 @@
     <string name="error_event_name_empty">Enter event name</string>
     <string name="duration_incoming_prefix">In</string>
     <string name="duration_started_prefix">Started</string>
-    <plurals name="notification_delete_item">
-        <item quantity="one">Deleted %1$d item</item>
-        <item quantity="other">Deleted %1$d items</item>
-    </plurals>
-    <string name="notify_retrieving_place_info">Retrieving place...</string>
-    <string name="notification_created_item_success">Event created successfully!</string>
-    <string name="notification_created_item_failed">Failed to create event :(</string>
 
     <!-- Global menu items -->
     <string name="menu_item_delete">Delete</string>
@@ -129,6 +132,7 @@
     <string name="menu_item_send">Send</string>
     <string name="menu_item_bookmark">Bookmark</string>
     <string name="menu_item_undo">Undo</string>
+    <string name="menu_item_try_again">Try Again</string>
 
 <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>

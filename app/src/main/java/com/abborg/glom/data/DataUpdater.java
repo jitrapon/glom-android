@@ -683,7 +683,8 @@ public class DataUpdater {
                                                         }
                                                         else {
                                                             DateTime updatedTime = updatedMillis==null ? null : new DateTime(updatedMillis);
-                                                            updateEvent(circle, updatedTime, id, name, startTime, endTime, placeId, location, note);
+                                                            updateEvent(circle, updatedTime, id, name, startTime, endTime,
+                                                                    placeId, location, note, false);
                                                             event.setDirty(false);
                                                         }
                                                     }
@@ -818,37 +819,44 @@ public class DataUpdater {
         }
 
         // whether or not to sync with the server
-        if (sync) {
+        if (sync) requestCreateEvent(circle, event);
+
+        return event;
+    }
+
+    public void requestCreateEvent(Circle circle, final Event event) {
+        if (event != null) {
             try {
                 JSONObject body = new JSONObject();
+                body.put(Const.JSON_SERVER_ITEM_ID, event.getId());
                 body.put(Const.JSON_SERVER_ITEM_TYPE, BoardItem.TYPE_EVENT);
-                body.put(Const.JSON_SERVER_TIME, createdTime.getMillis());
+                body.put(Const.JSON_SERVER_TIME, event.getCreatedTime().getMillis());
                 JSONObject info = new JSONObject();
-                info.put(Const.JSON_SERVER_EVENT_NAME, name);
-                if (startTime != null)
-                    info.put(Const.JSON_SERVER_EVENT_START_TIME, startTime.getMillis());
+                info.put(Const.JSON_SERVER_EVENT_NAME, event.getName());
+                if (event.getStartTime() != null)
+                    info.put(Const.JSON_SERVER_EVENT_START_TIME, event.getStartTime().getMillis());
                 else
                     info.put(Const.JSON_SERVER_EVENT_START_TIME, JSONObject.NULL);
-                if (endTime != null)
-                    info.put(Const.JSON_SERVER_EVENT_END_TIME, endTime.getMillis());
+                if (event.getEndTime() != null)
+                    info.put(Const.JSON_SERVER_EVENT_END_TIME, event.getEndTime().getMillis());
                 else
                     info.put(Const.JSON_SERVER_EVENT_END_TIME, JSONObject.NULL);
-                if (!TextUtils.isEmpty(placeId))
-                    info.put(Const.JSON_SERVER_EVENT_PLACE_ID, placeId);
+                if (!TextUtils.isEmpty(event.getPlace()))
+                    info.put(Const.JSON_SERVER_EVENT_PLACE_ID, event.getPlace());
                 else
                     info.put(Const.JSON_SERVER_EVENT_PLACE_ID, JSONObject.NULL);
                 JSONObject locationJson = new JSONObject();
-                if (location != null) {
-                    locationJson.put(Const.JSON_SERVER_LOCATION_LAT, location.getLatitude());
-                    locationJson.put(Const.JSON_SERVER_LOCATION_LONG, location.getLongitude());
+                if (event.getLocation() != null) {
+                    locationJson.put(Const.JSON_SERVER_LOCATION_LAT, event.getLocation().getLatitude());
+                    locationJson.put(Const.JSON_SERVER_LOCATION_LONG, event.getLocation().getLongitude());
                 }
                 else {
                     locationJson.put(Const.JSON_SERVER_LOCATION_LAT, JSONObject.NULL);
                     locationJson.put(Const.JSON_SERVER_LOCATION_LONG, JSONObject.NULL);
                 }
                 info.put(Const.JSON_SERVER_LOCATION, locationJson);
-                if (!TextUtils.isEmpty(note))
-                    info.put(Const.JSON_SERVER_EVENT_NOTE, note);
+                if (!TextUtils.isEmpty(event.getNote()))
+                    info.put(Const.JSON_SERVER_EVENT_NOTE, event.getNote());
                 else
                     info.put(Const.JSON_SERVER_EVENT_NOTE, JSONObject.NULL);
                 body.put(Const.JSON_SERVER_INFO, info);
@@ -862,21 +870,21 @@ public class DataUpdater {
 
                             @Override
                             public void onError(VolleyError error) {
-                                if (handler != null) handler.sendEmptyMessage(Const.MSG_EVENT_CREATED_FAILED);
+                                if (handler != null) {
+                                    handler.sendMessage(handler.obtainMessage(Const.MSG_EVENT_CREATED_FAILED, event));
+                                }
                             }
                         });
             }
             catch (Exception ex) {
                 ex.printStackTrace();
-                if (handler != null) handler.sendEmptyMessage(Const.MSG_EVENT_CREATED_FAILED);
+                if (handler != null) handler.sendMessage(handler.obtainMessage(Const.MSG_EVENT_CREATED_FAILED, event));
             }
         }
-
-        return event;
     }
 
     public Event updateEvent(Circle circle, DateTime updatedTime, String id, String name, DateTime startTime, DateTime endTime,
-                             String place, Location location, String note) {
+                             String place, Location location, String note, boolean sync) {
         List<BoardItem> events = circle.getItems();
         Event event = null;
         for (BoardItem item : events) {
@@ -937,9 +945,66 @@ public class DataUpdater {
             finally {
                 database.endTransaction();
             }
+
+            // whether or not to sync this update with the server
+            if (sync) requestUpdateEvent(circle, event);
         }
 
         return event;
+    }
+
+    public void requestUpdateEvent(Circle circle, final Event event) {
+        if (event != null) {
+            try {
+                JSONObject body = new JSONObject();
+                body.put(Const.JSON_SERVER_EVENT_NAME, event.getName());
+                if (event.getStartTime() != null)
+                    body.put(Const.JSON_SERVER_EVENT_START_TIME, event.getStartTime().getMillis());
+                else
+                    body.put(Const.JSON_SERVER_EVENT_START_TIME, JSONObject.NULL);
+                if (event.getEndTime() != null)
+                    body.put(Const.JSON_SERVER_EVENT_END_TIME, event.getEndTime().getMillis());
+                else
+                    body.put(Const.JSON_SERVER_EVENT_END_TIME, JSONObject.NULL);
+                if (!TextUtils.isEmpty(event.getPlace()))
+                    body.put(Const.JSON_SERVER_EVENT_PLACE_ID, event.getPlace());
+                else
+                    body.put(Const.JSON_SERVER_EVENT_PLACE_ID, JSONObject.NULL);
+                JSONObject locationJson = new JSONObject();
+                if (event.getLocation() != null) {
+                    locationJson.put(Const.JSON_SERVER_LOCATION_LAT, event.getLocation().getLatitude());
+                    locationJson.put(Const.JSON_SERVER_LOCATION_LONG, event.getLocation().getLongitude());
+                }
+                else {
+                    locationJson.put(Const.JSON_SERVER_LOCATION_LAT, JSONObject.NULL);
+                    locationJson.put(Const.JSON_SERVER_LOCATION_LONG, JSONObject.NULL);
+                }
+                body.put(Const.JSON_SERVER_LOCATION, locationJson);
+                if (!TextUtils.isEmpty(event.getNote()))
+                    body.put(Const.JSON_SERVER_EVENT_NOTE, event.getNote());
+                else
+                    body.put(Const.JSON_SERVER_EVENT_NOTE, JSONObject.NULL);
+
+                RequestHandler.getInstance(context).post("Update Event", String.format(Const.API_BOARD_ITEM, circle.getId(), event.getId()), body,
+                        new ResponseListener() {
+                            @Override
+                            public void onSuccess(JSONObject response) {
+                                if (handler != null) handler.sendEmptyMessage(Const.MSG_EVENT_UPDATED_SUCCESS);
+                            }
+
+                            @Override
+                            public void onError(VolleyError error) {
+                                if (handler != null) {
+                                    handler.sendMessage(handler.obtainMessage(Const.MSG_EVENT_UPDATED_FAILED, event));
+                                }
+                            }
+                        });
+            }
+            catch (Exception ex) {
+                ex.printStackTrace();
+                if (handler != null) handler.sendMessage(handler.obtainMessage(Const.MSG_EVENT_UPDATED_FAILED, event));
+            }
+        }
     }
 
     public void deleteItem(BoardItem item) {
@@ -957,7 +1022,7 @@ public class DataUpdater {
         }
     }
 
-    public void deleteItem(String id, Circle circle) {
+    public void deleteItem(String id, Circle circle, boolean sync) {
         List<BoardItem> items = circle.getItems();
         BoardItem deleted = null;
         for (int index = 0; index < items.size(); index++) {
@@ -968,6 +1033,27 @@ public class DataUpdater {
         }
 
         deleteItem(deleted);
+        if (sync) requestDeleteItem(circle, deleted);
+    }
+
+    public void requestDeleteItem(Circle circle, final BoardItem item) {
+        if (item != null) {
+            RequestHandler.getInstance(context).delete("Delete Item", String.format(Const.API_BOARD_ITEM, circle.getId(), item.getId()), null,
+                    new ResponseListener() {
+                        @Override
+                        public void onSuccess(JSONObject response) {
+                            if (handler != null)
+                                handler.sendEmptyMessage(Const.MSG_ITEM_DELETED_SUCCESS);
+                        }
+
+                        @Override
+                        public void onError(VolleyError error) {
+                            if (handler != null) {
+                                handler.sendMessage(handler.obtainMessage(Const.MSG_ITEM_DELETED_FAILED, item));
+                            }
+                        }
+                    });
+        }
     }
 
     private Event serializeEvent(Cursor cursor, Circle circle) {

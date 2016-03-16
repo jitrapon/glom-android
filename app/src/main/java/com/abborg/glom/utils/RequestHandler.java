@@ -310,4 +310,53 @@ public class RequestHandler {
         request.setTag(tag);
         addToRequestQueue(request);
     }
+
+    /**
+     * Convenience method for making a DELETE request
+     */
+    public void delete(String tag, String endpoint, JSONObject body, final ResponseListener listener) {
+        String baseUrl = Const.HOST_ADDRESS;
+        String url;
+        if (baseUrl.endsWith("/") && endpoint.startsWith("/"))
+            url = baseUrl.substring(0, baseUrl.length() - 1).concat(endpoint);
+        else if (!endpoint.endsWith("/") && !endpoint.startsWith("/"))
+            url = baseUrl.concat("/").concat(endpoint);
+        else url = baseUrl.concat(endpoint);
+
+        JsonObjectRequest request = new JsonObjectRequest(Request.Method.DELETE, url, body,
+                new Response.Listener<JSONObject>() {
+
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        if (listener != null) listener.onSuccess(response);
+                    }
+                },
+                new Response.ErrorListener() {
+
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        if (listener != null) listener.onError(error);
+                    }
+                })
+
+        {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                HashMap<String, String> headers = new HashMap<String, String>();
+                headers.put(Const.API_AUTHORIZATION_HEADER, Const.TEST_API_AUTHORIZATION_HEADER);
+                return headers;
+            }
+
+            @Override
+            protected Response<JSONObject> parseNetworkResponse(NetworkResponse response) {
+                int status = response.statusCode;
+                VolleyLog.d("<-- " + status + " " + getStatusText(status) + " (" + response.networkTimeMs + "ms, " +
+                        response.data.length + "-byte body)");
+                return super.parseNetworkResponse(response);
+            }
+        };
+
+        request.setTag(tag);
+        addToRequestQueue(request);
+    }
 }

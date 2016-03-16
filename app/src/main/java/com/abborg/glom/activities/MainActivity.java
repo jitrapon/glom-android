@@ -48,10 +48,12 @@ import com.abborg.glom.fragments.CircleFragment;
 import com.abborg.glom.fragments.DiscoverFragment;
 import com.abborg.glom.fragments.DrawerFragment;
 import com.abborg.glom.fragments.LocationFragment;
-import com.abborg.glom.interfaces.BroadcastLocationListener;
 import com.abborg.glom.interfaces.BoardItemChangeListener;
+import com.abborg.glom.interfaces.BroadcastLocationListener;
+import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CircleInfo;
+import com.abborg.glom.model.Event;
 import com.abborg.glom.model.User;
 import com.abborg.glom.service.CirclePushService;
 import com.abborg.glom.service.RegistrationIntentService;
@@ -852,8 +854,12 @@ public class MainActivity extends AppCompatActivity
                     }
                 }
 
-                dataUpdater.deleteItem(id, appState.getActiveCircle());
+                dataUpdater.deleteItem(id, appState.getActiveCircle(), true);
 
+                break;
+
+            /* Request: delete board item successfully */
+            case Const.MSG_ITEM_DELETED_SUCCESS:
                 Snackbar.make(mainCoordinatorLayout, getResources().getQuantityString(R.plurals.notification_delete_item, 1, 1),
                         Snackbar.LENGTH_LONG)
                         .setAction(getResources().getString(R.string.menu_item_undo), new View.OnClickListener() {
@@ -863,6 +869,23 @@ public class MainActivity extends AppCompatActivity
                             }
                         }).show();
                 break;
+
+            /* Request: delete board item failed */
+            case Const.MSG_ITEM_DELETED_FAILED: {
+                final BoardItem item = msg.obj==null ? null : (BoardItem) msg.obj;
+
+                Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_delete_item_failed),
+                        Snackbar.LENGTH_LONG)
+                        .setAction(getResources().getString(R.string.menu_item_try_again), new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                if (item != null) {
+                                    dataUpdater.requestDeleteItem(appState.getActiveCircle(), item);
+                                }
+                            }
+                        }).show();
+                break;
+            }
 
             /* Request: get board item in a circle */
             case Const.MSG_GET_ITEMS:
@@ -877,10 +900,46 @@ public class MainActivity extends AppCompatActivity
                 break;
 
             /* Request: create event failed to sync with server */
-            case Const.MSG_EVENT_CREATED_FAILED:
-                Toast.makeText(getApplicationContext(), getResources().getString(R.string.notification_created_item_failed),
+            case Const.MSG_EVENT_CREATED_FAILED: {
+                final Event event = msg.obj == null ? null : (Event) msg.obj;
+
+                Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_created_item_failed),
+                        Snackbar.LENGTH_LONG)
+                        .setAction(getResources().getString(R.string.menu_item_try_again), new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                if (event != null) {
+                                    dataUpdater.requestCreateEvent(appState.getActiveCircle(), event);
+                                }
+                            }
+                        })
+                        .show();
+                break;
+            }
+
+            /* Request: update event successfully synced with server */
+            case Const.MSG_EVENT_UPDATED_SUCCESS:
+                Toast.makeText(getApplicationContext(), getResources().getString(R.string.notification_updated_item_success),
                         Toast.LENGTH_LONG).show();
                 break;
+
+            /* Request: update event failed to sync with server */
+            case Const.MSG_EVENT_UPDATED_FAILED: {
+                final Event event = msg.obj == null ? null : (Event) msg.obj;
+
+                Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_updated_item_failed),
+                        Snackbar.LENGTH_LONG)
+                        .setAction(getResources().getString(R.string.menu_item_try_again), new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                if (event != null) {
+                                    dataUpdater.requestUpdateEvent(appState.getActiveCircle(), event);
+                                }
+                            }
+                        })
+                        .show();
+                break;
+            }
         }
 
         return false;

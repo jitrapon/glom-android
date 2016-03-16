@@ -453,7 +453,6 @@ public class EventActivity extends AppCompatActivity {
             // verify that the event name is provided
             // verify that datetime is input correctly
             if (validateName() && validateDateTime()) {
-                User user = appState.getActiveUser();
                 dataUpdater.open();
 
                 if (mode.equals(Mode.CREATE_EVENT)) {
@@ -473,7 +472,7 @@ public class EventActivity extends AppCompatActivity {
                         }
 
                         editEvent = dataUpdater.updateEvent(appState.getActiveCircle(), null, editEvent.getId(), nameText.getText().toString(),
-                               startDateTime, endDateTime, place, location, null);
+                               startDateTime, endDateTime, place, location, null, true);
                     }
                 }
 
