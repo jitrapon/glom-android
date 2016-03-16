@@ -4,7 +4,6 @@ package com.abborg.glom.fragments;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
@@ -110,9 +109,6 @@ public class BoardFragment extends Fragment implements View.OnClickListener, Boa
         // Inflate the layout for this fragment
         View root = inflater.inflate(R.layout.fragment_board, container, false);
         refreshView = (SwipeRefreshLayout) root.findViewById(R.id.board_refresh_layout);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            refreshView.setProgressViewOffset(false, 0, activity.getSupportActionBar().getHeight());
-        }
         refreshView.setOnRefreshListener(this);
         recyclerView = (RecyclerView) root.findViewById(R.id.circle_board_view);
         recyclerView.setHasFixedSize(true);

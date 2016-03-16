@@ -146,7 +146,6 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
 //        int marginTopDp = (int) TypedValue.applyDimension(
 //                TypedValue.COMPLEX_UNIT_DIP, getResources().getDimension(R.dimen.fragment_margin_top), getResources()
 //                        .getDisplayMetrics());
-        mapView.setPadding(0, (int) getResources().getDimension(R.dimen.fragment_margin_top), 0, 0);
 
         // zoom-to-fit button
         Button zoomToFitBtn = (Button) overlay.findViewById(R.id.zoom_to_fit_btn);

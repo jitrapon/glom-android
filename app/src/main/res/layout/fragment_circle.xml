@@ -2,9 +2,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".fragments.CircleFragment"
-    android:paddingTop="@dimen/fragment_margin_top">
-
-
+    tools:context=".fragments.CircleFragment">
 
 </RelativeLayout>
