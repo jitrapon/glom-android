@@ -453,31 +453,37 @@ public class EventActivity extends AppCompatActivity {
             // verify that the event name is provided
             // verify that datetime is input correctly
             if (validateName() && validateDateTime()) {
-                dataUpdater.open();
+                String note = null;
+                Intent intent = new Intent();
+                long start = startDateTime == null ? 0L : startDateTime.getMillis();
+                long end = endDateTime == null ? 0L : endDateTime.getMillis();
 
-                if (mode.equals(Mode.CREATE_EVENT)) {
-                    editEvent = dataUpdater.createEvent(appState.getActiveCircle(), null, null, nameText.getText().toString(), startDateTime,
-                            endDateTime, place, location, null, true);
-                }
-                else if (mode.equals(Mode.UPDATE_EVENT)) {
+                //TODO handle the case where LOCATION is custom
+                //TODO if the user has not picked a location from a LocationPicker or selected one from auto-suggest
+                //TODO assume that the location is custom, alert the user to create a new place,
+                //TODO picked a location instead, or continue without map knowing the place location.
+                if (mode.equals(Mode.UPDATE_EVENT)) {
                     if (editEvent != null) {
-                        //TODO handle the case where LOCATION is custom
-                        //TODO if the user has not picked a location from a LocationPicker or selected one from auto-suggest
-                        //TODO assume that the location is custom, alert the user to create a new place,
-                        //TODO picked a location instead, or continue without map knowing the place location.
                         if (TextUtils.isEmpty(locationText.getText())) {
                             place = null;
                             location = null;
                             Log.d(TAG, "Location is empty");
                         }
 
-                        editEvent = dataUpdater.updateEvent(appState.getActiveCircle(), null, editEvent.getId(), nameText.getText().toString(),
-                               startDateTime, endDateTime, place, location, null, true);
+                        intent.putExtra(getResources().getString(R.string.EXTRA_EVENT_ID), editEvent.getId());
                     }
                 }
 
+                intent.putExtra(getResources().getString(R.string.EXTRA_ITEM_CREATE_TIME), DateTime.now().getMillis());
+                intent.putExtra(getResources().getString(R.string.EXTRA_EVENT_NAME), nameText.getText().toString());
+                intent.putExtra(getResources().getString(R.string.EXTRA_EVENT_START_TIME), start);
+                intent.putExtra(getResources().getString(R.string.EXTRA_EVENT_END_TIME), end);
+                intent.putExtra(getResources().getString(R.string.EXTRA_EVENT_PLACE_ID), place);
+                intent.putExtra(getResources().getString(R.string.EXTRA_EVENT_LOCATION), location);
+                intent.putExtra(getResources().getString(R.string.EXTRA_EVENT_NOTE), note);
+
                 // pass data to finishWithResult
-                finishWithResult(editEvent.getId());
+                finishWithResult(intent);
             }
             return true;
         }
@@ -485,16 +491,12 @@ public class EventActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    private void finishWithResult(String id) {
-        if (id != null) {
-            Intent intent = new Intent();
-            intent.putExtra(getResources().getString(R.string.EXTRA_EVENT_ID), id);
+    private void finishWithResult(Intent intent) {
+        if (intent != null) {
             setResult(RESULT_OK, intent);
-            Log.d(TAG, "finishing with result " + RESULT_OK + " and id of " + id);
         }
         else {
             setResult(RESULT_CANCELED);
-            Log.d(TAG, "finishing with result " + RESULT_CANCELED);
         }
 
         finish();

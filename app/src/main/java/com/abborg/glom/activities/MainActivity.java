@@ -925,11 +925,29 @@ public class MainActivity extends AppCompatActivity
                 ((BoardFragment) adapter.getItem(2)).update();
                 break;
 
+            case Const.MSG_EVENT_CREATED: {
+                final Event event = msg.obj == null ? null : (Event) msg.obj;
+
+                if (event != null) {
+                    appState.getActiveCircle().addItem(event);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemAdded(event.getId());
+                        }
+                    }
+                }
+
+                break;
+            }
+
             /* Request: create event successfully synced with server */
-            case Const.MSG_EVENT_CREATED_SUCCESS:
+            case Const.MSG_EVENT_CREATED_SUCCESS: {
+                final Event event = msg.obj == null ? null : (Event) msg.obj;
+
                 Toast.makeText(getApplicationContext(), getResources().getString(R.string.notification_created_item_success),
                         Toast.LENGTH_LONG).show();
                 break;
+            }
 
             /* Request: create event failed to sync with server */
             case Const.MSG_EVENT_CREATED_FAILED: {
@@ -1028,21 +1046,40 @@ public class MainActivity extends AppCompatActivity
         switch (requestCode) {
             case Const.CREATE_EVENT_RESULT_CODE:
                 if (resultCode == RESULT_OK) {
-                    String id = data.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_ID));
-                    if (boardItemChangeListeners != null) {
-                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
-                            listener.onItemAdded(id);
-                        }
-                    }
+                    long create = data.getLongExtra(getResources().getString(R.string.EXTRA_ITEM_CREATE_TIME), 0L);
+                    DateTime createTime = create == 0L ? DateTime.now() : new DateTime(create);
+                    String name = data.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_NAME));
+                    long start = data.getLongExtra(getResources().getString(R.string.EXTRA_EVENT_START_TIME), 0L);
+                    DateTime startTime = start == 0L ? null : new DateTime(start);
+                    long end = data.getLongExtra(getResources().getString(R.string.EXTRA_EVENT_END_TIME), 0L);
+                    DateTime endTime = end == 0L ? null : new DateTime(end);
+                    String placeId = data.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_PLACE_ID));
+                    Location location = data.getParcelableExtra(getResources().getString(R.string.EXTRA_EVENT_LOCATION));
+                    String note = data.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_NOTE));
+                    dataUpdater.createEventAsync(appState.getActiveCircle(), createTime, null, name, startTime, endTime,
+                            placeId, location, note, true);
                 }
                 break;
 
             case Const.UPDATE_EVENT_RESULT_CODE:
                 if (resultCode == RESULT_OK) {
                     String id = data.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_ID));
+                    long update = data.getLongExtra(getResources().getString(R.string.EXTRA_ITEM_CREATE_TIME), 0L);
+                    DateTime updateTime = update == 0L ? DateTime.now() : new DateTime(update);
+                    String name = data.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_NAME));
+                    long start = data.getLongExtra(getResources().getString(R.string.EXTRA_EVENT_START_TIME), 0L);
+                    DateTime startTime = start == 0L ? null : new DateTime(start);
+                    long end = data.getLongExtra(getResources().getString(R.string.EXTRA_EVENT_END_TIME), 0L);
+                    DateTime endTime = end == 0L ? null : new DateTime(end);
+                    String placeId = data.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_PLACE_ID));
+                    Location location = data.getParcelableExtra(getResources().getString(R.string.EXTRA_EVENT_LOCATION));
+                    String note = data.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_NOTE));
+                    final Event event = dataUpdater.updateEvent(appState.getActiveCircle(), updateTime, id, name,
+                            startTime, endTime, placeId, location, note, true);
+
                     if (boardItemChangeListeners != null) {
                         for (BoardItemChangeListener listener : boardItemChangeListeners) {
-                            listener.onItemModified(id);
+                            listener.onItemModified(event.getId());
                         }
                     }
                 }

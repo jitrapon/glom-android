@@ -3,15 +3,15 @@ package com.abborg.glom;
 public class Const {
 
 //    public static final String HOST_ADDRESS = "http://putsreq.com/KJVQCdWbHg0xXf2aHWf1";
-    public static String HOST_ADDRESS = "http://10.11.3.202:8080";
+    public static String HOST_ADDRESS = "http://192.168.1.4:8080";
     public static final String SENT_TOKEN_TO_SERVER = "sentTokenToServer";
     public static final String REGISTRATION_COMPLETE = "registrationComplete";
 
     /**
      * TEST INFO
      * **/
-//    public static final String TEST_USER_ID = "yoshi3003";
-    public static final String TEST_USER_ID = "fatcat18";
+    public static final String TEST_USER_ID = "yoshi3003";
+//    public static final String TEST_USER_ID = "fatcat18";
     public static final String TEST_CIRCLE_ID = "dev-test-circle-1";
     public static final String TEST_API_AUTHORIZATION_HEADER = "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -69,11 +69,13 @@ public class Const {
     public static final int MSG_GET_USERS = 5000;
     public static final int MSG_ITEM_DELETED = 5001;
     public static final int MSG_GET_ITEMS = 5002;
-    public static final int MSG_EVENT_CREATED_SUCCESS = 5003;
-    public static final int MSG_EVENT_CREATED_FAILED = 5004;
-    public static final int MSG_EVENT_UPDATED_SUCCESS = 5005;
-    public static final int MSG_EVENT_UPDATED_FAILED = 5006;
-    public static final int MSG_ITEM_DELETED_SUCCESS = 5007;
-    public static final int MSG_ITEM_DELETED_FAILED = 5008;
-    public static final int MSG_INIT_SUCCESS = 5009;
+    public static final int MSG_EVENT_CREATED = 5003;
+    public static final int MSG_EVENT_CREATED_SUCCESS = 5004;
+    public static final int MSG_EVENT_CREATED_FAILED = 5005;
+    public static final int MSG_EVENT_UPDATED = 5006;
+    public static final int MSG_EVENT_UPDATED_SUCCESS = 5007;
+    public static final int MSG_EVENT_UPDATED_FAILED = 5008;
+    public static final int MSG_ITEM_DELETED_SUCCESS = 5009;
+    public static final int MSG_ITEM_DELETED_FAILED = 5010;
+    public static final int MSG_INIT_SUCCESS = 5011;
 }

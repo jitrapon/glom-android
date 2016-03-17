@@ -756,102 +756,108 @@ public class DataUpdater {
                 new ResponseListener() {
                     @Override
                     public void onSuccess(JSONObject response) {
-                        try {
-                            if (response != null) {
-                                JSONArray jsonArray = response.getJSONArray(Const.JSON_SERVER_ITEMS);
-                                int numItem = jsonArray.length();
-                                List<BoardItem> items = circle.getItems();
-                                if (items != null) {
-                                    for (BoardItem item : items) {
-                                        item.setDirty(true);
-                                    }
-                                }
-                                else return;
-
-                                if (numItem != 0) {
-                                    for (int i = 0; i < jsonArray.length(); i++) {
-                                        JSONObject json = jsonArray.getJSONObject(i);
-                                        String error = json.optString(Const.JSON_SERVER_ERROR);
-                                        if (TextUtils.isEmpty(error)) {
-                                            String id = json.getString(Const.JSON_SERVER_ITEM_ID);
-                                            int type = json.getInt(Const.JSON_SERVER_ITEM_TYPE);
-                                            Long createdMillis = json.getLong(Const.JSON_SERVER_CREATED_TIME);
-                                            Long updatedMillis = json.getLong(Const.JSON_SERVER_UPDATED_TIME);
-                                            JSONObject info = json.getJSONObject(Const.JSON_SERVER_INFO);
-
-                                            switch (type) {
-                                                case BoardItem.TYPE_EVENT:
-                                                    String name = info.getString(Const.JSON_SERVER_EVENT_NAME);
-                                                    long start = info.optLong(Const.JSON_SERVER_EVENT_START_TIME);
-                                                    long end = info.optLong(Const.JSON_SERVER_EVENT_END_TIME);
-                                                    String placeId = info.getString(Const.JSON_SERVER_EVENT_PLACE_ID);
-                                                    JSONObject locationJson = info.getJSONObject(Const.JSON_SERVER_LOCATION);
-                                                    double lat = locationJson.optDouble(Const.JSON_SERVER_LOCATION_LAT, -1);
-                                                    double lng = locationJson.optDouble(Const.JSON_SERVER_LOCATION_LONG, -1);
-                                                    String note = info.getString(Const.JSON_SERVER_EVENT_NOTE);
-
-                                                    name = name.equals("null") ? null : name;
-                                                    DateTime startTime = null;
-                                                    DateTime endTime = null;
-                                                    if (start != 0L)
-                                                        startTime = new DateTime(start);
-                                                    if (end != 0L) endTime = new DateTime(end);
-                                                    placeId = placeId.equals("null") ? null : placeId;
-                                                    Location location = null;
-                                                    if (lat != -1 && lng != -1) {
-                                                        location = new Location("");
-                                                        location.setLatitude(lat);
-                                                        location.setLongitude(lng);
-                                                    }
-                                                    note = note.equals("null") ? null : note;
-
-                                                    Event event = null;
-
-                                                    if (items != null) {
-                                                        for (BoardItem item : items) {
-                                                            if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_EVENT) {
-                                                                event = (Event) item;
-                                                            }
-                                                        }
-                                                        if (event == null) {
-                                                            DateTime createdTime = createdMillis==null ? null : new DateTime(createdMillis);
-                                                            createEvent(circle, createdTime, id, name, startTime, endTime, placeId, location,
-                                                                    note, false);
-                                                        }
-                                                        else {
-                                                            DateTime updatedTime = updatedMillis==null ? null : new DateTime(updatedMillis);
-                                                            updateEvent(circle, updatedTime, id, name, startTime, endTime,
-                                                                    placeId, location, note, false);
-                                                            event.setDirty(false);
-                                                        }
-                                                    }
-                                                    break;
-                                                default:
-                                                    break;
+                        final JSONObject respJson = response;
+                        run(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    if (respJson != null) {
+                                        JSONArray jsonArray = respJson.getJSONArray(Const.JSON_SERVER_ITEMS);
+                                        int numItem = jsonArray.length();
+                                        List<BoardItem> items = circle.getItems();
+                                        if (items != null) {
+                                            for (BoardItem item : items) {
+                                                item.setDirty(true);
                                             }
                                         }
-                                    }
-                                }
-                                Log.d(TAG, "Found " + numItem + " items");
+                                        else return;
 
-                                // remove dirty BoardItems
-                                Iterator<BoardItem> iterator = items.iterator();
-                                while (iterator.hasNext()) {
-                                    BoardItem item = iterator.next();
-                                    if (item.isDirty()) {
-                                        iterator.remove();
-                                        deleteItem(item);
-                                    }
-                                }
+                                        if (numItem != 0) {
+                                            for (int i = 0; i < jsonArray.length(); i++) {
+                                                JSONObject json = jsonArray.getJSONObject(i);
+                                                String error = json.optString(Const.JSON_SERVER_ERROR);
+                                                if (TextUtils.isEmpty(error)) {
+                                                    String id = json.getString(Const.JSON_SERVER_ITEM_ID);
+                                                    int type = json.getInt(Const.JSON_SERVER_ITEM_TYPE);
+                                                    Long createdMillis = json.getLong(Const.JSON_SERVER_CREATED_TIME);
+                                                    Long updatedMillis = json.getLong(Const.JSON_SERVER_UPDATED_TIME);
+                                                    JSONObject info = json.getJSONObject(Const.JSON_SERVER_INFO);
 
-                                // update UI
-                                if (handler != null)
-                                    handler.sendEmptyMessage(Const.MSG_GET_ITEMS);
+                                                    switch (type) {
+                                                        case BoardItem.TYPE_EVENT:
+                                                            String name = info.getString(Const.JSON_SERVER_EVENT_NAME);
+                                                            long start = info.optLong(Const.JSON_SERVER_EVENT_START_TIME);
+                                                            long end = info.optLong(Const.JSON_SERVER_EVENT_END_TIME);
+                                                            String placeId = info.getString(Const.JSON_SERVER_EVENT_PLACE_ID);
+                                                            JSONObject locationJson = info.getJSONObject(Const.JSON_SERVER_LOCATION);
+                                                            double lat = locationJson.optDouble(Const.JSON_SERVER_LOCATION_LAT, -1);
+                                                            double lng = locationJson.optDouble(Const.JSON_SERVER_LOCATION_LONG, -1);
+                                                            String note = info.getString(Const.JSON_SERVER_EVENT_NOTE);
+
+                                                            name = name.equals("null") ? null : name;
+                                                            DateTime startTime = null;
+                                                            DateTime endTime = null;
+                                                            if (start != 0L)
+                                                                startTime = new DateTime(start);
+                                                            if (end != 0L) endTime = new DateTime(end);
+                                                            placeId = placeId.equals("null") ? null : placeId;
+                                                            Location location = null;
+                                                            if (lat != -1 && lng != -1) {
+                                                                location = new Location("");
+                                                                location.setLatitude(lat);
+                                                                location.setLongitude(lng);
+                                                            }
+                                                            note = note.equals("null") ? null : note;
+
+                                                            Event event = null;
+
+                                                            if (items != null) {
+                                                                for (BoardItem item : items) {
+                                                                    if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_EVENT) {
+                                                                        event = (Event) item;
+                                                                    }
+                                                                }
+                                                                if (event == null) {
+                                                                    DateTime createdTime = createdMillis==null ? null : new DateTime(createdMillis);
+                                                                    createEvent(circle, createdTime, id, name, startTime, endTime, placeId, location,
+                                                                            note, false);
+                                                                }
+                                                                else {
+                                                                    DateTime updatedTime = updatedMillis==null ? null : new DateTime(updatedMillis);
+                                                                    updateEvent(circle, updatedTime, id, name, startTime, endTime,
+                                                                            placeId, location, note, false);
+                                                                    event.setDirty(false);
+                                                                }
+                                                            }
+                                                            break;
+                                                        default:
+                                                            break;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        Log.d(TAG, "Found " + numItem + " items");
+
+                                        // remove dirty BoardItems
+                                        Iterator<BoardItem> iterator = items.iterator();
+                                        while (iterator.hasNext()) {
+                                            BoardItem item = iterator.next();
+                                            if (item.isDirty()) {
+                                                iterator.remove();
+                                                deleteItem(item);
+                                            }
+                                        }
+
+                                        // update UI
+                                        if (handler != null)
+                                            handler.sendEmptyMessage(Const.MSG_GET_ITEMS);
+                                    }
+                                } catch (Exception ex) {
+                                    ex.printStackTrace();
+                                    if (handler != null) handler.sendEmptyMessage(Const.MSG_GET_ITEMS);
+                                }
                             }
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
-                            if (handler != null) handler.sendEmptyMessage(Const.MSG_GET_ITEMS);
-                        }
+                        });
                     }
 
                     @Override
@@ -902,6 +908,71 @@ public class DataUpdater {
     /*************************************************
      * EVENT OPERATIONS
      *************************************************/
+
+    public void createEventAsync(final Circle circle, final DateTime createdTime,
+                                 final String id, final String name, final DateTime startTime, final DateTime endTime, final String placeId,
+                             final Location location, final String note, final boolean sync) {
+        final Event event = TextUtils.isEmpty(id) ? Event.createEvent(circle, createdTime, createdTime)
+                : Event.createEvent(id, circle, createdTime, createdTime);
+        event.setEventInfo(name, startTime, endTime, placeId, location, note);
+        event.setLastAction(new FeedAction(FeedAction.CREATE_EVENT, activeUser, createdTime));
+
+        run(new Runnable() {
+            @Override
+            public void run() {
+                if (!database.isOpen()) open();
+                database.beginTransaction();
+
+                try {
+                    ContentValues values = new ContentValues();
+                    values.put(DBHelper.CIRCLEITEM_COLUMN_CIRCLEID, circle.getId());
+                    values.put(DBHelper.CIRCLEITEM_COLUMN_ITEMID, event.getId());
+                    values.put(DBHelper.CIRCLEITEM_COLUMN_TYPE, event.getType());
+                    values.put(DBHelper.CIRCLEITEM_COLUMN_CREATED_TIME, createdTime.getMillis());
+                    values.put(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME, createdTime.getMillis());
+                    long insertId = database.insert(DBHelper.TABLE_CIRCLE_ITEMS, null, values);
+                    Log.d(TAG, "[" + insertId + "] Inserted new item to circle (" + circle.getId() + ") with id = " + event.getId());
+
+                    values.clear();
+                    values.put(DBHelper.EVENT_COLUMN_ID, event.getId());
+                    values.put(DBHelper.EVENT_COLUMN_NAME, event.getName());
+                    if (event.getStartTime() != null) {
+                        values.put(DBHelper.EVENT_COLUMN_STARTTIME, event.getStartTime().getMillis());
+                    }
+                    if (event.getEndTime() != null) {
+                        values.put(DBHelper.EVENT_COLUMN_ENDTIME, event.getEndTime().getMillis());
+                    }
+                    values.put(DBHelper.EVENT_COLUMN_PLACE, event.getPlace());
+                    if (event.getLocation() != null) {
+                        values.put(DBHelper.EVENT_COLUMN_LATITUDE, event.getLocation().getLatitude());
+                        values.put(DBHelper.EVENT_COLUMN_LONGITUDE, event.getLocation().getLongitude());
+                    }
+                    else {
+                        values.put(DBHelper.EVENT_COLUMN_LATITUDE, -1.0);
+                        values.put(DBHelper.EVENT_COLUMN_LONGITUDE, -1.0);
+                    }
+                    values.put(DBHelper.EVENT_COLUMN_NOTE, event.getNote());
+                    insertId = database.insert(DBHelper.TABLE_EVENTS, null, values);
+                    Log.d(TAG, "[" + insertId + "] Inserted new event successfully");
+
+                    database.setTransactionSuccessful();
+
+                    if (handler != null && sync)
+                        handler.sendMessageDelayed(handler.obtainMessage(Const.MSG_EVENT_CREATED, event), 1000);
+                }
+                catch (SQLException ex) {
+                    Log.e(TAG, ex.getMessage());
+                }
+                finally {
+                    database.endTransaction();
+                }
+
+                // whether or not to sync with the server
+                if (sync) requestCreateEvent(circle, event);
+            }
+        });
+    }
+
     public Event createEvent(Circle circle, DateTime createdTime, String id, String name, DateTime startTime, DateTime endTime, String placeId,
                              Location location, String note, boolean sync) {
         createdTime = createdTime==null ? DateTime.now() : createdTime;
@@ -1002,7 +1073,9 @@ public class DataUpdater {
                         new ResponseListener() {
                             @Override
                             public void onSuccess(JSONObject response) {
-                                if (handler != null) handler.sendEmptyMessage(Const.MSG_EVENT_CREATED_SUCCESS);
+                                if (handler != null) {
+                                    handler.sendMessage(handler.obtainMessage(Const.MSG_EVENT_CREATED_SUCCESS, event));
+                                }
                             }
 
                             @Override

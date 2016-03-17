@@ -38,6 +38,13 @@
     <string name="ACTION_CREATE_EVENT">com.abborg.glom.action.CREATE_EVENT</string>
     <string name="ACTION_UPDATE_EVENT">com.abborg.glom.action.UPDATE_EVENT</string>
     <string name="EXTRA_EVENT_ID">com.abborg.glom.extra.EVENT_ID</string>
+    <string name="EXTRA_EVENT_NAME">com.abborg.glom.extra.EVENT_NAME</string>
+    <string name="EXTRA_EVENT_START_TIME">com.abborg.glom.extra.EVENT_START_TIME</string>
+    <string name="EXTRA_EVENT_END_TIME">com.abborg.glom.extra.EVENT_END_TIME</string>
+    <string name="EXTRA_EVENT_PLACE_ID">com.abborg.glom.extra.EVENT_PLACE_ID</string>
+    <string name="EXTRA_EVENT_LOCATION">com.abborg.glom.extra.EVENT_LOCATION</string>
+    <string name="EXTRA_EVENT_NOTE">com.abborg.glom.extra.EVENT_NOTE</string>
+    <string name="EXTRA_ITEM_CREATE_TIME">com.abborg.glom.extra.ITEM_CREATE_TIME</string>
 
     <!-- Profile activity strings -->
     <string name="profile_activity_label">My Profile</string>

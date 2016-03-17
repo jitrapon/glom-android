@@ -197,8 +197,8 @@ public class BoardFragment extends Fragment implements View.OnClickListener, Boa
     @Override
     public void onItemAdded(String id) {
         if (activity != null && id != null) {
-            layoutManager.scrollToPosition(0);
             adapter.notifyItemInserted(0);
+            layoutManager.scrollToPosition(0);
             Log.d(TAG, "Inserted item at " + 0);
         }
 
