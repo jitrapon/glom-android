@@ -163,6 +163,10 @@ public class MainActivity extends AppCompatActivity
             mFragmentTitleList.add(title);
         }
 
+        public List<String> getFragmentTitleList() {
+            return mFragmentTitleList;
+        }
+
         @Override
         public CharSequence getPageTitle(int position) {
 //            return mFragmentTitleList.get(position);
@@ -181,9 +185,9 @@ public class MainActivity extends AppCompatActivity
         // set up handler for receiving all messages
         handler = new Handler(this);
 
-        setupData();
-
         setupView();
+
+        appState = AppState.init(this, handler);
     }
 
     @Override
@@ -191,15 +195,19 @@ public class MainActivity extends AppCompatActivity
         super.onStart();
 
         // connect to the Google Play API
-        appState.connectGoogleApiClient();
-        appState.setKeepGoogleApiClientAlive(false);
+        if (appState != null) {
+            appState.connectGoogleApiClient();
+            appState.setKeepGoogleApiClientAlive(false);
+        }
 
         // register local broadcast receiver
-        LocalBroadcastManager broadcastManager = LocalBroadcastManager.getInstance(this);
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(getResources().getString(R.string.ACTION_RECEIVE_LOCATION));
-        intentFilter.addAction(getResources().getString(R.string.ACTION_USER_LOCATION_UPDATE));
-        broadcastManager.registerReceiver(broadcastReceiver, intentFilter);
+        if (broadcastReceiver != null) {
+            LocalBroadcastManager broadcastManager = LocalBroadcastManager.getInstance(this);
+            IntentFilter intentFilter = new IntentFilter();
+            intentFilter.addAction(getResources().getString(R.string.ACTION_RECEIVE_LOCATION));
+            intentFilter.addAction(getResources().getString(R.string.ACTION_USER_LOCATION_UPDATE));
+            broadcastManager.registerReceiver(broadcastReceiver, intentFilter);
+        }
 
         // get database writable object, if already initialized
         if (dataUpdater != null) {
@@ -214,8 +222,10 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onStop() {
         // unregister the local broadcast receiver
-        LocalBroadcastManager broadcastManager = LocalBroadcastManager.getInstance(this);
-        broadcastManager.unregisterReceiver(broadcastReceiver);
+        if (broadcastReceiver != null) {
+            LocalBroadcastManager broadcastManager = LocalBroadcastManager.getInstance(this);
+            broadcastManager.unregisterReceiver(broadcastReceiver);
+        }
 
         // disconnect google api client
         if (!appState.shouldKeepGoogleApiAlive()) appState.disconnectGoogleApiClient();
@@ -241,10 +251,6 @@ public class MainActivity extends AppCompatActivity
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
-    }
-
-    private void setupData() {
-        appState = AppState.init(this, handler);
     }
 
     private void setupEventListeners() {
@@ -507,10 +513,8 @@ public class MainActivity extends AppCompatActivity
 
         // register the local broadcast receiver for our gcm listener service updates
         broadcastReceiver = new BroadcastReceiver() {
+
             @Override
-            //TODO keep track of received message of user and circleId to show appropriate
-            //TODO notifications
-            //TODO retrive notification counts from USER table
             public void onReceive(Context context, Intent intent) {
 
                 // location updates from MessageListenerService
@@ -562,6 +566,12 @@ public class MainActivity extends AppCompatActivity
                 }
             }
         };
+
+        LocalBroadcastManager broadcastManager = LocalBroadcastManager.getInstance(this);
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(getResources().getString(R.string.ACTION_RECEIVE_LOCATION));
+        intentFilter.addAction(getResources().getString(R.string.ACTION_USER_LOCATION_UPDATE));
+        broadcastManager.registerReceiver(broadcastReceiver, intentFilter);
     }
 
     private void setupService() {
@@ -833,9 +843,8 @@ public class MainActivity extends AppCompatActivity
 
             /* On first load */
             case Const.MSG_INIT_SUCCESS:
-                dataUpdater = appState.getDataUpdater();
-
                 try {
+                    dataUpdater = appState.getDataUpdater();
                     dataUpdater.open();
                 } catch (SQLException ex) {
                     Log.e(TAG, ex.getMessage());
