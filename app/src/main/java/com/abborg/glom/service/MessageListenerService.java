@@ -65,7 +65,7 @@ public class MessageListenerService extends GcmListenerService {
                         Intent locUpdateIntent = new Intent(getResources().getString(R.string.ACTION_RECEIVE_LOCATION));
 
                         // save updated location in DB
-                        AppState appState = AppState.getInstance(this);
+                        AppState appState = AppState.getInstance();
                         appState.getDataUpdater().open();
                         appState.getDataUpdater().onLocationUpdateReceived(data);
 

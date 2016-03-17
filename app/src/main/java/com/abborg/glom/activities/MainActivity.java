@@ -131,6 +131,9 @@ public class MainActivity extends AppCompatActivity
     private ImageView avatarIcon;
     private SubActionButton.Builder lCSubBuilder;
     private FrameLayout.LayoutParams blueContentParams;
+    private ViewPager viewPager;
+    private Toolbar toolbar;
+    private android.support.design.widget.FloatingActionButton fab;
     private boolean isRadialMenuOptionsOpening;
     private static final int MENU_OVERLAY_ANIM_TIME = 150;
 
@@ -181,12 +184,6 @@ public class MainActivity extends AppCompatActivity
         setupData();
 
         setupView();
-
-        setupBroadcastReceiver();
-
-        setupEventListeners();
-
-        setupService();
     }
 
     @Override
@@ -204,12 +201,13 @@ public class MainActivity extends AppCompatActivity
         intentFilter.addAction(getResources().getString(R.string.ACTION_USER_LOCATION_UPDATE));
         broadcastManager.registerReceiver(broadcastReceiver, intentFilter);
 
-        // get database writable object
-        try {
-            dataUpdater.open();
-        }
-        catch (SQLException ex) {
-            Log.e(TAG, ex.getMessage());
+        // get database writable object, if already initialized
+        if (dataUpdater != null) {
+            try {
+                dataUpdater.open();
+            } catch (SQLException ex) {
+                Log.e(TAG, ex.getMessage());
+            }
         }
     }
 
@@ -246,9 +244,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void setupData() {
-        appState = AppState.getInstance(this);
-        dataUpdater = appState.getDataUpdater();
-        dataUpdater.setHandler(handler);
+        appState = AppState.init(this, handler);
     }
 
     private void setupEventListeners() {
@@ -261,21 +257,30 @@ public class MainActivity extends AppCompatActivity
 
     private void setupView() {
         setContentView(R.layout.activity_main);
-        mainCoordinatorLayout = (CoordinatorLayout) findViewById(R.id.parentView);
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        mainCoordinatorLayout = (CoordinatorLayout) findViewById(R.id.parentView);
+        tabLayout = (TabLayout) findViewById(R.id.tabs);
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        viewPager = (ViewPager) findViewById(R.id.viewpager);
+        bottomSheet = (BottomSheetLayout) findViewById(R.id.bottomsheet);
+        fab = (FloatingActionButton) findViewById(R.id.fab);
+        overlayLayout = (RelativeLayout) findViewById(R.id.overlayLayout);
+
         setSupportActionBar(toolbar);
+
+        fab.hide();
+    }
+
+    private void updateView() {
+        setupViewPager(viewPager);
+        tabLayout.setupWithViewPager(viewPager);
+        setupTabIcons();
+
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setTitle(appState.getActiveCircle().getTitle()
                     + " (" + appState.getActiveCircle().getUsers().size() + ")");
         }
-
-        final ViewPager viewPager = (ViewPager) findViewById(R.id.viewpager);
-        setupViewPager(viewPager);
-        tabLayout = (TabLayout) findViewById(R.id.tabs);
-        tabLayout.setupWithViewPager(viewPager);
-        setupTabIcons();
 
         // set up the navigation drawer
         DrawerFragment drawerFragment = (DrawerFragment)
@@ -284,7 +289,6 @@ public class MainActivity extends AppCompatActivity
         drawerFragment.setDrawerListener(this);
 
         // set up the bottom sheets
-        bottomSheet = (BottomSheetLayout) findViewById(R.id.bottomsheet);
         bottomSheet.setShouldDimContentView(false);
         broadcastLocationSheetLayout = LayoutInflater.from(this).inflate(R.layout.bottom_sheet_broadcast_location, bottomSheet, false);
         broadcastLocationToggle = (SwitchCompat) broadcastLocationSheetLayout.findViewById(R.id.toggleBroadcastLocationSwitch);
@@ -424,27 +428,24 @@ public class MainActivity extends AppCompatActivity
         });
 
         // set up the floating action button for all fragments
-        android.support.design.widget.FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+        if (fab != null) {
+            fab.show();
+            fab.setOnClickListener(new View.OnClickListener() {
 
-            @Override
-            public void onClick(View v) {
+                @Override
+                public void onClick(View v) {
 
-                // click event for circle fragment
-                if (adapter.getItem(viewPager.getCurrentItem()) instanceof CircleFragment) {
-                    showRadialMenuOptions(appState.getActiveUser());
+                    // click event for circle fragment
+                    if (adapter.getItem(viewPager.getCurrentItem()) instanceof CircleFragment) {
+                        showRadialMenuOptions(appState.getActiveUser());
+                    } else if (adapter.getItem(viewPager.getCurrentItem()) instanceof LocationFragment) {
+
+                    } else if (adapter.getItem(viewPager.getCurrentItem()) instanceof BoardFragment) {
+                        showRadialMenuOptions(appState.getActiveUser());
+                    }
                 }
-                else if (adapter.getItem(viewPager.getCurrentItem()) instanceof LocationFragment) {
-
-                }
-                else if (adapter.getItem(viewPager.getCurrentItem()) instanceof BoardFragment) {
-                    showRadialMenuOptions(appState.getActiveUser());
-                }
-            }
-        });
-
-        // initialize the second relative layout for overlay and avatar menu
-        overlayLayout = (RelativeLayout) findViewById(R.id.overlayLayout);
+            });
+        }
 
         // initialize the overlay imageview
         menuOverlay = new ImageView(this);
@@ -829,6 +830,28 @@ public class MainActivity extends AppCompatActivity
     @Override
     public boolean handleMessage(Message msg) {
         switch (msg.what) {
+
+            /* On first load */
+            case Const.MSG_INIT_SUCCESS:
+                dataUpdater = appState.getDataUpdater();
+
+                try {
+                    dataUpdater.open();
+                } catch (SQLException ex) {
+                    Log.e(TAG, ex.getMessage());
+                }
+
+                updateView();
+
+                setupBroadcastReceiver();
+
+                setupEventListeners();
+
+                setupService();
+
+                dataUpdater.requestGetUsersInCircle(appState.getActiveCircle());
+
+                break;
 
             /* Request: get list of users in circle */
             case Const.MSG_GET_USERS:

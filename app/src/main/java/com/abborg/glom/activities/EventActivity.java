@@ -158,7 +158,7 @@ public class EventActivity extends AppCompatActivity {
             finishWithResult(null); // end abruptly if we don't know what MODE we're in
         }
 
-        appState = AppState.getInstance(this);
+        appState = AppState.getInstance();
         dataUpdater = appState.getDataUpdater();
         startDateTime = null;
         endDateTime = null;

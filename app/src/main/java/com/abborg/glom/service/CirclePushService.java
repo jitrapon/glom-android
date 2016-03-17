@@ -111,7 +111,7 @@ public class CirclePushService extends Service implements LocationListener,
 
             // loop through list of circles and send updates to them
             if (!circles.isEmpty()) {
-                AppState appState = AppState.getInstance(this);
+                AppState appState = AppState.getInstance();
                 appState.getDataUpdater().open();
                 for (String circleId : circles) {
                     sendLocationUpdateRequest(circleId, userLocation);
@@ -388,7 +388,7 @@ public class CirclePushService extends Service implements LocationListener,
         hideNotification();
 
         // make sure to remove all broadcasting circles accordingly before closing
-        AppState appState = AppState.getInstance(this);
+        AppState appState = AppState.getInstance();
         appState.getDataUpdater().open();
         if (circles != null && !circles.isEmpty()) {
             for (String circleId : circles) {

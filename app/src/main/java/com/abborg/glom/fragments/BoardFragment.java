@@ -98,7 +98,7 @@ public class BoardFragment extends Fragment implements View.OnClickListener, Boa
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        appState = AppState.getInstance(getContext());
+        appState = AppState.getInstance();
         adapter = new BoardRecyclerViewAdapter(getContext(), getItems(), this, handler);
         dataUpdater = appState.getDataUpdater();
     }

@@ -75,4 +75,5 @@ public class Const {
     public static final int MSG_EVENT_UPDATED_FAILED = 5006;
     public static final int MSG_ITEM_DELETED_SUCCESS = 5007;
     public static final int MSG_ITEM_DELETED_FAILED = 5008;
+    public static final int MSG_INIT_SUCCESS = 5009;
 }

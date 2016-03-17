@@ -67,7 +67,7 @@ public class CircleFragment extends Fragment implements BroadcastLocationListene
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        appState = AppState.getInstance(getContext());
+        appState = AppState.getInstance();
 
         users = appState.getActiveCircle().getUsers();
     }
@@ -141,7 +141,7 @@ public class CircleFragment extends Fragment implements BroadcastLocationListene
     private void setAvatarBroadcastingAnimation(boolean isBroadcasting) {
         int avatarIndex = 0;
         for (User user : users) {
-            if (user.getId().equals(AppState.getInstance(getContext()).getActiveUser().getId())) {
+            if (user.getId().equals(AppState.getInstance().getActiveUser().getId())) {
                 View avatar = getAvatarByPosition(avatarIndex);
                 Log.d(TAG, "Setting broadcast animation for " + avatarIndex);
                 avatarAdapter.setUserIsBroadcastingLocation(avatar, isBroadcasting);

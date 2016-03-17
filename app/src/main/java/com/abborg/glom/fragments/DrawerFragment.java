@@ -25,8 +25,6 @@ import java.util.List;
 
 public class DrawerFragment extends Fragment {
 
-    private static String TAG = DrawerFragment.class.getSimpleName();
-
     private RecyclerView recyclerView;
 
     private ActionBarDrawerToggle mDrawerToggle;
@@ -65,12 +63,15 @@ public class DrawerFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        circles = AppState.getInstance(getContext()).getAllCircleInfo();
-
         // Inflating view layout
         View layout = inflater.inflate(R.layout.fragment_navigation_drawer, container, false);
         recyclerView = (RecyclerView) layout.findViewById(R.id.drawerList);
 
+        return layout;
+    }
+
+    public void setUp(int fragmentId, DrawerLayout drawerLayout, final Toolbar toolbar) {
+        circles = AppState.getInstance().getAllCircleInfo();
         adapter = new NavigationDrawerAdapter(getActivity(), getData());
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
@@ -87,10 +88,6 @@ public class DrawerFragment extends Fragment {
             }
         }));
 
-        return layout;
-    }
-
-    public void setUp(int fragmentId, DrawerLayout drawerLayout, final Toolbar toolbar) {
         containerView = getActivity().findViewById(fragmentId);
         mDrawerLayout = drawerLayout;
         mDrawerToggle = new ActionBarDrawerToggle(getActivity(), drawerLayout, toolbar, R.string.ACTION_OPEN_DRAWER, R.string.ACTION_CLOSE_DRAWER) {
@@ -113,14 +110,13 @@ public class DrawerFragment extends Fragment {
             }
         };
 
-        mDrawerLayout.setDrawerListener(mDrawerToggle);
+        mDrawerLayout.addDrawerListener(mDrawerToggle);
         mDrawerLayout.post(new Runnable() {
             @Override
             public void run() {
                 mDrawerToggle.syncState();
             }
         });
-
     }
 
     static class RecyclerTouchListener implements RecyclerView.OnItemTouchListener {

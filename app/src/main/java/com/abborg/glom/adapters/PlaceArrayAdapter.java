@@ -63,7 +63,7 @@ public class PlaceArrayAdapter extends ArrayAdapter<PlaceArrayAdapter.PlaceAutoc
     }
 
     private ArrayList<PlaceAutocomplete> getPredictions(CharSequence constraint) {
-        GoogleApiClient apiClient = AppState.getInstance(getContext()).getGoogleApiClient();
+        GoogleApiClient apiClient = AppState.getInstance().getGoogleApiClient();
         if (apiClient != null) {
             Log.d(TAG, "Executing autocomplete query for: " + constraint);
             PendingResult<AutocompletePredictionBuffer> results =

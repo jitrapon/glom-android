@@ -1,18 +1,14 @@
 package com.abborg.glom;
 
 import android.content.Context;
-import android.content.SharedPreferences;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager.NameNotFoundException;
-import android.location.Location;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
+import android.os.Handler;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.abborg.glom.data.DataUpdater;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CircleInfo;
-import com.abborg.glom.data.DataUpdater;
 import com.abborg.glom.model.User;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -24,12 +20,11 @@ import net.danlew.android.joda.JodaTimeAndroid;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Class that handles objects that are to be used for the entire application
- * As long as the OS does not kill the application context, this class and fields will
+ * so long as the OS does not kill the application context, this class and fields will
  * not get initialized
  *
  * Created by Boat on 22/10/58.
@@ -42,17 +37,14 @@ public class AppState
 
     private Context context;
 
-    /* The current user */
-    private User user;
+    /* The current activeUser */
+    private User activeUser;
 
     /* The currently active circle */
     private Circle activeCircle;
 
     /* List of circle info */
     private List<CircleInfo> circles;
-
-    /* App's shared preferences file */
-    private SharedPreferences sharedPref;
 
     private DataUpdater dataUpdater;
 
@@ -68,66 +60,12 @@ public class AppState
     /* App-wide date formatter */
     private DateTimeFormatter dateTimeFormatter;
 
-    /* Determines the type of app start */
-    public enum AppStart {
-        FIRST_TIME, FIRST_TIME_VERSION, NORMAL;
+    public static AppState init(Context ctx, Handler handler) {
+        instance = new AppState(ctx, handler);
+        return instance;
     }
 
-    /* The app version code (not the name) used on the last start of the app */
-    private static final String LAST_APP_VERSION = "last_app_version";
-
-    private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
-
-    /**
-     * Finds out started for the first time (ever or in the current version).<br/>
-     * <br/>
-     * Note: This method is <b>not idempotent</b> only the first call will
-     * determine the proper result. Any subsequent calls will only return
-     * {@link AppStart#NORMAL} until the app is started again. So you might want
-     * to consider caching the result!
-     *
-     * @return the type of app start
-     */
-    public AppStart checkAppStart() {
-        PackageInfo pInfo;
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        AppStart appStart = AppStart.NORMAL;
-        try {
-            pInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
-            int lastVersionCode = sharedPreferences.getInt(LAST_APP_VERSION, -1);
-            int currentVersionCode = pInfo.versionCode;
-            appStart = checkAppStart(currentVersionCode, lastVersionCode);
-
-            // Update version in preferences
-            sharedPreferences.edit()
-                    .putInt(LAST_APP_VERSION, currentVersionCode).commit();
-        } catch (NameNotFoundException e) {
-            Log.w("ERROR",
-                    "Unable to determine current app version from package manager. Defensisvely assuming normal app start.");
-        }
-        return appStart;
-    }
-
-    public AppStart checkAppStart(int currentVersionCode, int lastVersionCode) {
-        if (lastVersionCode == -1) {
-            return AppStart.FIRST_TIME;
-        }
-        else if (lastVersionCode < currentVersionCode) {
-            return AppStart.FIRST_TIME_VERSION;
-        }
-        else if (lastVersionCode > currentVersionCode) {
-            Log.w("ERROR", "Current version code (" + currentVersionCode
-                    + ") is less then the one recognized on last startup ("
-                    + lastVersionCode
-                    + "). Defenisvely assuming normal app start.");
-            return AppStart.NORMAL;
-        }
-        else {
-            return AppStart.NORMAL;
-        }
-    }
-
-    private AppState(Context ctx) {
+    private AppState(Context ctx, Handler handler) {
         context = ctx.getApplicationContext();
 
         // It's important to initialize the ResourceZoneInfoProvider; otherwise
@@ -151,72 +89,14 @@ public class AppState
 
         dateTimeFormatter = DateTimeFormat.forPattern(context.getResources().getString(R.string.action_create_event_datetime_format));
 
-        // initialize the user info
-        // if user is not there, TODO sign in again
-        dataUpdater = new DataUpdater(context, this);
-        dataUpdater.open();
-        user = dataUpdater.getActiveUser(Const.TEST_USER_ID);
-        if (user == null) {
-            //TODO SIGN IN
-            user = createUser(Const.TEST_USER_ID);
-        }
-        dataUpdater.setActiveUser(user);
-
-        // determine if the user has launched the app before and what version
-        init(checkAppStart());
-    }
-
-    private void init(AppStart appStart) {
-        switch (appStart) {
-            case NORMAL:
-                Log.d("INIT", "App has launched normally, version is the same");
-                break;
-            case FIRST_TIME_VERSION:
-                Log.d("INIT", "App has been upgraded! Version is different");
-                break;
-            case FIRST_TIME:
-                Log.d("INIT", "App has not been launched before, resetting the state to default");
-                dataUpdater.resetCircles();
-                dataUpdater.createCircle(
-                        context.getResources().getString(R.string.friends_circle_title), null,
-                        Const.TEST_CIRCLE_ID
-                );
-                break;
-            default:
-
-        }
-
-        circles = dataUpdater.getCirclesInfo();
-        activeCircle = dataUpdater.getCircleById(Const.TEST_CIRCLE_ID);
+        DataUpdater.init(this, context, handler);
     }
 
     public DateTimeFormatter getDateTimeFormatter() {
         return dateTimeFormatter;
     }
 
-    private User createUser(String id) {
-        Location location = new Location("");
-        location.setLatitude(0);
-        location.setLongitude(0);
-        User user = new User("", id, location);
-        user.setAvatar("");
-
-        List<Integer> userPerm = new ArrayList<>();
-        userPerm.add(User.MEDIA_IMAGE_RECEIVE);
-        userPerm.add(User.MEDIA_AUDIO_RECEIVE);
-        userPerm.add(User.MEDIA_VIDEO_RECEIVE);
-        userPerm.add(User.ALARM_RECEIVE);
-        userPerm.add(User.NOTE_RECEIVE);
-        userPerm.add(User.LOCATION_REQUEST_RECEIVE);
-        userPerm.add(User.CREATE_EVENT);
-        user.setUserPermission(userPerm);
-        return user;
-    }
-
-    public static AppState getInstance(Context context) {
-        if (instance == null) {
-            instance = new AppState(context.getApplicationContext());
-        }
+    public static AppState getInstance() {
         return instance;
     }
 
@@ -275,7 +155,13 @@ public class AppState
         Log.e("Google API Client", "Google Places API connection suspended.");
     }
 
-    public User getActiveUser() { return user; }
+    public void setDataUpdater(DataUpdater updater) { dataUpdater = updater; }
+
+    public void setCircleInfos(List<CircleInfo> info) { circles = info; }
+
+    public void setActiveUser(User user) { activeUser = user; }
+
+    public User getActiveUser() { return activeUser; }
 
     public void setActiveCircle(Circle circle) { activeCircle = circle; }
 

@@ -129,7 +129,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         userMarkers = new ConcurrentHashMap<>();
         eventMarkers = new ConcurrentHashMap<>();
         staleEvents = new ArrayList<>();
-        appState = AppState.getInstance(getContext());
+        appState = AppState.getInstance();
         formatter = DateTimeFormat.forPattern(getContext().getResources().getString(R.string.card_event_datetime_format));
     }
 
@@ -268,7 +268,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
                         Intent intent = new Intent(getActivity(), EventActivity.class);
                         intent.putExtra(getResources().getString(R.string.EXTRA_EVENT_ID), eventId);
                         intent.setAction(getResources().getString(R.string.ACTION_UPDATE_EVENT));
-                        AppState.getInstance(getActivity()).setKeepGoogleApiClientAlive(true);
+                        AppState.getInstance().setKeepGoogleApiClientAlive(true);
                         getActivity().startActivityForResult(intent, Const.UPDATE_EVENT_RESULT_CODE);
                     }
                 }
@@ -597,7 +597,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
 
     private void updateEventMarkers(final Event event) {
         // connect to Google's PlaceAPI to update the location
-        GoogleApiClient apiClient = AppState.getInstance(getContext()).getGoogleApiClient();
+        GoogleApiClient apiClient = AppState.getInstance().getGoogleApiClient();
         if (apiClient != null && apiClient.isConnected() && !TextUtils.isEmpty(event.getPlace())) {
             PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(apiClient, event.getPlace());
             placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {
@@ -707,7 +707,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         // show nearby-place for this user
         if (true) {
             if (userMarkers.get(appState.getActiveUser().getId()).getId().equals(marker.getId())) {
-                GoogleApiClient apiClient = AppState.getInstance(getContext()).getGoogleApiClient();
+                GoogleApiClient apiClient = AppState.getInstance().getGoogleApiClient();
                 if (apiClient != null && apiClient.isConnected()) {
                     PendingResult<PlaceLikelihoodBuffer> placeResult = Places.PlaceDetectionApi.getCurrentPlace(apiClient, null);
                     placeResult.setResultCallback(new ResultCallback<PlaceLikelihoodBuffer>() {

@@ -3,6 +3,9 @@ package com.abborg.glom.data;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.SQLException;
@@ -10,6 +13,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -34,6 +38,8 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Class that wraps around model to perform CRUD operations on database and 
@@ -65,14 +71,148 @@ public class DataUpdater {
     /* Global app states */
     private AppState appState;
 
-    public DataUpdater(Context context, AppState appState) {
-        this.context = context;
-        this.appState = appState;
-        dbHelper = new DBHelper(context);
+    /* Executor service thread pool */
+    private final ExecutorService threadPool;
+
+    /* Determines the type of app start */
+    public enum AppStart {
+        FIRST_TIME, FIRST_TIME_VERSION, NORMAL;
     }
 
-    public void setHandler(Handler handler) {
+    /* The app version code (not the name) used on the last start of the app */
+    private static final String LAST_APP_VERSION = "last_app_version";
+
+    private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
+
+    public void run(Runnable runnable) {
+        threadPool.submit(runnable);
+    }
+
+    public static void init(final AppState appState, final Context context, final Handler handler) {
+        final DataUpdater instance = new DataUpdater(appState, context, handler);
+        instance.run(new Runnable() {
+            @Override
+            public void run() {
+                instance.dbHelper = new DBHelper(context);
+                instance.open();
+
+                // initialize the activeUser info
+                // if activeUser is not there, FIXME sign in again
+                instance.activeUser = instance.getActiveUser(Const.TEST_USER_ID);
+                if (instance.activeUser == null) {
+                    instance.activeUser = instance.createUser(Const.TEST_USER_ID);
+                }
+
+                // determine if the user has launched the app before and what version
+                AppStart appStart = instance.checkAppStart();
+                switch (appStart) {
+                    case NORMAL:
+                        Log.d("INIT", "App has launched normally, version is the same");
+                        break;
+                    case FIRST_TIME_VERSION:
+                        Log.d("INIT", "App has been upgraded! Version is different");
+                        break;
+                    case FIRST_TIME:
+                        Log.d("INIT", "App has not been launched before, resetting the state to default");
+                        instance.resetCircles();
+                        instance.createCircle(
+                                context.getResources().getString(R.string.friends_circle_title), null,
+                                Const.TEST_CIRCLE_ID
+                        );
+                        break;
+                    default:
+
+                }
+
+                // finally before finishing this async task, set the appropriate fields in the AppState
+                List<CircleInfo> circleInfoList = instance.getCirclesInfo();
+                Circle circle = instance.getCircleById(Const.TEST_CIRCLE_ID);
+                appState.setActiveUser(instance.activeUser);
+                appState.setCircleInfos(circleInfoList);
+                appState.setActiveCircle(circle);
+                appState.setDataUpdater(instance);
+
+                if (handler != null) {
+                    handler.sendEmptyMessage(Const.MSG_INIT_SUCCESS);
+                }
+            }
+        });
+    }
+
+    private DataUpdater(AppState appState, Context context, Handler handler) {
+        this.context = context;
+        this.appState = appState;
         this.handler = handler;
+        threadPool = Executors.newCachedThreadPool();
+    }
+
+    //FIXME this is a debug-convenience method to create a user
+    private User createUser(String id) {
+        Location location = new Location("");
+        location.setLatitude(0);
+        location.setLongitude(0);
+        User user = new User("", id, location);
+        user.setAvatar("");
+
+        List<Integer> userPerm = new ArrayList<>();
+        userPerm.add(User.MEDIA_IMAGE_RECEIVE);
+        userPerm.add(User.MEDIA_AUDIO_RECEIVE);
+        userPerm.add(User.MEDIA_VIDEO_RECEIVE);
+        userPerm.add(User.ALARM_RECEIVE);
+        userPerm.add(User.NOTE_RECEIVE);
+        userPerm.add(User.LOCATION_REQUEST_RECEIVE);
+        userPerm.add(User.CREATE_EVENT);
+        user.setUserPermission(userPerm);
+        return user;
+    }
+
+    /**
+     * Finds out started for the first time (ever or in the current version).<br/>
+     * <br/>
+     * Note: This method is <b>not idempotent</b> only the first call will
+     * determine the proper result. Any subsequent calls will only return
+     * {@link AppStart#NORMAL} until the app is started again. So you might want
+     * to consider caching the result!
+     *
+     * @return the type of app start
+     */
+    public AppStart checkAppStart() {
+        PackageInfo pInfo;
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        AppStart appStart = AppStart.NORMAL;
+        try {
+            pInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+            int lastVersionCode = sharedPreferences.getInt(LAST_APP_VERSION, -1);
+            int currentVersionCode = pInfo.versionCode;
+            appStart = checkAppStart(currentVersionCode, lastVersionCode);
+
+            // Update version in preferences
+            sharedPreferences.edit()
+                    .putInt(LAST_APP_VERSION, currentVersionCode).apply();
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.w("ERROR",
+                    "Unable to determine current app version from package manager. Defensively assuming normal app start.");
+        }
+        return appStart;
+    }
+
+    public AppStart checkAppStart(int currentVersionCode, int lastVersionCode) {
+        if (lastVersionCode == -1) {
+            return AppStart.FIRST_TIME;
+        }
+        else if (lastVersionCode < currentVersionCode) {
+            return AppStart.FIRST_TIME_VERSION;
+        }
+        else if (lastVersionCode > currentVersionCode) {
+            Log.w("ERROR", "Current version code (" + currentVersionCode
+                    + ") is less then the one recognized on last startup ("
+                    + lastVersionCode
+                    + "). Defenisvely assuming normal app start.");
+            return AppStart.NORMAL;
+        }
+        else {
+            return AppStart.NORMAL;
+        }
     }
 
     public void open() throws SQLException {
@@ -249,10 +389,6 @@ public class DataUpdater {
         return user;
     }
 
-    public void setActiveUser(User user) {
-        activeUser = user;
-    }
-
     public void addUsersToCircle(Circle circle, List<User> users) {
         if (circle != null && users != null) {
             database.beginTransaction();
@@ -359,7 +495,10 @@ public class DataUpdater {
         }
         userCursor.close();
 
-        // sync with server to make sure the circle is updated
+        return users;
+    }
+
+    public void requestGetUsersInCircle(final Circle circle) {
         RequestHandler.getInstance(context).get("Get Users", String.format(Const.API_GET_USERS, circle.getId()),
                 new ResponseListener() {
                     @Override
@@ -451,8 +590,6 @@ public class DataUpdater {
                         RequestHandler.getInstance(context).handleError(error);
                     }
                 });
-
-        return users;
     }
 
     private User serializeUser(Cursor cursor, Circle circle) {

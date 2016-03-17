@@ -449,7 +449,7 @@ public class BoardRecyclerViewAdapter
             String placeName = event.getLocation()!=null ?
                     event.getLocation().getLatitude() + ", " + event.getLocation().getLongitude() :
                     context.getResources().getString(R.string.notify_retrieving_place_info);
-            GoogleApiClient apiClient = AppState.getInstance(context).getGoogleApiClient();
+            GoogleApiClient apiClient = AppState.getInstance().getGoogleApiClient();
             if (apiClient != null && apiClient.isConnected()) {
                 PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(apiClient, event.getPlace());
                 placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {
