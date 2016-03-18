@@ -155,11 +155,11 @@ public class DataUpdater {
         user.setAvatar("");
 
         List<Integer> userPerm = new ArrayList<>();
-        userPerm.add(User.MEDIA_IMAGE_RECEIVE);
-        userPerm.add(User.MEDIA_AUDIO_RECEIVE);
-        userPerm.add(User.MEDIA_VIDEO_RECEIVE);
-        userPerm.add(User.ALARM_RECEIVE);
-        userPerm.add(User.NOTE_RECEIVE);
+//        userPerm.add(User.MEDIA_IMAGE_RECEIVE);
+//        userPerm.add(User.MEDIA_AUDIO_RECEIVE);
+//        userPerm.add(User.MEDIA_VIDEO_RECEIVE);
+//        userPerm.add(User.ALARM_RECEIVE);
+//        userPerm.add(User.NOTE_RECEIVE);
         userPerm.add(User.LOCATION_REQUEST_RECEIVE);
         userPerm.add(User.CREATE_EVENT);
         user.setUserPermission(userPerm);
@@ -375,11 +375,11 @@ public class DataUpdater {
             user.setAvatar(avatar);
 
             List<Integer> userPerm = new ArrayList<>();
-            userPerm.add(User.MEDIA_IMAGE_RECEIVE);
-            userPerm.add(User.MEDIA_AUDIO_RECEIVE);
-            userPerm.add(User.MEDIA_VIDEO_RECEIVE);
-            userPerm.add(User.ALARM_RECEIVE);
-            userPerm.add(User.NOTE_RECEIVE);
+//            userPerm.add(User.MEDIA_IMAGE_RECEIVE);
+//            userPerm.add(User.MEDIA_AUDIO_RECEIVE);
+//            userPerm.add(User.MEDIA_VIDEO_RECEIVE);
+//            userPerm.add(User.ALARM_RECEIVE);
+//            userPerm.add(User.NOTE_RECEIVE);
             userPerm.add(User.LOCATION_REQUEST_RECEIVE);
             userPerm.add(User.CREATE_EVENT);
             user.setUserPermission(userPerm);
@@ -605,11 +605,11 @@ public class DataUpdater {
 
         //TODO set all user permission to receive everything
         List<Integer> userPerm = new ArrayList<>();
-        userPerm.add(User.MEDIA_IMAGE_RECEIVE);
-        userPerm.add(User.MEDIA_AUDIO_RECEIVE);
-        userPerm.add(User.MEDIA_VIDEO_RECEIVE);
-        userPerm.add(User.ALARM_RECEIVE);
-        userPerm.add(User.NOTE_RECEIVE);
+//        userPerm.add(User.MEDIA_IMAGE_RECEIVE);
+//        userPerm.add(User.MEDIA_AUDIO_RECEIVE);
+//        userPerm.add(User.MEDIA_VIDEO_RECEIVE);
+//        userPerm.add(User.ALARM_RECEIVE);
+//        userPerm.add(User.NOTE_RECEIVE);
         userPerm.add(User.LOCATION_REQUEST_RECEIVE);
         if (activeUser.getId().equals(user.getId())) {
             userPerm.add(User.CREATE_EVENT);
@@ -820,12 +820,12 @@ public class DataUpdater {
                                                                 if (event == null) {
                                                                     DateTime createdTime = createdMillis==null ? null : new DateTime(createdMillis);
                                                                     createEvent(circle, createdTime, id, name, startTime, endTime, placeId, location,
-                                                                            note, false);
+                                                                            note);
                                                                 }
                                                                 else {
                                                                     DateTime updatedTime = updatedMillis==null ? null : new DateTime(updatedMillis);
                                                                     updateEvent(circle, updatedTime, id, name, startTime, endTime,
-                                                                            placeId, location, note, false);
+                                                                            placeId, location, note);
                                                                     event.setDirty(false);
                                                                 }
                                                             }
@@ -844,7 +844,7 @@ public class DataUpdater {
                                             BoardItem item = iterator.next();
                                             if (item.isDirty()) {
                                                 iterator.remove();
-                                                deleteItem(item);
+                                                deleteItemDB(item);
                                             }
                                         }
 
@@ -920,52 +920,12 @@ public class DataUpdater {
         run(new Runnable() {
             @Override
             public void run() {
-                if (!database.isOpen()) open();
-                database.beginTransaction();
+                createEventDB(circle, createdTime, event);
 
-                try {
-                    ContentValues values = new ContentValues();
-                    values.put(DBHelper.CIRCLEITEM_COLUMN_CIRCLEID, circle.getId());
-                    values.put(DBHelper.CIRCLEITEM_COLUMN_ITEMID, event.getId());
-                    values.put(DBHelper.CIRCLEITEM_COLUMN_TYPE, event.getType());
-                    values.put(DBHelper.CIRCLEITEM_COLUMN_CREATED_TIME, createdTime.getMillis());
-                    values.put(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME, createdTime.getMillis());
-                    long insertId = database.insert(DBHelper.TABLE_CIRCLE_ITEMS, null, values);
-                    Log.d(TAG, "[" + insertId + "] Inserted new item to circle (" + circle.getId() + ") with id = " + event.getId());
-
-                    values.clear();
-                    values.put(DBHelper.EVENT_COLUMN_ID, event.getId());
-                    values.put(DBHelper.EVENT_COLUMN_NAME, event.getName());
-                    if (event.getStartTime() != null) {
-                        values.put(DBHelper.EVENT_COLUMN_STARTTIME, event.getStartTime().getMillis());
-                    }
-                    if (event.getEndTime() != null) {
-                        values.put(DBHelper.EVENT_COLUMN_ENDTIME, event.getEndTime().getMillis());
-                    }
-                    values.put(DBHelper.EVENT_COLUMN_PLACE, event.getPlace());
-                    if (event.getLocation() != null) {
-                        values.put(DBHelper.EVENT_COLUMN_LATITUDE, event.getLocation().getLatitude());
-                        values.put(DBHelper.EVENT_COLUMN_LONGITUDE, event.getLocation().getLongitude());
-                    }
-                    else {
-                        values.put(DBHelper.EVENT_COLUMN_LATITUDE, -1.0);
-                        values.put(DBHelper.EVENT_COLUMN_LONGITUDE, -1.0);
-                    }
-                    values.put(DBHelper.EVENT_COLUMN_NOTE, event.getNote());
-                    insertId = database.insert(DBHelper.TABLE_EVENTS, null, values);
-                    Log.d(TAG, "[" + insertId + "] Inserted new event successfully");
-
-                    database.setTransactionSuccessful();
-
-                    if (handler != null && sync)
-                        handler.sendMessageDelayed(handler.obtainMessage(Const.MSG_EVENT_CREATED, event), 1000);
-                }
-                catch (SQLException ex) {
-                    Log.e(TAG, ex.getMessage());
-                }
-                finally {
-                    database.endTransaction();
-                }
+                // this 1000 ms delayed is set due to recyclerview animation bug where it needs some time
+                // for animation to work
+                if (handler != null && sync)
+                    handler.sendMessageDelayed(handler.obtainMessage(Const.MSG_EVENT_CREATED, event), 1000);
 
                 // whether or not to sync with the server
                 if (sync) requestCreateEvent(circle, event);
@@ -973,15 +933,7 @@ public class DataUpdater {
         });
     }
 
-    public Event createEvent(Circle circle, DateTime createdTime, String id, String name, DateTime startTime, DateTime endTime, String placeId,
-                             Location location, String note, boolean sync) {
-        createdTime = createdTime==null ? DateTime.now() : createdTime;
-        Event event = TextUtils.isEmpty(id) ? Event.createEvent(circle, createdTime, createdTime)
-                : Event.createEvent(id, circle, createdTime, createdTime);
-        event.setEventInfo(name, startTime, endTime, placeId, location, note);
-        event.setLastAction(new FeedAction(FeedAction.CREATE_EVENT, activeUser, createdTime));
-        circle.addItem(event);
-
+    public void createEventDB(Circle circle, DateTime createdTime, Event event) {
         if (!database.isOpen()) open();
         database.beginTransaction();
 
@@ -1025,9 +977,18 @@ public class DataUpdater {
         finally {
             database.endTransaction();
         }
+    }
 
-        // whether or not to sync with the server
-        if (sync) requestCreateEvent(circle, event);
+    private Event createEvent(Circle circle, DateTime createdTime, String id, String name, DateTime startTime, DateTime endTime, String placeId,
+                             Location location, String note) {
+        createdTime = createdTime==null ? DateTime.now() : createdTime;
+        final Event event = TextUtils.isEmpty(id) ? Event.createEvent(circle, createdTime, createdTime)
+                : Event.createEvent(id, circle, createdTime, createdTime);
+        event.setEventInfo(name, startTime, endTime, placeId, location, note);
+        event.setLastAction(new FeedAction(FeedAction.CREATE_EVENT, activeUser, createdTime));
+        circle.addItem(event);
+
+        createEventDB(circle, createdTime, event);
 
         return event;
     }
@@ -1093,8 +1054,44 @@ public class DataUpdater {
         }
     }
 
-    public Event updateEvent(Circle circle, DateTime updatedTime, String id, String name, DateTime startTime, DateTime endTime,
-                             String place, Location location, String note, boolean sync) {
+    public void updateEventAsync(final Circle circle, final DateTime updatedTime, String id, String name, DateTime startTime, DateTime endTime,
+                                 String place, Location location, String note, final boolean sync) {
+        List<BoardItem> events = circle.getItems();
+        Event e = null;
+        for (BoardItem item : events) {
+            if (item.getId().equals(id) && item instanceof Event) {
+                e = (Event) item;
+                break;
+            }
+        }
+
+        if (e != null) {
+            final Event event = e;
+            event.setLastAction(new FeedAction(FeedAction.UPDATE_EVENT, activeUser, updatedTime));
+            event.setName(name);
+            event.setStartTime(startTime);
+            event.setEndTime(endTime);
+            event.setPlace(place);
+            event.setLocation(location);
+            event.setNote(note);
+
+            run(new Runnable() {
+                @Override
+                public void run() {
+                    updateEventDB(updatedTime, event);
+
+                    if (handler != null)
+                        handler.sendMessage(handler.obtainMessage(Const.MSG_EVENT_UPDATED, event));
+
+                    // whether or not to sync this update with the server
+                    if (sync) requestUpdateEvent(circle, event);
+                }
+            });
+        }
+    }
+
+    private Event updateEvent(Circle circle, DateTime updatedTime, String id, String name, DateTime startTime, DateTime endTime,
+                             String place, Location location, String note) {
         List<BoardItem> events = circle.getItems();
         Event event = null;
         for (BoardItem item : events) {
@@ -1114,53 +1111,54 @@ public class DataUpdater {
             event.setLocation(location);
             event.setNote(note);
 
-            if (!database.isOpen()) open();
-            database.beginTransaction();
-
-            try {
-                ContentValues values = new ContentValues();
-                values.put(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME, updatedTime.getMillis());
-                int rows = database.update(DBHelper.TABLE_CIRCLE_ITEMS, values, DBHelper.CIRCLEITEM_COLUMN_ITEMID + "='" +
-                        event.getId() + "'", null);
-                Log.d(TAG, "Updated item with id " + event.getId() + ", " + rows + " row(s) affected");
-                values.clear();
-
-                values.put(DBHelper.EVENT_COLUMN_NAME, event.getName());
-                if (event.getStartTime() != null) {
-                    values.put(DBHelper.EVENT_COLUMN_STARTTIME, event.getStartTime().getMillis());
-                }
-                if (event.getEndTime() != null) {
-                    values.put(DBHelper.EVENT_COLUMN_ENDTIME, event.getEndTime().getMillis());
-                }
-                values.put(DBHelper.EVENT_COLUMN_PLACE, event.getPlace());
-                if (event.getLocation() != null) {
-                    values.put(DBHelper.EVENT_COLUMN_LATITUDE, event.getLocation().getLatitude());
-                    values.put(DBHelper.EVENT_COLUMN_LONGITUDE, event.getLocation().getLongitude());
-                }
-                else {
-                    values.put(DBHelper.EVENT_COLUMN_LATITUDE, -1.0);
-                    values.put(DBHelper.EVENT_COLUMN_LONGITUDE, -1.0);
-                }
-                values.put(DBHelper.EVENT_COLUMN_NOTE, event.getNote());
-                rows = database.update(DBHelper.TABLE_EVENTS, values,
-                        DBHelper.EVENT_COLUMN_ID + "='" + event.getId() + "'", null);
-                Log.d(TAG, "Updated event id: " + event.getId() + ", name: " +
-                    event.getName() + ", time: " + event.getStartTime() + ", place: " + event.getPlace() + ", " + rows + " row(s) affected");
-
-                database.setTransactionSuccessful();
-            }
-            catch (SQLException ex) {
-                Log.e(TAG, ex.getMessage());
-            }
-            finally {
-                database.endTransaction();
-            }
-
-            // whether or not to sync this update with the server
-            if (sync) requestUpdateEvent(circle, event);
+            updateEventDB(updatedTime, event);
         }
 
         return event;
+    }
+
+    private void updateEventDB(DateTime updatedTime, Event event) {
+        if (!database.isOpen()) open();
+        database.beginTransaction();
+
+        try {
+            ContentValues values = new ContentValues();
+            values.put(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME, updatedTime.getMillis());
+            int rows = database.update(DBHelper.TABLE_CIRCLE_ITEMS, values, DBHelper.CIRCLEITEM_COLUMN_ITEMID + "='" +
+                    event.getId() + "'", null);
+            Log.d(TAG, "Updated item with id " + event.getId() + ", " + rows + " row(s) affected");
+            values.clear();
+
+            values.put(DBHelper.EVENT_COLUMN_NAME, event.getName());
+            if (event.getStartTime() != null) {
+                values.put(DBHelper.EVENT_COLUMN_STARTTIME, event.getStartTime().getMillis());
+            }
+            if (event.getEndTime() != null) {
+                values.put(DBHelper.EVENT_COLUMN_ENDTIME, event.getEndTime().getMillis());
+            }
+            values.put(DBHelper.EVENT_COLUMN_PLACE, event.getPlace());
+            if (event.getLocation() != null) {
+                values.put(DBHelper.EVENT_COLUMN_LATITUDE, event.getLocation().getLatitude());
+                values.put(DBHelper.EVENT_COLUMN_LONGITUDE, event.getLocation().getLongitude());
+            }
+            else {
+                values.put(DBHelper.EVENT_COLUMN_LATITUDE, -1.0);
+                values.put(DBHelper.EVENT_COLUMN_LONGITUDE, -1.0);
+            }
+            values.put(DBHelper.EVENT_COLUMN_NOTE, event.getNote());
+            rows = database.update(DBHelper.TABLE_EVENTS, values,
+                    DBHelper.EVENT_COLUMN_ID + "='" + event.getId() + "'", null);
+            Log.d(TAG, "Updated event id: " + event.getId() + ", name: " +
+                    event.getName() + ", time: " + event.getStartTime() + ", place: " + event.getPlace() + ", " + rows + " row(s) affected");
+
+            database.setTransactionSuccessful();
+        }
+        catch (SQLException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
+        finally {
+            database.endTransaction();
+        }
     }
 
     public void requestUpdateEvent(Circle circle, final Event event) {
@@ -1217,7 +1215,44 @@ public class DataUpdater {
         }
     }
 
-    public void deleteItem(BoardItem item) {
+    public void deleteItemAsync(String id, final Circle circle, final boolean sync) {
+        List<BoardItem> items = circle.getItems();
+        BoardItem deleted = null;
+        for (int index = 0; index < items.size(); index++) {
+            if (items.get(index).getId().equals(id)) {
+                deleted = items.remove(index);
+                break;
+            }
+        }
+
+        final BoardItem item = deleted;
+        run(new Runnable() {
+            @Override
+            public void run() {
+                deleteItemDB(item);
+
+                if (sync) requestDeleteItem(circle, item);
+                else if (handler != null) handler.sendEmptyMessage(Const.MSG_ITEM_DELETED_SUCCESS);
+            }
+        });
+    }
+
+    public void deleteItem(String id, Circle circle, boolean sync) {
+        List<BoardItem> items = circle.getItems();
+        BoardItem deleted = null;
+        for (int index = 0; index < items.size(); index++) {
+            if (items.get(index).getId().equals(id)) {
+                deleted = items.remove(index);
+                break;
+            }
+        }
+
+        deleteItemDB(deleted);
+
+        if (sync) requestDeleteItem(circle, deleted);
+    }
+
+    public void deleteItemDB(BoardItem item) {
         if (item != null) {
             String id = item.getId();
             if (!database.isOpen()) open();
@@ -1230,20 +1265,6 @@ public class DataUpdater {
                 Log.d(TAG, "Deleted event id " + id + " from event table, affected " + rows + " row(s)");
             }
         }
-    }
-
-    public void deleteItem(String id, Circle circle, boolean sync) {
-        List<BoardItem> items = circle.getItems();
-        BoardItem deleted = null;
-        for (int index = 0; index < items.size(); index++) {
-            if (items.get(index).getId().equals(id) && items.get(index).getType() == BoardItem.TYPE_EVENT) {
-                deleted = items.remove(index);
-                break;
-            }
-        }
-
-        deleteItem(deleted);
-        if (sync) requestDeleteItem(circle, deleted);
     }
 
     public void requestDeleteItem(Circle circle, final BoardItem item) {

@@ -228,10 +228,11 @@ public class MainActivity extends AppCompatActivity
         }
 
         // disconnect google api client
-        if (!appState.shouldKeepGoogleApiAlive()) appState.disconnectGoogleApiClient();
+        if (appState != null)
+            if (!appState.shouldKeepGoogleApiAlive()) appState.disconnectGoogleApiClient();
 
         // close database
-        dataUpdater.close();
+        if (dataUpdater != null) dataUpdater.close();
 
         super.onStop();
     }
@@ -877,48 +878,6 @@ public class MainActivity extends AppCompatActivity
                 mapFragment.updateUserMarkers(circle.getUsers());
                 break;
 
-            /* Request: delete board item from a circle */
-            case Const.MSG_ITEM_DELETED:
-                String id = (String) msg.obj;
-                if (boardItemChangeListeners != null) {
-                    for (BoardItemChangeListener listener : boardItemChangeListeners) {
-                        listener.onItemDeleted(id);
-                    }
-                }
-
-                dataUpdater.deleteItem(id, appState.getActiveCircle(), true);
-
-                break;
-
-            /* Request: delete board item successfully */
-            case Const.MSG_ITEM_DELETED_SUCCESS:
-                Snackbar.make(mainCoordinatorLayout, getResources().getQuantityString(R.plurals.notification_delete_item, 1, 1),
-                        Snackbar.LENGTH_LONG)
-                        .setAction(getResources().getString(R.string.menu_item_undo), new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                //TODO
-                            }
-                        }).show();
-                break;
-
-            /* Request: delete board item failed */
-            case Const.MSG_ITEM_DELETED_FAILED: {
-                final BoardItem item = msg.obj==null ? null : (BoardItem) msg.obj;
-
-                Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_delete_item_failed),
-                        Snackbar.LENGTH_LONG)
-                        .setAction(getResources().getString(R.string.menu_item_try_again), new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                if (item != null) {
-                                    dataUpdater.requestDeleteItem(appState.getActiveCircle(), item);
-                                }
-                            }
-                        }).show();
-                break;
-            }
-
             /* Request: get board item in a circle */
             case Const.MSG_GET_ITEMS:
                 ((LocationFragment) adapter.getItem(1)).update(false, true);
@@ -967,6 +926,21 @@ public class MainActivity extends AppCompatActivity
                 break;
             }
 
+            /* Request: update event successfully */
+            case Const.MSG_EVENT_UPDATED: {
+                final Event event = msg.obj == null ? null : (Event) msg.obj;
+
+                if (event != null) {
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(event.getId());
+                        }
+                    }
+                }
+
+                break;
+            }
+
             /* Request: update event successfully synced with server */
             case Const.MSG_EVENT_UPDATED_SUCCESS:
                 Toast.makeText(getApplicationContext(), getResources().getString(R.string.notification_updated_item_success),
@@ -990,6 +964,48 @@ public class MainActivity extends AppCompatActivity
                         .show();
                 break;
             }
+
+            /* Request: delete board item from a circle */
+            case Const.MSG_ITEM_TO_DELETE:
+                String id = (String) msg.obj;
+                if (boardItemChangeListeners != null) {
+                    for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                        listener.onItemDeleted(id);
+                    }
+                }
+                dataUpdater.deleteItemAsync(id, appState.getActiveCircle(), true);
+
+                break;
+
+            /* Request: delete board item successfully */
+            case Const.MSG_ITEM_DELETED_SUCCESS:
+                Snackbar.make(mainCoordinatorLayout, getResources().getQuantityString(R.plurals.notification_delete_item, 1, 1),
+                        Snackbar.LENGTH_LONG)
+                        .setAction(getResources().getString(R.string.menu_item_undo), new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                //TODO
+                            }
+                        }).show();
+                break;
+
+            /* Request: delete board item failed */
+            case Const.MSG_ITEM_DELETED_FAILED: {
+                final BoardItem item = msg.obj==null ? null : (BoardItem) msg.obj;
+
+                Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_delete_item_failed),
+                        Snackbar.LENGTH_LONG)
+                        .setAction(getResources().getString(R.string.menu_item_try_again), new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                if (item != null) {
+                                    dataUpdater.requestDeleteItem(appState.getActiveCircle(), item);
+                                }
+                            }
+                        }).show();
+                break;
+            }
+
         }
 
         return false;
@@ -1074,14 +1090,8 @@ public class MainActivity extends AppCompatActivity
                     String placeId = data.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_PLACE_ID));
                     Location location = data.getParcelableExtra(getResources().getString(R.string.EXTRA_EVENT_LOCATION));
                     String note = data.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_NOTE));
-                    final Event event = dataUpdater.updateEvent(appState.getActiveCircle(), updateTime, id, name,
+                    dataUpdater.updateEventAsync(appState.getActiveCircle(), updateTime, id, name,
                             startTime, endTime, placeId, location, note, true);
-
-                    if (boardItemChangeListeners != null) {
-                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
-                            listener.onItemModified(event.getId());
-                        }
-                    }
                 }
                 break;
             default:

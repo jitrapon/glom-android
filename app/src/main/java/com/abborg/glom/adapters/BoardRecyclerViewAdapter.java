@@ -228,7 +228,7 @@ public class BoardRecyclerViewAdapter
                     public void onClick(DialogInterface dialog, int item) {
                         switch (item) {
                             case 0:
-                                if (handler != null) handler.sendMessage(handler.obtainMessage(Const.MSG_ITEM_DELETED, id));
+                                if (handler != null) handler.sendMessage(handler.obtainMessage(Const.MSG_ITEM_TO_DELETE, id));
                                 break;
                             case 1:
 
