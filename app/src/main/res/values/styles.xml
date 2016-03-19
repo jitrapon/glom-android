@@ -23,7 +23,9 @@
         <item name="pressedTranslationZ">12dp</item>
         <item name="rippleColor">@android:color/white</item>
     </style>
+
     <style name="AppMaterialTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+
     <style name="AppMaterialTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
 </resources>

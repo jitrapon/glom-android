@@ -3,15 +3,15 @@ package com.abborg.glom;
 public class Const {
 
 //    public static final String HOST_ADDRESS = "http://putsreq.com/KJVQCdWbHg0xXf2aHWf1";
-    public static String HOST_ADDRESS = "http://10.11.3.202:8080";
+    public static String HOST_ADDRESS = "http://192.168.1.5:8080";
     public static final String SENT_TOKEN_TO_SERVER = "sentTokenToServer";
     public static final String REGISTRATION_COMPLETE = "registrationComplete";
 
     /**
      * TEST INFO
      * **/
-    public static final String TEST_USER_ID = "yoshi3003";
-//    public static final String TEST_USER_ID = "fatcat18";
+//    public static final String TEST_USER_ID = "yoshi3003";
+    public static final String TEST_USER_ID = "fatcat18";
     public static final String TEST_CIRCLE_ID = "dev-test-circle-1";
     public static final String TEST_API_AUTHORIZATION_HEADER = "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789";
 

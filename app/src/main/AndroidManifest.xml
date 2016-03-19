@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.abborg.glom" >
+    package="com.abborg.glom">
 
     <uses-sdk android:minSdkVersion="16" />
 
@@ -29,11 +29,11 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/AppMaterialTheme" >
+        android:theme="@style/AppMaterialTheme">
         <receiver
             android:name="com.google.android.gms.gcm.GcmReceiver"
             android:exported="true"
-            android:permission="com.google.android.c2dm.permission.SEND" >
+            android:permission="com.google.android.c2dm.permission.SEND">
             <intent-filter>
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
                 <action android:name="com.google.android.c2dm.intent.REGISTRATION" />
@@ -42,21 +42,20 @@
             </intent-filter>
         </receiver>
 
-        <service android:name=".service.CirclePushService" >
-        </service>
+        <service android:name=".service.CirclePushService"></service>
         <service
             android:name=".service.RegistrationIntentService"
             android:enabled="true" />
         <service
             android:name=".service.MessageListenerService"
-            android:exported="false" >
+            android:exported="false">
             <intent-filter>
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
             </intent-filter>
         </service>
         <service
             android:name=".service.BaseInstanceIDListenerService"
-            android:exported="false" >
+            android:exported="false">
             <intent-filter>
                 <action android:name="com.google.android.gms.iid.InstanceID" />
             </intent-filter>
@@ -77,7 +76,7 @@
 
         <activity
             android:name=".activities.MainActivity"
-            android:label="@string/app_name" >
+            android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -88,10 +87,19 @@
             android:name=".activities.EventActivity"
             android:label="@string/title_activity_create_event"
             android:parentActivityName=".activities.MainActivity"
-            android:theme="@style/AppMaterialTheme" >
+            android:theme="@style/AppMaterialTheme">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".activities.MainActivity" />
+        </activity>
+        <activity
+            android:name=".activities.ChatActivity"
+            android:label="@string/title_activity_chat"
+            android:parentActivityName=".activities.MainActivity"
+            android:theme="@style/AppMaterialTheme">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.abborg.glom.activities.MainActivity" />
         </activity>
     </application>
 

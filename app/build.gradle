@@ -55,5 +55,6 @@ dependencies {
     compile 'com.nineoldandroids:library:2.4.0'
     compile 'com.flipboard:bottomsheet-core:1.4.3'
     compile 'com.flipboard:bottomsheet-commons:1.4.3'       // optional
+    compile 'me.himanshusoni.chatmessageview:chat-message-view:1.0.3'
 //    compile 'jp.wasabeef:recyclerview-animators:2.2.0'    // commented out for now due to incompatible with new support lib
 }

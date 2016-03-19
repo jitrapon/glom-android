@@ -866,8 +866,6 @@ public class MainActivity extends AppCompatActivity
             /* Request: get list of users in circle */
             case Const.MSG_GET_USERS:
                 Circle circle = appState.getActiveCircle();
-                Toast.makeText(this, "Displaying circle " + circle.getTitle() + " with "
-                        + circle.getUsers().size() + " user(s)", Toast.LENGTH_LONG).show();
 
                 if (getSupportActionBar() != null)
                     getSupportActionBar().setTitle(circle.getTitle() + " (" + circle.getUsers().size() + ")");
@@ -1028,6 +1026,10 @@ public class MainActivity extends AppCompatActivity
             return true;
         }
         else if (id == R.id.action_chat) {
+            if (appState != null) {
+                Intent intent = new Intent(this, ChatActivity.class);
+                startActivity(intent);
+            }
             return true;
         }
         else if (id == R.id.action_settings) {
