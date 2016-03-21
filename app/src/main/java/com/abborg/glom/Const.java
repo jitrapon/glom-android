@@ -3,7 +3,7 @@ package com.abborg.glom;
 public class Const {
 
 //    public static final String HOST_ADDRESS = "http://putsreq.com/KJVQCdWbHg0xXf2aHWf1";
-    public static String HOST_ADDRESS = "http://10.11.3.201:8080";
+    public static String HOST_ADDRESS = "http://192.168.1.8:8080";
     public static final String SENT_TOKEN_TO_SERVER = "sentTokenToServer";
     public static final String REGISTRATION_COMPLETE = "registrationComplete";
 
@@ -62,8 +62,9 @@ public class Const {
     public static final String JSON_SERVER_EVENT_NOTE = "note";
     public static final String JSON_SERVER_ERROR = "error";
     public static final String JSON_SERVER_TIME = "time";
-    public static final String JSON_SERVER_MESSAGE_ID = "message_id";
-    public static final String JSON_SERVER_MESSAGE_TYPE = "message_type";
+    public static final String JSON_SERVER_MESSAGE_ID = "id";
+    public static final String JSON_SERVER_MESSAGE_TYPE = "type";
+    public static final String JSON_SERVER_SENDER = "sender";
     public static final String JSON_VALUE_MESSAGE_TYPE_TEXT = "text";
 
     /**

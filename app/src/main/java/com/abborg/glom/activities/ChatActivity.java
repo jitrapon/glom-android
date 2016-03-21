@@ -27,7 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class ChatActivity extends AppCompatActivity implements View.OnClickListener, Handler.Callback, OnMessageClickListener {
+public class ChatActivity extends AppCompatActivity implements View.OnClickListener, Handler.Callback,
+        OnMessageClickListener {
 
     /** Circle state information **/
     AppState appState;

@@ -29,6 +29,9 @@ public class MessageListenerService extends GcmListenerService {
     private static final String TAG = "GcmListenerService";
 
     private static final int LOCATION_UPDATE = 0;
+    private static final int NEW_MESSAGE = 1;
+    private static final int EDIT_MESSAGE = 2;
+    private static final int DELETE_MESSAGE = 3;
 
     @Override
     public void onMessageSent(String messageId) {
@@ -45,8 +48,8 @@ public class MessageListenerService extends GcmListenerService {
     // [START receive_message]
     @Override
     public void onMessageReceived(String from, Bundle data) {
-        Log.d(TAG, "Data received: " + data);
         String message = data.getString(Const.JSON_SERVER_MESSAGE);
+        Log.d(TAG, "Data received: " + data);
         Log.d(TAG, "Message: " + message);
 
         /**
@@ -61,6 +64,15 @@ public class MessageListenerService extends GcmListenerService {
                 int opCode = Integer.parseInt(opCodeString);
                 Log.d(TAG, "Message of type " + opCode + " received");
 
+                AppState appState = AppState.getInstance();
+                DataUpdater dataUpdater;
+                String currentUserId = null;
+                if (appState != null) {
+                    currentUserId = appState.getActiveUser().getId();
+                    dataUpdater = appState.getDataUpdater();
+                }
+                else dataUpdater = DataUpdater.init(this);
+
                 //TODO keep track of received message of user and circleId
                 //TODO store it in USERS table under column notification
                 switch(opCode) {
@@ -70,14 +82,6 @@ public class MessageListenerService extends GcmListenerService {
                         Intent locUpdateIntent = new Intent(getResources().getString(R.string.ACTION_RECEIVE_LOCATION));
 
                         // save updated location in DB
-                        AppState appState = AppState.getInstance();
-                        DataUpdater dataUpdater;
-                        String currentUserId = null;
-                        if (appState != null) {
-                            currentUserId = appState.getActiveUser().getId();
-                            dataUpdater = appState.getDataUpdater();
-                        }
-                        else dataUpdater = DataUpdater.init(this);
                         dataUpdater.open();
                         dataUpdater.onLocationUpdateReceived(data, currentUserId);
 
@@ -86,6 +90,15 @@ public class MessageListenerService extends GcmListenerService {
                         LocalBroadcastManager.getInstance(this).sendBroadcast(locUpdateIntent);
 
                         sendNotification(message);
+                        break;
+
+                    // MESSAGE TYPE 2: incoming IM message
+                    case NEW_MESSAGE:
+
+                        // update message in DB
+
+                        // broadcast the action to the new message
+
                         break;
 
                     default:
