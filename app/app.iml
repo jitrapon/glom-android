@@ -129,6 +129,7 @@
     </content>
     <orderEntry type="jdk" jdkName="Android API 23 Platform" jdkType="Android SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" exported="" name="jxmpp-util-cache-0.4.2" level="project" />
     <orderEntry type="library" exported="" name="play-services-location-8.4.0" level="project" />
     <orderEntry type="library" exported="" name="play-services-auth-8.4.0" level="project" />
     <orderEntry type="library" exported="" name="play-services-wearable-8.4.0" level="project" />
@@ -137,9 +138,11 @@
     <orderEntry type="library" exported="" name="play-services-vision-8.4.0" level="project" />
     <orderEntry type="library" exported="" name="play-services-wallet-8.4.0" level="project" />
     <orderEntry type="library" exported="" name="lib-core-slh-3.1.0" level="project" />
+    <orderEntry type="library" exported="" name="smack-android-4.1.6" level="project" />
     <orderEntry type="library" exported="" name="support-v4-23.2.1" level="project" />
     <orderEntry type="library" exported="" name="play-services-drive-8.4.0" level="project" />
     <orderEntry type="library" exported="" name="bottomsheet-core-1.4.3" level="project" />
+    <orderEntry type="library" exported="" name="minidns-0.1.7" level="project" />
     <orderEntry type="library" exported="" name="glide-3.6.1" level="project" />
     <orderEntry type="library" exported="" name="bottomsheet-commons-1.4.3" level="project" />
     <orderEntry type="library" exported="" name="joda-time-2.8.2-no-tzdb" level="project" />
@@ -150,14 +153,19 @@
     <orderEntry type="library" exported="" name="design-23.2.1" level="project" />
     <orderEntry type="library" exported="" name="play-services-gcm-8.4.0" level="project" />
     <orderEntry type="library" exported="" name="cardview-v7-23.2.1" level="project" />
+    <orderEntry type="library" exported="" name="smack-im-4.1.6" level="project" />
+    <orderEntry type="library" exported="" name="smack-sasl-provided-4.1.6" level="project" />
     <orderEntry type="library" exported="" name="CircularFloatingActionMenu-1.0.2" level="project" />
+    <orderEntry type="library" exported="" name="smack-extensions-4.1.6" level="project" />
     <orderEntry type="library" exported="" name="play-services-panorama-8.4.0" level="project" />
+    <orderEntry type="library" exported="" name="smack-android-extensions-4.1.6" level="project" />
     <orderEntry type="library" exported="" name="play-services-appindexing-8.4.0" level="project" />
     <orderEntry type="library" exported="" name="play-services-plus-8.4.0" level="project" />
     <orderEntry type="library" exported="" name="play-services-identity-8.4.0" level="project" />
     <orderEntry type="library" exported="" name="play-services-maps-8.4.0" level="project" />
     <orderEntry type="library" exported="" name="recyclerview-v7-23.2.1" level="project" />
     <orderEntry type="library" exported="" name="play-services-cast-8.4.0" level="project" />
+    <orderEntry type="library" exported="" name="smack-tcp-4.1.6" level="project" />
     <orderEntry type="library" exported="" name="play-services-8.4.0" level="project" />
     <orderEntry type="library" exported="" name="play-services-analytics-8.4.0" level="project" />
     <orderEntry type="library" exported="" name="android.joda-2.8.2" level="project" />
@@ -169,11 +177,14 @@
     <orderEntry type="library" exported="" name="lib-manipulation-3.1.0" level="project" />
     <orderEntry type="library" exported="" name="play-services-safetynet-8.4.0" level="project" />
     <orderEntry type="library" exported="" name="gson-2.4" level="project" />
+    <orderEntry type="library" exported="" name="jxmpp-core-0.4.2" level="project" />
     <orderEntry type="library" exported="" name="play-services-appstate-8.4.0" level="project" />
+    <orderEntry type="library" exported="" name="smack-core-4.1.6" level="project" />
     <orderEntry type="library" exported="" name="play-services-games-8.4.0" level="project" />
     <orderEntry type="library" exported="" name="mediarouter-v7-23.0.0" level="project" />
     <orderEntry type="library" exported="" name="lib-core-3.1.0" level="project" />
     <orderEntry type="library" exported="" name="multidex-1.0.1" level="project" />
+    <orderEntry type="library" exported="" name="smack-resolver-minidns-4.1.6" level="project" />
     <orderEntry type="library" exported="" name="volley-1.0.0" level="project" />
     <orderEntry type="library" exported="" name="chat-message-view-1.0.3" level="project" />
     <orderEntry type="library" exported="" name="play-services-nearby-8.4.0" level="project" />

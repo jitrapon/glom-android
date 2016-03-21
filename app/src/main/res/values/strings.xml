@@ -1,6 +1,7 @@
 <resources>
     <!-- App-wide strings -->
     <string name="google_app_id">1098468135284</string>
+    <string name="gcm_ccs_domain">gcm.googleapis.com</string>
     <string name="app_name">Glom</string>
     <string name="PREFERENCE_FILE">com.abborg.glom.preferences</string>
     <string name="server_address">http://www.google.com</string>

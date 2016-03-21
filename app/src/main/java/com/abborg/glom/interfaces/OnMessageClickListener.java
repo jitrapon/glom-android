@@ -5,4 +5,6 @@ import com.abborg.glom.model.ChatMessage;
 public interface OnMessageClickListener {
 
     void onMessageClicked(ChatMessage message);
+
+    void onMessageLongClicked(ChatMessage message);
 }

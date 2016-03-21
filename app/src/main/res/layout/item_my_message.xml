@@ -4,7 +4,11 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="12dp">
+    android:paddingTop="12dp"
+    android:paddingEnd="12dp"
+    android:paddingRight="12dp"
+    android:paddingLeft="148dp"
+    android:paddingStart="148dp">
 
     <me.himanshusoni.chatmessageview.ChatMessageView
         android:layout_width="match_parent"

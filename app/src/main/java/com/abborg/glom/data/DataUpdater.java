@@ -29,15 +29,18 @@ import com.abborg.glom.model.FeedAction;
 import com.abborg.glom.model.User;
 import com.abborg.glom.utils.RequestHandler;
 import com.android.volley.VolleyError;
+import com.google.android.gms.gcm.GoogleCloudMessaging;
 
 import org.joda.time.DateTime;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -70,6 +73,9 @@ public class DataUpdater {
 
     /* Global app states */
     private AppState appState;
+
+    /* GCM Instance */
+    private GoogleCloudMessaging gcm;
 
     /* Executor service thread pool */
     private final ExecutorService threadPool;
@@ -144,6 +150,7 @@ public class DataUpdater {
         this.appState = appState;
         this.handler = handler;
         threadPool = Executors.newCachedThreadPool();
+        gcm = GoogleCloudMessaging.getInstance(context);
     }
 
     //FIXME this is a debug-convenience method to create a user
@@ -1323,5 +1330,36 @@ public class DataUpdater {
         Event event = Event.createEvent(id, circle, createdTime, updatedTime);
         event.setEventInfo(name, time, endTime, place,location, note);
         return event;
+    }
+
+    /*************************************************
+     * XMPP MESSAGE HANDLER
+     *************************************************/
+
+    private String generateMessageId() {
+        return UUID.randomUUID().toString();
+    }
+
+    public void sendUpstreamMessage(final String content) {
+        run(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    String messageId = generateMessageId();
+                    String senderId = context.getResources().getString(R.string.gcm_senderId);
+                    String domain = context.getResources().getString(R.string.gcm_ccs_domain);
+                    Bundle data = new Bundle();
+                    data.putString(Const.JSON_SERVER_MESSAGE_ID, messageId);
+                    data.putString(Const.JSON_SERVER_MESSAGE_TYPE, Const.JSON_VALUE_MESSAGE_TYPE_TEXT);
+                    data.putString(Const.JSON_SERVER_CIRCLEID, appState.getActiveCircle().getId());
+                    data.putString(Const.JSON_SERVER_MESSAGE, content);
+                    gcm.send(senderId + "@" + domain, messageId, data);
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
+                    Log.e(TAG, e.getMessage());
+                }
+            }
+        });
     }
 }

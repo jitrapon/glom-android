@@ -89,6 +89,8 @@ public class AppState
 
         dateTimeFormatter = DateTimeFormat.forPattern(context.getResources().getString(R.string.action_create_event_datetime_format));
 
+        //TODO initialize XMPP connection
+
         DataUpdater.init(this, context, handler);
     }
 

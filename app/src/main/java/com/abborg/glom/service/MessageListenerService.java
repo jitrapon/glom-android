@@ -29,6 +29,11 @@ public class MessageListenerService extends GcmListenerService {
 
     private static final int LOCATION_UPDATE = 0;
 
+    @Override
+    public void onMessageSent(String messageId) {
+        Log.d(TAG, "Message is sent with id " + messageId);
+    }
+
     /**
      * Called when message is received.
      *
@@ -43,7 +48,6 @@ public class MessageListenerService extends GcmListenerService {
         String message = data.getString(Const.JSON_SERVER_MESSAGE);
         Log.d(TAG, "Message: " + message);
 
-        // [START_EXCLUDE]
         /**
          * Production applications would usually process the message here.
          * Eg: - Syncing with server.

@@ -18,6 +18,8 @@ import com.bumptech.glide.Glide;
 
 import java.util.List;
 
+import me.himanshusoni.chatmessageview.ChatMessageView;
+
 public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private static final String TAG = "ChatMessageAdapter";
@@ -69,7 +71,8 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         if (viewType == TYPE_MY_MESSAGE) {
             View view = LayoutInflater.from(context).inflate(R.layout.item_my_message, parent, false);
             final MyMessageViewHolder holder = new MyMessageViewHolder(view);
-            view.findViewById(R.id.message_view).setOnClickListener(new View.OnClickListener() {
+            ChatMessageView chatView = (ChatMessageView) view.findViewById(R.id.message_view);
+            chatView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     int position = holder.getAdapterPosition();
@@ -79,12 +82,24 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                     }
                 }
             });
+            chatView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    int position = holder.getAdapterPosition();
+                    if (onClickListener != null && messages != null && !messages.isEmpty()
+                            && position != RecyclerView.NO_POSITION) {
+                        onClickListener.onMessageLongClicked(messages.get(position));
+                    }
+                    return true;
+                }
+            });
             return holder;
         }
         else if (viewType == TYPE_OTHER_MESSAGE) {
             View view = LayoutInflater.from(context).inflate(R.layout.item_other_message, parent, false);
             final OtherMessageViewHolder holder = new OtherMessageViewHolder(view);
-            view.findViewById(R.id.message_view).setOnClickListener(new View.OnClickListener() {
+            ChatMessageView chatView = (ChatMessageView) view.findViewById(R.id.message_view);
+            chatView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     int position = holder.getAdapterPosition();
@@ -92,6 +107,17 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                             && position != RecyclerView.NO_POSITION) {
                         onClickListener.onMessageClicked(messages.get(position));
                     }
+                }
+            });
+            chatView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    int position = holder.getAdapterPosition();
+                    if (onClickListener != null && messages != null && !messages.isEmpty()
+                            && position != RecyclerView.NO_POSITION) {
+                        onClickListener.onMessageLongClicked(messages.get(position));
+                    }
+                    return true;
                 }
             });
             return holder;

@@ -110,32 +110,40 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    private void sendMessage(String message) {
-        ChatMessage chatMessage = new ChatMessage(message, true);
-        messages.add(chatMessage);
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                botReply();
-            }
-        }, 500);
+    /***********************************************************************
+     * HELPER METHODS ON MESSAGES
+     ***********************************************************************/
+    private void sendMessage(String content) {
+        ChatMessage message = new ChatMessage(content, true);
+        addMessage(message);
+//        handler.postDelayed(new Runnable() {
+//            @Override
+//            public void run() {
+//                botReply();
+//            }
+//        }, 500);
 
-        updateIncomingMessage();
+        dataUpdater.sendUpstreamMessage(content);
     }
 
-    private void updateIncomingMessage() {
+    private synchronized void addMessage(ChatMessage message) {
+        messages.add(message);
         int lastPos = messages.size() - 1;
         adapter.notifyItemInserted(lastPos);
         chatView.scrollToPosition(lastPos);
     }
 
     private void botReply() {
-        String[] replies = {"Hello!","Howdy","What's up?","I'm fine","You suck","Fucking hell","I hate this","Bored..."};
+        String[] replies = {"Hello!","Hi there","What's up?","Weather is good today, isn't it?",
+                "I'm doing good as well, we should catch up some time","wtf you want bro","Nothing much","Really bored right now"};
         int random = new Random().nextInt(replies.length);
         ChatMessage chatMessage = new ChatMessage(replies[random], false);
-        messages.add(chatMessage);
-        updateIncomingMessage();
+        addMessage(chatMessage);
     }
+
+    /***********************************************************************
+     * HANDLERS
+     ***********************************************************************/
 
     @Override
     public boolean handleMessage(Message msg) {
@@ -144,6 +152,11 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onMessageClicked(ChatMessage message) {
-        Log.d(TAG, "Message is " + message.getContent());
+        Log.d(TAG, "Clicked message is " + message.getContent());
+    }
+
+    @Override
+    public void onMessageLongClicked(ChatMessage message) {
+        Log.d(TAG, "Long-clicked message is " + message.getContent());
     }
 }

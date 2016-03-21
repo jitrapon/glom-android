@@ -31,6 +31,9 @@ android {
 }
 
 repositories {
+    maven {
+        url 'https://oss.sonatype.org/content/repositories/snapshots'
+    }
     mavenCentral()
 }
 
@@ -56,5 +59,8 @@ dependencies {
     compile 'com.flipboard:bottomsheet-core:1.4.3'
     compile 'com.flipboard:bottomsheet-commons:1.4.3'       // optional
     compile 'me.himanshusoni.chatmessageview:chat-message-view:1.0.3'
+    compile "org.igniterealtime.smack:smack-android-extensions:4.1.6"
+    compile "org.igniterealtime.smack:smack-tcp:4.1.6"
+    compile "org.igniterealtime.smack:smack-android:4.1.6"
 //    compile 'jp.wasabeef:recyclerview-animators:2.2.0'    // commented out for now due to incompatible with new support lib
 }
