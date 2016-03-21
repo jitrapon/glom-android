@@ -94,6 +94,12 @@ public class DataUpdater {
         threadPool.submit(runnable);
     }
 
+    public static DataUpdater init(Context context) {
+        DataUpdater dataUpdater = new DataUpdater(null, context, null);
+        dataUpdater.dbHelper = new DBHelper(context);
+        return dataUpdater;
+    }
+
     public static void init(final AppState appState, final Context context, final Handler handler) {
         final DataUpdater instance = new DataUpdater(appState, context, handler);
         instance.run(new Runnable() {
@@ -648,7 +654,7 @@ public class DataUpdater {
         Log.d(TAG, "Updated " + rowAffected + " row(s) in " + DBHelper.TABLE_USER_CIRCLE);
     }
 
-    public void onLocationUpdateReceived(Bundle data) {
+    public void onLocationUpdateReceived(Bundle data, String currentUserId) {
         String userJson = data.getString(Const.JSON_SERVER_USERIDS);
         String circleId = data.getString(Const.JSON_SERVER_CIRCLEID);
 
@@ -665,7 +671,8 @@ public class DataUpdater {
                 for (int i = 0; i < users.length(); i++) {
                     JSONObject user = users.getJSONObject(i);
                     String userId = user.getString(Const.JSON_SERVER_USERID);
-                    if (userId.equals(appState.getActiveUser().getId())) continue;
+                    if (!TextUtils.isEmpty(currentUserId))
+                        if (userId.equals(currentUserId)) continue;
 
                     // verify that the user is in a circle and the ID is valid
                     Cursor userInCircleCursor = database.query(DBHelper.TABLE_USER_CIRCLE,

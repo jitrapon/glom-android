@@ -15,6 +15,7 @@ import com.abborg.glom.AppState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.activities.MainActivity;
+import com.abborg.glom.data.DataUpdater;
 import com.google.android.gms.gcm.GcmListenerService;
 
 /**
@@ -70,10 +71,17 @@ public class MessageListenerService extends GcmListenerService {
 
                         // save updated location in DB
                         AppState appState = AppState.getInstance();
-                        appState.getDataUpdater().open();
-                        appState.getDataUpdater().onLocationUpdateReceived(data);
+                        DataUpdater dataUpdater;
+                        String currentUserId = null;
+                        if (appState != null) {
+                            currentUserId = appState.getActiveUser().getId();
+                            dataUpdater = appState.getDataUpdater();
+                        }
+                        else dataUpdater = DataUpdater.init(this);
+                        dataUpdater.open();
+                        dataUpdater.onLocationUpdateReceived(data, currentUserId);
 
-                        locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_USERS), data.getString(Const.JSON_SERVER_USERIDS));
+                        locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_USERS) , data.getString(Const.JSON_SERVER_USERIDS));
                         locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_CIRCLE_ID), data.getString(Const.JSON_SERVER_CIRCLEID));
                         LocalBroadcastManager.getInstance(this).sendBroadcast(locUpdateIntent);
 
