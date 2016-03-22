@@ -202,11 +202,7 @@ public class MainActivity extends AppCompatActivity
 
         // register local broadcast receiver
         if (broadcastReceiver != null) {
-            LocalBroadcastManager broadcastManager = LocalBroadcastManager.getInstance(this);
-            IntentFilter intentFilter = new IntentFilter();
-            intentFilter.addAction(getResources().getString(R.string.ACTION_RECEIVE_LOCATION));
-            intentFilter.addAction(getResources().getString(R.string.ACTION_USER_LOCATION_UPDATE));
-            broadcastManager.registerReceiver(broadcastReceiver, intentFilter);
+            registerBroadcastReceiver(broadcastReceiver);
         }
 
         // get database writable object, if already initialized
@@ -518,7 +514,7 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onReceive(Context context, Intent intent) {
 
-                // location updates from MessageListenerService
+                // location updates from MessageService
                 // updates from OTHER users
                 if ( intent.getAction().equals(getResources().getString(R.string.ACTION_RECEIVE_LOCATION)) ) {
                     List<User> users = dataUpdater.getLocationUpdates(intent, appState.getActiveCircle());
@@ -565,14 +561,24 @@ public class MainActivity extends AppCompatActivity
                         }
                     }
                 }
+
+                // incoming message
+                else if (intent.getAction().equals(getResources().getString(R.string.ACTION_NEW_MESSAGE))) {
+
+                }
             }
         };
 
+        registerBroadcastReceiver(broadcastReceiver);
+    }
+
+    private void registerBroadcastReceiver(BroadcastReceiver receiver) {
         LocalBroadcastManager broadcastManager = LocalBroadcastManager.getInstance(this);
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(getResources().getString(R.string.ACTION_RECEIVE_LOCATION));
         intentFilter.addAction(getResources().getString(R.string.ACTION_USER_LOCATION_UPDATE));
-        broadcastManager.registerReceiver(broadcastReceiver, intentFilter);
+        intentFilter.addAction(getResources().getString(R.string.ACTION_NEW_MESSAGE));
+        broadcastManager.registerReceiver(receiver, intentFilter);
     }
 
     private void setupService() {

@@ -21,6 +21,7 @@ import com.abborg.glom.AppState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.interfaces.ResponseListener;
+import com.abborg.glom.model.BaseChatMessage;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CircleInfo;
@@ -40,7 +41,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -1343,30 +1343,29 @@ public class DataUpdater {
      * XMPP MESSAGE HANDLER
      *************************************************/
 
-    private String generateMessageId() {
-        return UUID.randomUUID().toString();
-    }
+    public void sendUpstreamMessage(final BaseChatMessage message) {
+        if (message != null) {
+            run(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        String senderId = context.getResources().getString(R.string.gcm_senderId);
+                        String domain = context.getResources().getString(R.string.gcm_ccs_domain);
+                        Bundle data = new Bundle();
 
-    public void sendUpstreamMessage(final String content) {
-        run(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    String messageId = generateMessageId();
-                    String senderId = context.getResources().getString(R.string.gcm_senderId);
-                    String domain = context.getResources().getString(R.string.gcm_ccs_domain);
-                    Bundle data = new Bundle();
-                    data.putString(Const.JSON_SERVER_MESSAGE_ID, messageId);
-                    data.putString(Const.JSON_SERVER_MESSAGE_TYPE, Const.JSON_VALUE_MESSAGE_TYPE_TEXT);
-                    data.putString(Const.JSON_SERVER_CIRCLEID, appState.getActiveCircle().getId());
-                    data.putString(Const.JSON_SERVER_MESSAGE, content);
-                    gcm.send(senderId + "@" + domain, messageId, data);
+                        // save in DB
+
+                        data.putString(Const.JSON_SERVER_MESSAGE_ID, message.getId());
+                        data.putString(Const.JSON_SERVER_MESSAGE_TYPE, message.getType());
+                        data.putString(Const.JSON_SERVER_CIRCLEID, appState.getActiveCircle().getId());
+                        data.putString(Const.JSON_SERVER_MESSAGE, message.getContent());
+                        gcm.send(senderId + "@" + domain, message.getId(), data);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        Log.e(TAG, e.getMessage());
+                    }
                 }
-                catch (IOException e) {
-                    e.printStackTrace();
-                    Log.e(TAG, e.getMessage());
-                }
-            }
-        });
+            });
+        }
     }
 }

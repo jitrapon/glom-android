@@ -1,28 +1,15 @@
 package com.abborg.glom.model;
 
-public class ChatMessage {
+import com.abborg.glom.Const;
 
-    private String content;
-    private boolean isMine;
+public class ChatMessage extends BaseChatMessage {
 
-    public ChatMessage(String message, boolean mine) {
-        content = message;
-        isMine = mine;
+    public ChatMessage(String messageId, String message, User user, boolean mine) {
+        super(messageId, message, user, mine);
     }
 
-    public String getContent() {
-        return content;
-    }
-
-    public void setContent(String content) {
-        this.content = content;
-    }
-
-    public boolean isMine() {
-        return isMine;
-    }
-
-    public void setIsMine(boolean isMine) {
-        this.isMine = isMine;
+    @Override
+    public String getType() {
+        return Const.JSON_VALUE_MESSAGE_TYPE_TEXT;
     }
 }

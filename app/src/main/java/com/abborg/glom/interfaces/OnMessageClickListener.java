@@ -1,10 +1,10 @@
 package com.abborg.glom.interfaces;
 
-import com.abborg.glom.model.ChatMessage;
+import com.abborg.glom.model.BaseChatMessage;
 
 public interface OnMessageClickListener {
 
-    void onMessageClicked(ChatMessage message);
+    void onMessageClicked(BaseChatMessage message);
 
-    void onMessageLongClicked(ChatMessage message);
+    void onMessageLongClicked(BaseChatMessage message);
 }

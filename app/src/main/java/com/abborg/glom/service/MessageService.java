@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.abborg.glom.AppState;
@@ -24,7 +25,7 @@ import com.google.android.gms.gcm.GcmListenerService;
  * http://stackoverflow.com/questions/32137660/android-gcm-duplicate-push-after-notification-dismiss
  * If a notification is not consumed, and the app is closed (in the recent app), the notification will arrive again
  */
-public class MessageListenerService extends GcmListenerService {
+public class MessageService extends GcmListenerService {
 
     private static final String TAG = "GcmListenerService";
 
@@ -36,6 +37,16 @@ public class MessageListenerService extends GcmListenerService {
     @Override
     public void onMessageSent(String messageId) {
         Log.d(TAG, "Message is sent with id " + messageId);
+    }
+
+    @Override
+    public void onDeletedMessages() {
+        Log.d(TAG, "Message is deleted");
+    }
+
+    @Override
+    public void onSendError(String msgId, String error) {
+        Log.d(TAG, "Message " + msgId + " failed to send with error " + error);
     }
 
     /**
@@ -85,22 +96,53 @@ public class MessageListenerService extends GcmListenerService {
                         dataUpdater.open();
                         dataUpdater.onLocationUpdateReceived(data, currentUserId);
 
-                        locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_USERS) , data.getString(Const.JSON_SERVER_USERIDS));
-                        locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_CIRCLE_ID), data.getString(Const.JSON_SERVER_CIRCLEID));
+                        // broadcast update
+                        locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_USERS),
+                                data.getString(Const.JSON_SERVER_USERIDS));
+                        locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_CIRCLE_ID),
+                                data.getString(Const.JSON_SERVER_CIRCLEID));
                         LocalBroadcastManager.getInstance(this).sendBroadcast(locUpdateIntent);
 
                         sendNotification(message);
                         break;
 
                     // MESSAGE TYPE 2: incoming IM message
-                    case NEW_MESSAGE:
+                    case NEW_MESSAGE: {
+                        String senderId =  data.getString(Const.JSON_SERVER_SENDER);
+                        String messageId = data.getString(Const.JSON_SERVER_MESSAGE_ID);
+                        String content = data.getString(Const.JSON_SERVER_MESSAGE);
+                        String circleId = data.getString(Const.JSON_SERVER_CIRCLEID);
+                        String type = data.getString(Const.JSON_SERVER_MESSAGE_TYPE);
+                        boolean messageIsValid = true;
+                        if (TextUtils.isEmpty(senderId)) {
+                            Log.e(TAG, "Invalid message received, missing sender id");
+                            messageIsValid = false;
+                        }
+                        if (TextUtils.isEmpty(circleId)) {
+                            Log.e(TAG, "Invalid message received, missing circle id");
+                            messageIsValid = false;
+                        }
+                        if (TextUtils.isEmpty(type)) {
+                            Log.e(TAG, "Invalid message received, missing message type");
+                            messageIsValid = false;
+                        }
+                        if (messageIsValid) {
+                            // update message in DB
+                            // TODO
 
-                        // update message in DB
+                            // broadcast update
+                            Intent newMessageIntent = new Intent(getResources().getString(R.string.ACTION_NEW_MESSAGE));
+                            newMessageIntent.putExtra(getResources().getString(R.string.EXTRA_MESSAGE_SENDER), senderId);
+                            newMessageIntent.putExtra(getResources().getString(R.string.EXTRA_MESSAGE_ID), messageId);
+                            newMessageIntent.putExtra(getResources().getString(R.string.EXTRA_MESSAGE_CONTENT), content);
+                            newMessageIntent.putExtra(getResources().getString(R.string.EXTRA_MESSAGE_TYPE), type);
+                            newMessageIntent.putExtra(getResources().getString(R.string.EXTRA_MESSAGE_CIRCLE_ID), circleId);
+                            LocalBroadcastManager.getInstance(this).sendBroadcast(newMessageIntent);
 
-                        // broadcast the action to the new message
-
+//                            sendNotification(message);
+                        }
                         break;
-
+                    }
                     default:
                         // do nothing for now
                         Log.e(TAG, "Unsupported opcode received, do nothing for now!");

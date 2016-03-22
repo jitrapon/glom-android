@@ -46,6 +46,12 @@
     <string name="EXTRA_EVENT_LOCATION">com.abborg.glom.extra.EVENT_LOCATION</string>
     <string name="EXTRA_EVENT_NOTE">com.abborg.glom.extra.EVENT_NOTE</string>
     <string name="EXTRA_ITEM_CREATE_TIME">com.abborg.glom.extra.ITEM_CREATE_TIME</string>
+    <string name="ACTION_NEW_MESSAGE">com.abborg.glom.action.NEW_MESSAGE</string>
+    <string name="EXTRA_MESSAGE_SENDER">com.abborg.glom.extra.MESSAGE_SENDER</string>
+    <string name="EXTRA_MESSAGE_ID">com.abborg.glom.extra.MESSAGE_ID</string>
+    <string name="EXTRA_MESSAGE_CONTENT">com.abborg.glom.extra.MESSAGE_CONTENT</string>
+    <string name="EXTRA_MESSAGE_CIRCLE_ID">com.abborg.glom.extra.MESSAGE_CIRCLEID</string>
+    <string name="EXTRA_MESSAGE_TYPE">com.abborg.glom.extra.MESSAGE_TYPE</string>
 
     <!-- Profile activity strings -->
     <string name="profile_activity_label">My Profile</string>

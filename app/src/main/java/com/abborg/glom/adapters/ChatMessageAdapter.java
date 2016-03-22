@@ -10,6 +10,7 @@ import android.widget.TextView;
 
 import com.abborg.glom.R;
 import com.abborg.glom.interfaces.OnMessageClickListener;
+import com.abborg.glom.model.BaseChatMessage;
 import com.abborg.glom.model.ChatMessage;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.User;
@@ -23,33 +24,33 @@ import me.himanshusoni.chatmessageview.ChatMessageView;
 public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private static final String TAG = "ChatMessageAdapter";
-    private static final int TYPE_MY_MESSAGE = 1;
-    private static final int TYPE_OTHER_MESSAGE = 2;
+    private static final int TYPE_MY_TEXT_MESSAGE = 1;
+    private static final int TYPE_OTHER_TEXT_MESSAGE = 2;
 
-    private List<ChatMessage> messages;
+    private List<BaseChatMessage> messages;
     private Context context;
     private OnMessageClickListener onClickListener;
     private Circle circle;
     private User user;
 
-    public static class MyMessageViewHolder extends RecyclerView.ViewHolder {
+    public static class MyTextMessageViewHolder extends RecyclerView.ViewHolder {
 
         TextView message;
 
 
-        public MyMessageViewHolder(View itemView) {
+        public MyTextMessageViewHolder(View itemView) {
             super(itemView);
 
             message = (TextView) itemView.findViewById(R.id.message);
         }
     }
 
-    public static class OtherMessageViewHolder extends RecyclerView.ViewHolder {
+    public static class OtherTextMessageViewHolder extends RecyclerView.ViewHolder {
 
         TextView message;
         ImageView avatar;
 
-        public OtherMessageViewHolder(View itemView) {
+        public OtherTextMessageViewHolder(View itemView) {
             super(itemView);
 
             message = (TextView) itemView.findViewById(R.id.message);
@@ -57,7 +58,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         }
     }
 
-    public ChatMessageAdapter(Context context, List<ChatMessage> messages, OnMessageClickListener onClickListener,
+    public ChatMessageAdapter(Context context, List<BaseChatMessage> messages, OnMessageClickListener onClickListener,
                               Circle circle, User user) {
         this.user = user;
         this.circle = circle;
@@ -68,9 +69,9 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        if (viewType == TYPE_MY_MESSAGE) {
+        if (viewType == TYPE_MY_TEXT_MESSAGE) {
             View view = LayoutInflater.from(context).inflate(R.layout.item_my_message, parent, false);
-            final MyMessageViewHolder holder = new MyMessageViewHolder(view);
+            final MyTextMessageViewHolder holder = new MyTextMessageViewHolder(view);
             ChatMessageView chatView = (ChatMessageView) view.findViewById(R.id.message_view);
             chatView.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -95,9 +96,9 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             });
             return holder;
         }
-        else if (viewType == TYPE_OTHER_MESSAGE) {
+        else if (viewType == TYPE_OTHER_TEXT_MESSAGE) {
             View view = LayoutInflater.from(context).inflate(R.layout.item_other_message, parent, false);
-            final OtherMessageViewHolder holder = new OtherMessageViewHolder(view);
+            final OtherTextMessageViewHolder holder = new OtherTextMessageViewHolder(view);
             ChatMessageView chatView = (ChatMessageView) view.findViewById(R.id.message_view);
             chatView.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -128,12 +129,12 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
     @Override
     public int getItemViewType(int position) {
         if (messages != null) {
-            ChatMessage message = messages.get(position);
+            BaseChatMessage message = messages.get(position);
             if (message.isMine()) {
-                return TYPE_MY_MESSAGE;
+                if (message instanceof ChatMessage) return TYPE_MY_TEXT_MESSAGE;
             }
             else {
-                return TYPE_OTHER_MESSAGE;
+                if (message instanceof ChatMessage) return TYPE_OTHER_TEXT_MESSAGE;
             }
         }
         return 0;
@@ -141,16 +142,18 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-        ChatMessage message = messages.get(position);
-        if (holder instanceof MyMessageViewHolder) {
-            MyMessageViewHolder viewHolder = (MyMessageViewHolder) holder;
+        BaseChatMessage message = messages.get(position);
+        User sender = message.getSender();
+        String avatar = sender==null ? "" : sender.getAvatar();
+        if (holder instanceof MyTextMessageViewHolder) {
+            MyTextMessageViewHolder viewHolder = (MyTextMessageViewHolder) holder;
             viewHolder.message.setText(message.getContent());
         }
-        else if (holder instanceof OtherMessageViewHolder) {
-            OtherMessageViewHolder viewHolder = (OtherMessageViewHolder) holder;
+        else if (holder instanceof OtherTextMessageViewHolder) {
+            OtherTextMessageViewHolder viewHolder = (OtherTextMessageViewHolder) holder;
             viewHolder.message.setText(message.getContent());
             Glide.with(context)
-                    .load(user.getAvatar()).fitCenter()
+                    .load(avatar).fitCenter()
                     .transform(new CircleTransform(context))
                     .override(38, 38)
                     .placeholder(R.drawable.ic_profile)
