@@ -1357,6 +1357,7 @@ public class DataUpdater {
 
                         data.putString(Const.JSON_SERVER_MESSAGE_ID, message.getId());
                         data.putString(Const.JSON_SERVER_MESSAGE_TYPE, message.getType());
+                        data.putString(Const.JSON_SERVER_SENDER, appState.getActiveUser().getId());
                         data.putString(Const.JSON_SERVER_CIRCLEID, appState.getActiveCircle().getId());
                         data.putString(Const.JSON_SERVER_MESSAGE, message.getContent());
                         gcm.send(senderId + "@" + domain, message.getId(), data);
