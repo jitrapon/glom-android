@@ -29,29 +29,30 @@ public class User implements Parcelable {
 
     private String status;
 
+    private int type;
+
     private boolean dirty;
 
     public static final int MEDIA_IMAGE_RECEIVE = 1;
-
     public static final int MEDIA_AUDIO_RECEIVE = 2;
-
     public static final int MEDIA_VIDEO_RECEIVE = 3;
-
     public static final int ALARM_RECEIVE = 4;
-
     public static final int NOTE_RECEIVE = 5;
-
     public static final int LOCATION_REQUEST_RECEIVE = 6;
-
     public static final int CREATE_EVENT = 7;
 
-    public User(String name, String id, Location location) {
+    public static final int TYPE_USER = 1;
+    public static final int TYPE_ENTITY = 2;
+    public static final int TYPE_BOT = 3;
+
+    public User(String name, String id, Location location, int type) {
         this.name = name;
         this.id = id;
         this.location = location;
         this.currentCircle = null;
         userPerm = new ArrayList<>();
         this.status = null;
+        this.type = type;
     }
 
     public User(Parcel parcel) {
@@ -123,6 +124,8 @@ public class User implements Parcelable {
 
     public void setAvatar(String avatar) { this.avatar = avatar; }
 
+    public void setType(int type) { this.type = type; }
+
     public String getAvatar() { return this.avatar; }
 
     public void setCurrentCircle(Circle circle) { this.currentCircle = circle; }
@@ -140,6 +143,8 @@ public class User implements Parcelable {
     public void setStatus(String status) { this.status = status; }
 
     public String getStatus() { return status; }
+
+    public int getType() { return type; }
 
     public boolean isDirty() { return dirty; }
 

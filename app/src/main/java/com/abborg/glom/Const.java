@@ -10,8 +10,8 @@ public class Const {
     /**
      * TEST INFO
      * **/
-    public static final String TEST_USER_ID = "yoshi3003";
-//    public static final String TEST_USER_ID = "fatcat18";
+//    public static final String TEST_USER_ID = "yoshi3003";
+    public static final String TEST_USER_ID = "fatcat18";
     public static final String TEST_CIRCLE_ID = "dev-test-circle-1";
     public static final String TEST_API_AUTHORIZATION_HEADER = "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -41,6 +41,7 @@ public class Const {
     public static final String JSON_SERVER_USERID = "user_id";
     public static final String JSON_SERVER_USERNAME = "user_name";
     public static final String JSON_SERVER_USER_AVATAR = "avatar";
+    public static final String JSON_SERVER_USERTYPE = "user_type";
     public static final String JSON_SERVER_USERIDS = "user_ids";
     public static final String JSON_SERVER_CIRCLEID = "circle_id";
     public static final String JSON_SERVER_GCM_TOKEN = "gcm_token";

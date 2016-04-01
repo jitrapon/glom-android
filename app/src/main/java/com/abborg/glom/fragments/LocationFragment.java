@@ -514,6 +514,9 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
 
         for (User user : circle.getUsers()) {
 
+            // if this is a bot, skip!
+            if (user.getType() == User.TYPE_BOT) continue;
+
             // for current user
             if ( user.getId().equals(appState.getActiveUser().getId()) ) {
                 options = new MarkerOptions()
@@ -780,33 +783,33 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         if (googleMap != null) {
 
             for (User user : users) {
-                //TODO ignore the current user location update from the request
+                if (user.getType() != User.TYPE_BOT) {
+                    String id = user.getId();
+                    Location location = user.getLocation();
+                    Marker marker = userMarkers.get(id);
 
-                String id = user.getId();
-                Location location = user.getLocation();
-                Marker marker = userMarkers.get(id);
+                    double currentLatitude = location.getLatitude();
+                    double currentLongitude = location.getLongitude();
+                    LatLng latLng = new LatLng(currentLatitude, currentLongitude);
 
-                double currentLatitude = location.getLatitude();
-                double currentLongitude = location.getLongitude();
-                LatLng latLng = new LatLng(currentLatitude, currentLongitude);
+                    // add a new marker belonging to the user if it's not there before
+                    // ignore the bots!
+                    if (marker == null) {
+                        String markerTitle = id;
 
-                // add a new marker belonging to the user if it's not there before
-                if (marker == null) {
-                    String markerTitle = id;
-
-                    MarkerOptions options = new MarkerOptions()
-                            .title(markerTitle)
-                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_blue))
-                            .position(latLng);
-                    marker = googleMap.addMarker(options);
-                    setUserMarkerIconAvatar(user.getAvatar(), marker, "blue");
-                    marker.showInfoWindow();
-                    userMarkers.put(id, marker);
-                    setMarkerSnippet(marker);
-                }
-                else {
-                    marker.setPosition(latLng);
-                    marker.showInfoWindow();
+                        MarkerOptions options = new MarkerOptions()
+                                .title(markerTitle)
+                                .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_marker_blue))
+                                .position(latLng);
+                        marker = googleMap.addMarker(options);
+                        setUserMarkerIconAvatar(user.getAvatar(), marker, "blue");
+                        marker.showInfoWindow();
+                        userMarkers.put(id, marker);
+                        setMarkerSnippet(marker);
+                    } else {
+                        marker.setPosition(latLng);
+                        marker.showInfoWindow();
+                    }
                 }
             }
 

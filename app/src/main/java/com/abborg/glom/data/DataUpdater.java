@@ -63,8 +63,6 @@ public class DataUpdater {
     private DBHelper dbHelper;
     private String[] circleColumns = { DBHelper.CIRCLE_COLUMN_ID,
             DBHelper.CIRCLE_COLUMN_NAME, DBHelper.CIRCLE_COLUMN_BROADCAST_LOCATION };
-    private String[] userColumns = { DBHelper.USER_COLUMN_ID, DBHelper.USER_COLUMN_NAME,
-            DBHelper.USER_COLUMN_AVATAR};
     private String[] userCircleColumns = { DBHelper.USERCIRCLE_COLUMN_USER_ID, DBHelper.USERCIRCLE_COLUMN_CIRCLE_ID,
             DBHelper.USERCIRCLE_COLUMN_LATITUDE, DBHelper.USERCIRCLE_COLUMN_LONGITUDE };
 
@@ -164,7 +162,7 @@ public class DataUpdater {
         Location location = new Location("");
         location.setLatitude(0);
         location.setLongitude(0);
-        User user = new User("", id, location);
+        User user = new User("", id, location, User.TYPE_USER);
         user.setAvatar("");
 
         List<Integer> userPerm = new ArrayList<>();
@@ -281,6 +279,7 @@ public class DataUpdater {
                 values.put(DBHelper.USER_COLUMN_ID, user.getId());
                 values.put(DBHelper.USER_COLUMN_NAME, user.getName());
                 values.put(DBHelper.USER_COLUMN_AVATAR, user.getAvatar());
+                values.put(DBHelper.USER_COLUMN_TYPE, user.getType());
                 insertId = database.insert(DBHelper.TABLE_USERS, null, values);
                 Log.d(TAG, "Inserted user with _id: " +  insertId + ", id: " + user.getId() + " into " + DBHelper.TABLE_USERS);
 
@@ -384,7 +383,8 @@ public class DataUpdater {
             String name = cursor.getString(cursor.getColumnIndex(DBHelper.USER_COLUMN_NAME));
             String userId = cursor.getString(cursor.getColumnIndex(DBHelper.USER_COLUMN_ID));
             String avatar = cursor.getString(cursor.getColumnIndex(DBHelper.USER_COLUMN_AVATAR));
-            user = new User(name, userId, null);
+            int type = cursor.getInt(cursor.getColumnIndex(DBHelper.USER_COLUMN_TYPE));
+            user = new User(name, userId, null, type);
             user.setAvatar(avatar);
 
             List<Integer> userPerm = new ArrayList<>();
@@ -414,6 +414,7 @@ public class DataUpdater {
                     values.put(DBHelper.USER_COLUMN_ID, user.getId());
                     values.put(DBHelper.USER_COLUMN_NAME, user.getName());
                     values.put(DBHelper.USER_COLUMN_AVATAR, user.getAvatar());
+                    values.put(DBHelper.USER_COLUMN_TYPE, user.getType());
                     database.insert(DBHelper.TABLE_USERS, null, values);
                     values.clear();
 
@@ -449,6 +450,7 @@ public class DataUpdater {
 
                     values.put(DBHelper.USER_COLUMN_NAME, user.getName());
                     values.put(DBHelper.USER_COLUMN_AVATAR, user.getAvatar());
+                    values.put(DBHelper.USER_COLUMN_TYPE, user.getType());
                     database.update(DBHelper.TABLE_USERS, values, DBHelper.USER_COLUMN_ID + "='" + user.getId() + "'", null);
                     values.clear();
                 }
@@ -490,7 +492,8 @@ public class DataUpdater {
 
         // get the user info from USERS table and the user location from USERCIRCLE table
         // SELECT id,name,avatarId,location
-        String selectColumns = DBHelper.USER_COLUMN_ID + "," + DBHelper.USER_COLUMN_NAME + "," + DBHelper.USER_COLUMN_AVATAR + "," +
+        String selectColumns = DBHelper.USER_COLUMN_ID + "," + DBHelper.USER_COLUMN_NAME + ","
+                + DBHelper.USER_COLUMN_AVATAR + "," + DBHelper.USER_COLUMN_TYPE + "," +
                 DBHelper.USERCIRCLE_COLUMN_LATITUDE + "," + DBHelper.USERCIRCLE_COLUMN_LONGITUDE;
 
         String query = "SELECT " + selectColumns + " FROM " + DBHelper.TABLE_USERS + ", " + DBHelper.TABLE_USER_CIRCLE + " WHERE " +
@@ -529,6 +532,7 @@ public class DataUpdater {
                                     String id = json.getString(Const.JSON_SERVER_USERID);
                                     String name = json.getString(Const.JSON_SERVER_USERNAME);
                                     String avatar = json.getString(Const.JSON_SERVER_USER_AVATAR);
+                                    int type = json.getInt(Const.JSON_SERVER_USERTYPE);
                                     id = TextUtils.isEmpty(id) ? "" : id;
                                     name = TextUtils.isEmpty(name) ? "" : name;
                                     avatar = TextUtils.isEmpty(avatar) ? "" : avatar;
@@ -543,9 +547,11 @@ public class DataUpdater {
                                             if (id.equals(appState.getActiveUser().getId())) {
                                                 appState.getActiveUser().setName(name);
                                                 appState.getActiveUser().setAvatar(avatar);
+                                                appState.getActiveUser().setType(type);
                                             }
                                             user.setName(name);
                                             user.setAvatar(avatar);
+                                            user.setType(type);
 
                                             // add to the list of ones to be modified;
                                             toModify.add(user);
@@ -561,7 +567,7 @@ public class DataUpdater {
                                             Location location = new Location("");
                                             location.setLatitude(0);
                                             location.setLongitude(0);
-                                            user = new User(name, id, location);
+                                            user = new User(name, id, location, type);
                                             user.setDirty(false);
                                             if (user.getAvatar() == null || !user.getAvatar().equals(avatar))
                                                 user.setAvatar(avatar);
@@ -606,14 +612,15 @@ public class DataUpdater {
     }
 
     private User serializeUser(Cursor cursor, Circle circle) {
-        User user = new User(null, null, null);
-        user.setId(cursor.getString(0));
-        user.setName(cursor.getString(1));
-        user.setAvatar(cursor.getString(2));
+        User user = new User(null, null, null, -1);
+        user.setId(cursor.getString(cursor.getColumnIndex(DBHelper.USER_COLUMN_ID)));
+        user.setName(cursor.getString(cursor.getColumnIndex(DBHelper.USER_COLUMN_NAME)));
+        user.setAvatar(cursor.getString(cursor.getColumnIndex(DBHelper.USER_COLUMN_AVATAR)));
+        user.setType(cursor.getInt(cursor.getColumnIndex(DBHelper.USER_COLUMN_TYPE)));
 
         Location location = new Location("");
-        location.setLatitude(cursor.getDouble(3));
-        location.setLongitude(cursor.getDouble(4));
+        location.setLatitude(cursor.getDouble(cursor.getColumnIndex(DBHelper.USERCIRCLE_COLUMN_LATITUDE)));
+        location.setLongitude(cursor.getDouble(cursor.getColumnIndex(DBHelper.USERCIRCLE_COLUMN_LONGITUDE)));
         user.setLocation(location);
 
         //TODO set all user permission to receive everything
@@ -748,7 +755,7 @@ public class DataUpdater {
                         Location location = new Location("");
                         location.setLatitude(locationJson.getDouble(Const.JSON_SERVER_LOCATION_LAT));
                         location.setLongitude(locationJson.getDouble(Const.JSON_SERVER_LOCATION_LONG));
-                        userList.add(new User(null, userId, location));
+                        userList.add(new User(s.getName(), userId, location, s.getType()));
                         s.setLocation(location);
                     }
                 }

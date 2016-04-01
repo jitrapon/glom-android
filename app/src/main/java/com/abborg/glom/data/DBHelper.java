@@ -27,6 +27,7 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String USER_COLUMN_ID = "id";
     public static final String USER_COLUMN_NAME = "name";
     public static final String USER_COLUMN_AVATAR = "avatar";
+    public static final String USER_COLUMN_TYPE = "type";
 
     // user_circle table - mapping userId to circleId to location (x,y) columns
     public static final String TABLE_USER_CIRCLE = "user_circle";
@@ -69,6 +70,7 @@ public class DBHelper extends SQLiteOpenHelper {
             USER_COLUMN_ID + " TEXT, " +
             USER_COLUMN_NAME + " TEXT, " +
             USER_COLUMN_AVATAR + " TEXT, " +
+            USER_COLUMN_TYPE + " INTEGER, " +
             "UNIQUE (" + USER_COLUMN_ID + ", " + USER_COLUMN_NAME + ")" +
             ");";
 
