@@ -25,9 +25,15 @@ import com.abborg.glom.model.BaseChatMessage;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CircleInfo;
+import com.abborg.glom.model.DiscoverItem;
 import com.abborg.glom.model.Event;
 import com.abborg.glom.model.FeedAction;
+import com.abborg.glom.model.Movie;
 import com.abborg.glom.model.User;
+import com.abborg.glom.model.WatchableFeed;
+import com.abborg.glom.model.WatchableImage;
+import com.abborg.glom.model.WatchableRating;
+import com.abborg.glom.model.WatchableVideo;
 import com.abborg.glom.utils.RequestHandler;
 import com.android.volley.VolleyError;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
@@ -1375,5 +1381,110 @@ public class DataUpdater {
                 }
             });
         }
+    }
+
+    /*************************************************
+     * DISCOVER ITEMS
+     *************************************************/
+    public void requestMovies() {
+        RequestHandler.getInstance(context).get("Get Movies", Const.API_GET_MOVIES,
+                new ResponseListener() {
+                    @Override
+                    public void onSuccess(JSONObject response) {
+                        final JSONObject respJson = response;
+                        run(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    List<Movie> movies = new ArrayList<>();
+                                    int type = 0;
+                                    if (respJson != null) {
+                                        JSONArray itemsJson = respJson.getJSONArray(Const.JSON_SERVER_ITEMS);
+                                        for (int i = 0; i < itemsJson.length(); i++) {
+                                            JSONObject itemJson = itemsJson.getJSONObject(i);
+                                            type = itemJson.getInt(Const.JSON_SERVER_ITEM_TYPE);
+                                            if (type == DiscoverItem.TYPE_MOVIE) {
+                                                JSONArray ratingsJson = itemJson.getJSONArray(Const.JSON_SERVER_RATINGS);
+                                                List<WatchableRating> ratings = new ArrayList<>();
+                                                for (int j = 0; j < ratingsJson.length(); j++) {
+                                                    WatchableRating rating = new WatchableRating();
+                                                    JSONObject ratingJson = ratingsJson.getJSONObject(j);
+                                                    rating.score = ratingJson.getDouble(Const.JSON_SERVER_RATING_SCORE);
+                                                    rating.source = ratingJson.getString(Const.JSON_SERVER_RATING_SOURCE);
+                                                    ratings.add(rating);
+                                                }
+                                                JSONArray imagesJson = itemJson.getJSONArray(Const.JSON_SERVER_IMAGES);
+                                                List<WatchableImage> images = new ArrayList<>();
+                                                for (int j = 0; j < imagesJson.length(); j++) {
+                                                    WatchableImage image = new WatchableImage();
+                                                    JSONObject imageJson = imagesJson.getJSONObject(j);
+                                                    image.type = imageJson.getInt(Const.JSON_SERVER_IMAGE_TYPE);
+                                                    image.thumbnail = imageJson.getString(Const.JSON_SERVER_IMAGE_THUMBNAIL);
+                                                    image.url = imageJson.getString(Const.JSON_SERVER_IMAGE_URL);
+                                                    images.add(image);
+                                                }
+                                                JSONArray videosJson = itemJson.getJSONArray(Const.JSON_SERVER_VIDEOS);
+                                                List<WatchableVideo> videos = new ArrayList<>();
+                                                for (int j = 0; j < videosJson.length(); j++) {
+                                                    WatchableVideo video = new WatchableVideo();
+                                                    JSONObject videoJson = videosJson.getJSONObject(j);
+                                                    video.type = videoJson.getInt(Const.JSON_SERVER_VIDEO_TYPE);
+                                                    video.lang = videoJson.getString(Const.JSON_SERVER_VIDEO_LANG);
+                                                    video.source = videoJson.getString(Const.JSON_SERVER_VIDEO_SOURCE);
+                                                    video.url = videoJson.getString(Const.JSON_SERVER_VIDEO_URL);
+                                                    videos.add(video);
+                                                }
+                                                JSONArray feedsJson = itemJson.getJSONArray(Const.JSON_SERVER_FEEDS);
+                                                List<WatchableFeed> feeds = new ArrayList<>();
+                                                for (int j = 0; j < feedsJson.length(); j++) {
+                                                    WatchableFeed feed = new WatchableFeed();
+                                                    JSONObject feedJson = feedsJson.getJSONObject(j);
+                                                    feed.name = feedJson.getString(Const.JSON_SERVER_FEED_NAME);
+                                                    feed.source = feedJson.getString(Const.JSON_SERVER_FEED_SOURCE);
+                                                    feeds.add(feed);
+                                                }
+
+                                                Movie movie = new Movie();
+                                                movie.setId(itemJson.getString(Const.JSON_SERVER_ITEM_ID))
+                                                        .setUpdatedTime(null)
+                                                        .setCreatedTime(null)
+                                                        .setTitle(itemJson.getString(Const.JSON_SERVER_TITLE))
+                                                        .setSummary(itemJson.getString(Const.JSON_SERVER_SUMMARY))
+                                                        .setGenre(itemJson.getString(Const.JSON_SERVER_GENRE))
+                                                        .setLang(itemJson.getString(Const.JSON_SERVER_LANG))
+                                                        .setReleaseDate(new DateTime(itemJson.getLong(Const.JSON_SERVER_RELEASE_DATE)))
+                                                        .setDirector(itemJson.getString(Const.JSON_SERVER_DIRECTOR))
+                                                        .setCast(itemJson.getString(Const.JSON_SERVER_CAST))
+                                                        .setRatings(ratings)
+                                                        .setImages(images)
+                                                        .setVideos(videos)
+                                                        .setFeeds(feeds);
+                                                movies.add(movie);
+                                            }
+                                        }
+                                    }
+
+                                    if (handler != null)
+                                        handler.sendMessage(
+                                                handler.obtainMessage(Const.MSG_DISCOVER_ITEM, DiscoverItem.TYPE_MOVIE, 0, movies));
+                                }
+                                catch (Exception ex) {
+                                    ex.printStackTrace();
+                                    if (handler != null)
+                                        handler.sendMessage(
+                                                handler.obtainMessage(Const.MSG_DISCOVER_ITEM, DiscoverItem.TYPE_MOVIE, -1, null));
+                                }
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(VolleyError error) {
+                        RequestHandler.getInstance(context).handleError(error);
+                        if (handler != null)
+                            handler.sendMessage(handler.obtainMessage(Const.MSG_DISCOVER_ITEM, DiscoverItem.TYPE_MOVIE, -1, null));
+                    }
+                }
+        );
     }
 }

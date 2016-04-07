@@ -63,4 +63,6 @@
     <dimen name="event_card_info_height">150dp</dimen>
     <dimen name="event_card_powered_by_google_margin">18dp</dimen>
     <dimen name="fab_margin">16dp</dimen>
+
+    <dimen name="content_inset">16dp</dimen>
 </resources>

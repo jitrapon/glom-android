@@ -50,9 +50,11 @@ import com.abborg.glom.fragments.DrawerFragment;
 import com.abborg.glom.fragments.LocationFragment;
 import com.abborg.glom.interfaces.BoardItemChangeListener;
 import com.abborg.glom.interfaces.BroadcastLocationListener;
+import com.abborg.glom.interfaces.DiscoverItemChangeListener;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CircleInfo;
+import com.abborg.glom.model.DiscoverItem;
 import com.abborg.glom.model.Event;
 import com.abborg.glom.model.User;
 import com.abborg.glom.service.CirclePushService;
@@ -110,6 +112,11 @@ public class MainActivity extends AppCompatActivity
      * Broadcast location listeners
      */
     private List<BroadcastLocationListener> broadcastLocationListeners;
+
+    /**
+     * Discover item change listeners
+     */
+    private List<DiscoverItemChangeListener> discoverItemChangeListeners;
 
     // UI elements
     private TabLayout tabLayout;
@@ -256,6 +263,8 @@ public class MainActivity extends AppCompatActivity
 
         addBroadcastLocationListener((CircleFragment) adapter.getItem(0));
         addBroadcastLocationListener((LocationFragment) adapter.getItem(1));
+
+        addDiscoverItemChangeListener((DiscoverFragment) adapter.getItem(3));
     }
 
     private void setupView() {
@@ -605,6 +614,15 @@ public class MainActivity extends AppCompatActivity
                 broadcastLocationListeners.add(listener);
             }
             else broadcastLocationListeners.add(listener);
+        }
+    }
+
+    private void addDiscoverItemChangeListener(DiscoverItemChangeListener listener) {
+        if (listener != null) {
+            if (discoverItemChangeListeners == null) {
+                discoverItemChangeListeners = new ArrayList<>();
+            }
+            discoverItemChangeListeners.add(listener);
         }
     }
 
@@ -1010,6 +1028,23 @@ public class MainActivity extends AppCompatActivity
                 break;
             }
 
+            /* Request: discover items received */
+            case Const.MSG_DISCOVER_ITEM: {
+                int type = msg.arg1;
+                boolean ok = msg.arg2 == 0;
+                List<DiscoverItem> results = null;
+                if (msg.obj != null && ok) {
+                    results = (List<DiscoverItem>) msg.obj;
+                }
+
+                if (discoverItemChangeListeners != null) {
+                    for (DiscoverItemChangeListener listener : discoverItemChangeListeners) {
+                        listener.onItemsReceived(type, results);
+                    }
+                }
+
+                break;
+            }
         }
 
         return false;

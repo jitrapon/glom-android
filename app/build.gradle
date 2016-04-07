@@ -22,7 +22,7 @@ android {
         debug {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            buildConfigField "String", "SERVER_URL", "\"http://10.11.3.202:8080\""
+            buildConfigField "String", "SERVER_URL", "\"http://192.168.1.6:8080\""
         }
     }
     compileOptions {
@@ -72,5 +72,8 @@ dependencies {
     compile "org.igniterealtime.smack:smack-android-extensions:4.1.6"
     compile "org.igniterealtime.smack:smack-tcp:4.1.6"
     compile "org.igniterealtime.smack:smack-android:4.1.6"
+    compile('com.github.afollestad:sectioned-recyclerview:0.2.1') {
+        transitive = true
+    }
 //    compile 'jp.wasabeef:recyclerview-animators:2.2.0'    // commented out for now due to incompatible with new support lib
 }

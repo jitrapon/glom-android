@@ -152,4 +152,10 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="title_activity_create_event">CreateEventActivity</string>
     <string name="title_activity_chat">ChatActivity</string>
+
+    <!-- Discover items -->
+    <string name="discover_item_empty">No item to display</string>
+    <string name="discover_section_header_movie">Movies</string>
+    <string name="discover_section_header_event">Event</string>
+    <string name="discover_section_header_food">Eateries</string>
 </resources>

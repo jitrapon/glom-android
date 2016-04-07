@@ -36,6 +36,7 @@ public class Const {
     public static final String API_GET_USERS = "/circle/%s/users";
     public static final String API_BOARD = "/circle/%s/board";
     public static final String API_BOARD_ITEM = "/circle/%1$s/board/%2$s";
+    public static final String API_GET_MOVIES = "/movie";
 
     public static final String JSON_SERVER_MESSAGE = "message";
     public static final String JSON_SERVER_USERID = "user_id";
@@ -67,6 +68,28 @@ public class Const {
     public static final String JSON_SERVER_MESSAGE_TYPE = "type";
     public static final String JSON_SERVER_SENDER = "sender";
     public static final String JSON_VALUE_MESSAGE_TYPE_TEXT = "text";
+    public static final String JSON_SERVER_RATINGS = "ratings";
+    public static final String JSON_SERVER_RATING_SCORE = "score";
+    public static final String JSON_SERVER_RATING_SOURCE = "source";
+    public static final String JSON_SERVER_IMAGES = "images";
+    public static final String JSON_SERVER_IMAGE_TYPE = "type";
+    public static final String JSON_SERVER_IMAGE_THUMBNAIL = "thumbnail";
+    public static final String JSON_SERVER_IMAGE_URL = "url";
+    public static final String JSON_SERVER_VIDEOS = "videos";
+    public static final String JSON_SERVER_VIDEO_TYPE = "type";
+    public static final String JSON_SERVER_VIDEO_LANG = "lang";
+    public static final String JSON_SERVER_VIDEO_SOURCE = "source";
+    public static final String JSON_SERVER_VIDEO_URL = "url";
+    public static final String JSON_SERVER_FEEDS = "feeds";
+    public static final String JSON_SERVER_FEED_NAME = "name";
+    public static final String JSON_SERVER_FEED_SOURCE = "url";
+    public static final String JSON_SERVER_TITLE = "title";
+    public static final String JSON_SERVER_SUMMARY = "summary";
+    public static final String JSON_SERVER_GENRE = "genre";
+    public static final String JSON_SERVER_LANG = "language";
+    public static final String JSON_SERVER_RELEASE_DATE = "release_date";
+    public static final String JSON_SERVER_DIRECTOR = "director";
+    public static final String JSON_SERVER_CAST = "cast";
 
     /**
      * HANDLER WHAT CONSTANTS
@@ -83,4 +106,5 @@ public class Const {
     public static final int MSG_ITEM_DELETED_SUCCESS = 5010;
     public static final int MSG_ITEM_DELETED_FAILED = 5011;
     public static final int MSG_INIT_SUCCESS = 5012;
+    public static final int MSG_DISCOVER_ITEM = 5013;
 }
