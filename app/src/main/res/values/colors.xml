@@ -11,4 +11,5 @@
     <color name="lineDivider">#D8D8D8</color>
     <color name="cardPrimaryText">#000000</color>
     <color name="actionButtonColor">#5766BD</color>
+    <color name="movieCardReleaseDateBackground">#00e5ff</color>
 </resources>

@@ -60,6 +60,9 @@ public class AppState
     /* App-wide date formatter */
     private DateTimeFormatter dateTimeFormatter;
 
+    /* API KEY to access Google APIs */
+    private String GOOGLE_API_KEY;
+
     public static AppState init(Context ctx, Handler handler) {
         instance = new AppState(ctx, handler);
         return instance;
@@ -88,6 +91,8 @@ public class AppState
         keepGoogleApiAlive = false;
 
         dateTimeFormatter = DateTimeFormat.forPattern(context.getResources().getString(R.string.action_create_event_datetime_format));
+
+        GOOGLE_API_KEY = context.getResources().getString(R.string.google_maps_key);
 
         //TODO initialize XMPP connection
 
@@ -174,4 +179,6 @@ public class AppState
     public DataUpdater getDataUpdater() { return dataUpdater; }
 
     public GoogleApiClient getGoogleApiClient() { return apiClient; }
+
+    public String getGoogleApiKey() { return GOOGLE_API_KEY; }
 }

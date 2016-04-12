@@ -62,6 +62,7 @@ import com.abborg.glom.service.RegistrationIntentService;
 import com.abborg.glom.utils.CircleTransform;
 import com.bumptech.glide.Glide;
 import com.flipboard.bottomsheet.BottomSheetLayout;
+import com.google.android.youtube.player.YouTubeStandalonePlayer;
 import com.oguzdev.circularfloatingactionmenu.library.FloatingActionMenu;
 import com.oguzdev.circularfloatingactionmenu.library.SubActionButton;
 
@@ -859,6 +860,13 @@ public class MainActivity extends AppCompatActivity
         ((BoardFragment) adapter.getItem(2)).update();
     }
 
+    public void setFloatingActionButtonVisible(boolean visible) {
+        if (fab != null) {
+            if (visible) fab.show();
+            else fab.hide();
+        }
+    }
+
     /**********************************************************
      * Handler
      **********************************************************/
@@ -1043,6 +1051,14 @@ public class MainActivity extends AppCompatActivity
                     }
                 }
 
+                break;
+            }
+
+            /* Play Youtube video */
+            case Const.MSG_PLAY_YOUTUBE_VIDEO: {
+                String videoId = (String) msg.obj;
+                Intent intent = YouTubeStandalonePlayer.createVideoIntent(this, appState.getGoogleApiKey(), videoId, 0, true, true);
+                startActivity(intent);
                 break;
             }
         }

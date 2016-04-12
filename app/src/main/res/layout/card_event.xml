@@ -5,15 +5,15 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:gravity="center_horizontal"
-    android:padding="@dimen/event_card_padding">
+    android:padding="@dimen/card_padding">
 
     <android.support.v7.widget.CardView
         android:id="@+id/cardView"
         android:layout_gravity="center"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="@dimen/event_card_margin"
-        cardView:cardCornerRadius="@dimen/event_card_corner_radius"
+        android:layout_margin="@dimen/card_margin"
+        cardView:cardCornerRadius="@dimen/card_corner_radius"
         cardView:cardUseCompatPadding="true">
 
         <LinearLayout
@@ -29,10 +29,10 @@
 
                 <ImageView
                     android:id="@+id/cardUserAvatar"
-                    android:layout_width="@dimen/event_card_avatar_size"
-                    android:layout_height="@dimen/event_card_avatar_size"
+                    android:layout_width="@dimen/card_avatar_size"
+                    android:layout_height="@dimen/card_avatar_size"
                     android:layout_alignParentLeft="true"
-                    android:layout_margin="@dimen/event_card_avatar_margin"
+                    android:layout_margin="@dimen/card_avatar_margin"
                     android:layout_centerVertical="true" />
 
                 <TextView
@@ -40,8 +40,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_toRightOf="@+id/cardUserAvatar"
-                    android:paddingTop="@dimen/event_card_username_padding_top"
-                    android:textSize="@dimen/event_card_supporting_text_size"
+                    android:paddingTop="@dimen/card_username_padding_top"
+                    android:textSize="@dimen/card_supporting_text_size"
                     android:textColor="@color/cardPrimaryText"
                     android:text="@string/card_host_name_placeholder"/>
 
@@ -51,9 +51,9 @@
                     android:layout_height="wrap_content"
                     android:layout_below="@+id/cardUserName"
                     android:layout_toRightOf="@+id/cardUserAvatar"
-                    android:paddingBottom="@dimen/event_card_post_time_padding_bottom"
+                    android:paddingBottom="@dimen/card_post_time_padding_bottom"
                     android:text="@string/card_host_post_time_placeholder"
-                    android:textSize="@dimen/event_card_supporting_text_size"/>
+                    android:textSize="@dimen/card_supporting_text_size"/>
 
             </RelativeLayout>
 
@@ -73,9 +73,9 @@
                     android:layout_height="wrap_content"
                     android:paddingLeft="@dimen/event_card_event_info_padding"
                     android:paddingRight="@dimen/event_card_event_info_padding"
-                    android:paddingTop="@dimen/event_card_primary_text_padding_top"
-                    android:paddingBottom="@dimen/event_card_primary_text_padding_bottom"
-                    android:textSize="@dimen/event_card_primary_text_size"
+                    android:paddingTop="@dimen/card_primary_text_padding_top"
+                    android:paddingBottom="@dimen/card_primary_text_padding_bottom"
+                    android:textSize="@dimen/card_primary_text_size"
                     android:textColor="@color/cardPrimaryText"
                     android:text="@string/card_event_name_placeholder"
                     android:maxLines="2"
@@ -100,7 +100,7 @@
                     android:paddingLeft="@dimen/event_card_event_info_padding"
                     android:paddingRight="@dimen/event_card_event_info_padding"
                     android:paddingBottom="@dimen/event_card_event_info_padding"
-                    android:textSize="@dimen/event_card_supporting_text_size"
+                    android:textSize="@dimen/card_supporting_text_size"
                     android:text="@string/card_event_venue_placeholder"
                     android:maxLines="3"
                     android:ellipsize="end" />
@@ -113,7 +113,7 @@
                     android:paddingLeft="@dimen/event_card_event_info_padding"
                     android:paddingRight="@dimen/event_card_event_info_padding"
                     android:paddingBottom="@dimen/event_card_event_info_padding"
-                    android:textSize="@dimen/event_card_supporting_text_size"
+                    android:textSize="@dimen/card_supporting_text_size"
                     android:textColor="@android:color/secondary_text_light"
                     android:text="@string/card_event_note_placeholder"
                     android:maxLines="2"
@@ -131,7 +131,7 @@
                     android:focusableInTouchMode="false"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/event_card_action_padding"
+                    android:padding="@dimen/card_action_padding"
                     android:background="?android:attr/selectableItemBackground"
                     android:textColor="@color/actionButtonColor"
                     android:text="ACTION 1"/>
@@ -142,7 +142,7 @@
                     android:focusableInTouchMode="false"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/event_card_action_padding"
+                    android:padding="@dimen/card_action_padding"
                     android:background="?android:attr/selectableItemBackground"
                     android:layout_toRightOf="@+id/cardActionButton1"
                     android:textColor="@color/actionButtonColor"

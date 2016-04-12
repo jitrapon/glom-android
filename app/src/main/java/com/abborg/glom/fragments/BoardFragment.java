@@ -142,12 +142,14 @@ public class BoardFragment extends Fragment implements View.OnClickListener, Boa
             if (dataUpdater != null) {
                 if (!firstView) {
                     if (refreshView != null) {
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                refreshView.setRefreshing(true);
-                            }
-                        });
+                        if (handler != null) {
+                            handler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    refreshView.setRefreshing(true);
+                                }
+                            });
+                        }
                     }
                     dataUpdater.requestBoardItems(appState.getActiveCircle());
                 }
@@ -267,7 +269,7 @@ public class BoardFragment extends Fragment implements View.OnClickListener, Boa
     }
 
     public void update() {
-        if (activity != null) {
+        if (activity != null && adapter != null) {
             items = appState.getActiveCircle().getItems();
             adapter.update(items);
             if (refreshView != null) {

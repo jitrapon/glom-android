@@ -134,7 +134,7 @@ public class BoardRecyclerViewAdapter
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         if (viewType == TYPE_EVENT) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.event_card, parent, false);
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_event, parent, false);
             view.setOnClickListener(onClickListener);
             return new EventHolder(view);
         }
@@ -280,8 +280,8 @@ public class BoardRecyclerViewAdapter
                 Glide.with(context)
                         .load(feedAction.user.getAvatar()).fitCenter()
                         .transform(new CircleTransform(context))
-                        .override(context.getResources().getDimensionPixelSize(R.dimen.event_card_avatar_size),
-                                context.getResources().getDimensionPixelSize(R.dimen.event_card_avatar_size))
+                        .override(context.getResources().getDimensionPixelSize(R.dimen.card_avatar_size),
+                                context.getResources().getDimensionPixelSize(R.dimen.card_avatar_size))
                         .placeholder(R.drawable.ic_profile)
                         .error(R.drawable.ic_profile)
                         .crossFade(1000)

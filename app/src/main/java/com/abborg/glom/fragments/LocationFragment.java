@@ -141,29 +141,35 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         FrameLayout mapView = (FrameLayout) super.onCreateView(inflater, container, savedInstanceState);
-        View overlay = inflater.inflate(R.layout.fragment_location_overlay, null);
+        if (mapView != null) {
+            View overlay = inflater.inflate(R.layout.fragment_location_overlay, null);
 
 //        int marginTopDp = (int) TypedValue.applyDimension(
 //                TypedValue.COMPLEX_UNIT_DIP, getResources().getDimension(R.dimen.fragment_margin_top), getResources()
 //                        .getDisplayMetrics());
 
-        // zoom-to-fit button
-        Button zoomToFitBtn = (Button) overlay.findViewById(R.id.zoom_to_fit_btn);
-        zoomToFitBtn.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                LatLngBounds.Builder boundBuilder = new LatLngBounds.Builder();
-                for (Marker marker : userMarkers.values()) {
-                    boundBuilder.include(marker.getPosition());
+            // zoom-to-fit button
+            if (overlay != null) {
+                Button zoomToFitBtn = (Button) overlay.findViewById(R.id.zoom_to_fit_btn);
+                if (zoomToFitBtn != null) {
+                    zoomToFitBtn.setOnClickListener(new View.OnClickListener() {
+                        public void onClick(View v) {
+                            LatLngBounds.Builder boundBuilder = new LatLngBounds.Builder();
+                            for (Marker marker : userMarkers.values()) {
+                                boundBuilder.include(marker.getPosition());
+                            }
+                            LatLngBounds bounds = boundBuilder.build();
+                            int padding = LayoutUtils.dpToPx(getContext(), CAMERA_CENTER_PADDING);
+                            googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
+                        }
+                    });
                 }
-                LatLngBounds bounds = boundBuilder.build();
-                int padding = LayoutUtils.dpToPx(getContext(), CAMERA_CENTER_PADDING);
-                googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
+
+                mapView.addView(overlay);
+
+                userMarkerView = inflater.inflate(R.layout.user_marker, null);
             }
-        });
-
-        mapView.addView(overlay);
-
-        userMarkerView = inflater.inflate(R.layout.user_marker, null);
+        }
 
         return mapView;
     }
@@ -585,16 +591,23 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
     }
 
     public void animateCamera(LatLngBounds.Builder boundBuilder) {
-        if (userMarkers.size() == 1) {
-            Marker marker = userMarkers.get(appState.getActiveUser().getId());
-            googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(marker.getPosition(), CAMERA_ZOOM_LEVEL));
-        }
-        else {
-            LatLngBounds bounds = boundBuilder.build();
-            if (getContext() != null) {
-                int padding = LayoutUtils.dpToPx(getContext(), CAMERA_CENTER_PADDING);
-                googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
+        try {
+            if (googleMap != null) {
+                if (userMarkers.size() == 1) {
+                    Marker marker = userMarkers.get(appState.getActiveUser().getId());
+                    googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(marker.getPosition(), CAMERA_ZOOM_LEVEL));
+                } else {
+                    LatLngBounds bounds = boundBuilder.build();
+                    if (getContext() != null) {
+                        int padding = LayoutUtils.dpToPx(getContext(), CAMERA_CENTER_PADDING);
+                        googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
+                    }
+                }
             }
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            Log.e(TAG, ex.getMessage());
         }
     }
 

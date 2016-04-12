@@ -107,4 +107,5 @@ public class Const {
     public static final int MSG_ITEM_DELETED_FAILED = 5011;
     public static final int MSG_INIT_SUCCESS = 5012;
     public static final int MSG_DISCOVER_ITEM = 5013;
+    public static final int MSG_PLAY_YOUTUBE_VIDEO = 5014;
 }

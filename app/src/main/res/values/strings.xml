@@ -92,6 +92,7 @@
     <string name="time_suffix_ago">ago</string>
     <string name="card_event_datetime_format">MM/dd/yyyy, h:mm aa</string>
     <string name="card_event_time_format">h:mm aa</string>
+    <string name="undefined">undefined</string>
 
     <!-- Notification messages -->
     <string name="notification_title_location_update">Message from GlomServer</string>
@@ -158,4 +159,9 @@
     <string name="discover_section_header_movie">Movies</string>
     <string name="discover_section_header_event">Event</string>
     <string name="discover_section_header_food">Eateries</string>
+    <string name="card_action_book">Book</string>
+    <string name="card_action_watch_trailer">Watch Trailer</string>
+    <string name="empty_placeholder">N/A</string>
+    <string name="error_unsupported_action">Booking will be implemented in the future</string>
+    <string name="error_no_trailer">No videos found for this movie</string>
 </resources>

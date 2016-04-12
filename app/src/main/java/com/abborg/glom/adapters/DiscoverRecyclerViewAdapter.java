@@ -3,22 +3,36 @@ package com.abborg.glom.adapters;
 import android.content.Context;
 import android.os.Handler;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.RatingBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.model.DiscoverItem;
 import com.abborg.glom.model.EmptyItem;
 import com.abborg.glom.model.Movie;
+import com.abborg.glom.model.WatchableImage;
+import com.abborg.glom.model.WatchableRating;
+import com.abborg.glom.model.WatchableVideo;
 import com.afollestad.sectionedrecyclerview.SectionedRecyclerViewAdapter;
+import com.bumptech.glide.Glide;
+
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class DiscoverRecyclerViewAdapter
         extends SectionedRecyclerViewAdapter<RecyclerView.ViewHolder> {
@@ -29,10 +43,17 @@ public class DiscoverRecyclerViewAdapter
 
     private Handler handler;
 
+    // datetime format
+    private DateTimeFormatter dateFormatter;
+
     /** the main model in this adapter, maps the item type to list of the items so we can easily
      * retrieve the item list based on their types
      */
     private Map<Integer, List<DiscoverItem>> items;
+
+    private static final String YOUTUBE_VIDEO_ID_REGEX =
+            "http(?:s)?://(?:www\\.)?youtu(?:\\.be/|be\\.com/(?:watch\\?v=|v/|embed/|user/(?:[\\w#]+/)+))([^&#?\n]+)";
+    private Pattern youtubePattern;
 
     /** Maps section to view types **/
     private static final int[] sections = {
@@ -53,6 +74,10 @@ public class DiscoverRecyclerViewAdapter
             list.add(new EmptyItem());
             items.put(type, list);
         }
+
+        dateFormatter = DateTimeFormat.forPattern("dd MMM yyyy");
+
+        youtubePattern = Pattern.compile(YOUTUBE_VIDEO_ID_REGEX);
     }
 
     /**
@@ -69,7 +94,6 @@ public class DiscoverRecyclerViewAdapter
     @Override
     public int getItemCount(int section) {
         List<DiscoverItem> items = getItems(section);
-        if (items != null) Log.e(TAG, "[" + section + "] Item count for " + sections[section] + " is " + items.size());
         return items == null ? 0 : items.size();
     }
 
@@ -77,11 +101,11 @@ public class DiscoverRecyclerViewAdapter
     public void onBindHeaderViewHolder(RecyclerView.ViewHolder viewHolder, int section) {
         SectionHeaderViewHolder holder = (SectionHeaderViewHolder) viewHolder;
         if (sections[section] == DiscoverItem.TYPE_MOVIE)
-            holder.sectionTitle.setText(context.getResources().getString(R.string.discover_section_header_movie));
+            holder.title.setText(context.getResources().getString(R.string.discover_section_header_movie));
         else if (sections[section] == DiscoverItem.TYPE_EVENT)
-            holder.sectionTitle.setText(context.getResources().getString(R.string.discover_section_header_event));
+            holder.title.setText(context.getResources().getString(R.string.discover_section_header_event));
         else if (sections[section] == DiscoverItem.TYPE_FOOD)
-            holder.sectionTitle.setText(context.getResources().getString(R.string.discover_section_header_food));
+            holder.title.setText(context.getResources().getString(R.string.discover_section_header_food));
     }
 
     private List<DiscoverItem> getItems(int section) {
@@ -97,7 +121,9 @@ public class DiscoverRecyclerViewAdapter
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder viewHolder,
                                  int section, int sectionPosition, int absolutePosition) {
-        String emptyText = context.getResources().getString(R.string.discover_item_empty);
+        final String emptyText = context.getResources().getString(R.string.discover_item_empty);
+        final String unsupportedActionText = context.getResources().getString(R.string.error_unsupported_action);
+        final String noTrailerText = context.getResources().getString(R.string.error_no_trailer);
         DiscoverItem item = getItem(section, sectionPosition);
 
         // movies!
@@ -107,13 +133,68 @@ public class DiscoverRecyclerViewAdapter
 
                 // when there is an actual movie to display
                 if (item instanceof Movie) {
-                    Movie movie = (Movie) item;
-                    holder.movieTitle.setText(movie.getTitle());
+                    final Movie movie = (Movie) item;
+                    String placeholder = context.getResources().getString(R.string.empty_placeholder);
+                    holder.title.setText(movie.getTitle());
+                    holder.releaseDate.setText(dateFormatter.print(movie.getReleaseDate()));
+                    holder.lang.setText(movie.getLang());
+                    List<WatchableRating> ratings = movie.getRatings();
+                    if (ratings != null && !ratings.isEmpty()) {
+                        holder.ratingStars.setRating((float) (ratings.get(0).score / 10 * holder.ratingStars.getNumStars()));
+                        holder.ratingInfo.setText(ratings.get(0).score + " " + ratings.get(0).source);
+                    }
+                    else {
+                        holder.ratingStars.setRating(0);
+                        holder.ratingInfo.setText(placeholder);
+                    }
+                    holder.director.setText(TextUtils.isEmpty(movie.getDirector()) ? placeholder : movie.getDirector());
+                    holder.cast.setText(TextUtils.isEmpty(movie.getCast()) ? placeholder : movie.getCast());
+                    List<WatchableImage> images = movie.getImages();
+                    if (images != null && !images.isEmpty()) {
+                        for (WatchableImage image : images) {
+                            if (image.type == WatchableImage.TYPE_POSTER) {
+                                Glide.with(context)
+                                        .load(image.thumbnail).fitCenter()
+                                        .placeholder(R.drawable.ic_placeholder_movie_poster)
+                                        .error(R.drawable.ic_placeholder_movie_poster)
+                                        .crossFade(1000)
+                                        .into(holder.poster);
+
+                                break;
+                            }
+                        }
+                    }
+                    holder.bookBtn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            Toast.makeText(v.getContext(), unsupportedActionText, Toast.LENGTH_LONG).show();
+                        }
+                    });
+                    holder.trailerBtn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            List<WatchableVideo> videos = movie.getVideos();
+                            if (videos != null && !videos.isEmpty()) {
+                                for (WatchableVideo video : videos) {
+                                    if (video.type == WatchableVideo.TYPE_TRAILER) {
+                                        String id = getYoutubeVideoId(video.url);
+                                        if (handler != null) {
+                                            handler.sendMessage(handler.obtainMessage(Const.MSG_PLAY_YOUTUBE_VIDEO, id));
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                            else {
+                                Toast.makeText(v.getContext(), noTrailerText, Toast.LENGTH_LONG).show();
+                            }
+                        }
+                    });
                 }
 
                 // when there is nothing to display
                 else {
-                    holder.movieTitle.setText(emptyText);
+                    holder.title.setText(emptyText);
                 }
             }
         }
@@ -127,7 +208,12 @@ public class DiscoverRecyclerViewAdapter
 
     @Override
     public int getItemViewType(int section, int sectionPosition, int absolutePosition) {
-        return sections[section];
+        DiscoverItem item = getItem(section, sectionPosition);
+        if (item == null || item instanceof EmptyItem) return DiscoverItem.TYPE_EMPTY;
+        else {
+            if (item instanceof Movie) return DiscoverItem.TYPE_MOVIE;
+            else return DiscoverItem.TYPE_EMPTY;
+        }
     }
 
     @Override
@@ -140,7 +226,7 @@ public class DiscoverRecyclerViewAdapter
             }
             case DiscoverItem.TYPE_MOVIE: {
                 View view = LayoutInflater.from(parent.getContext())
-                        .inflate(R.layout.discover_item_movie, parent, false);
+                        .inflate(R.layout.card_movie, parent, false);
                 return new MovieItemViewHolder(view);
             }
             case DiscoverItem.TYPE_EVENT:
@@ -155,28 +241,56 @@ public class DiscoverRecyclerViewAdapter
     /********************
      * VIEW HOLDERS
      *******************/
+
+    /**
+     * Header of the section
+     */
     public static class SectionHeaderViewHolder extends RecyclerView.ViewHolder {
 
-        TextView sectionTitle;
+        TextView title;
 
         public SectionHeaderViewHolder(View itemView) {
             super(itemView);
 
-            sectionTitle = (TextView) itemView.findViewById(R.id.section_title_text);
+            title = (TextView) itemView.findViewById(R.id.section_title_text);
         }
     }
 
+    /**
+     * Card holding movie information
+     */
     public static class MovieItemViewHolder extends RecyclerView.ViewHolder {
 
-        TextView movieTitle;
+        TextView title;
+        TextView releaseDate;
+        TextView lang;
+        RatingBar ratingStars;
+        TextView ratingInfo;
+        TextView director;
+        TextView cast;
+        ImageView poster;
+        Button bookBtn;
+        Button trailerBtn;
 
         public MovieItemViewHolder(View itemView) {
             super(itemView);
 
-            movieTitle = (TextView) itemView.findViewById(R.id.movie_title);
+            title = (TextView) itemView.findViewById(R.id.movie_title);
+            releaseDate = (TextView) itemView.findViewById(R.id.movie_release_date);
+            lang = (TextView) itemView.findViewById(R.id.movie_lang);
+            ratingStars =  (RatingBar) itemView.findViewById(R.id.movie_rating_stars);
+            ratingInfo = (TextView) itemView.findViewById(R.id.movie_rating_number);
+            director = (TextView) itemView.findViewById(R.id.movie_director);
+            cast = (TextView) itemView.findViewById(R.id.movie_cast);
+            poster = (ImageView) itemView.findViewById(R.id.movie_poster);
+            bookBtn = (Button) itemView.findViewById(R.id.card_action_book);
+            trailerBtn = (Button) itemView.findViewById(R.id.card_action_watch_trailer);
         }
     }
 
+    /**
+     * Generic empty message when no items to display in a section
+     */
     public static class EmptyItemViewHolder extends RecyclerView.ViewHolder {
 
         TextView title;
@@ -189,7 +303,7 @@ public class DiscoverRecyclerViewAdapter
     }
 
     /********************
-     * MODEL CRUD OPERATIONS
+     * HELPERS
      *******************/
 
     public void update(int type, List<DiscoverItem> newList) {
@@ -204,9 +318,20 @@ public class DiscoverRecyclerViewAdapter
             prevList.addAll(newList);
         }
         else prevList = newList;
-        Log.e(TAG, "Size for item " + type + " is " + prevList.size());
         items.put(type, prevList);
 
         notifyDataSetChanged();
+    }
+
+
+    private String getYoutubeVideoId(String url) {
+        if (!TextUtils.isEmpty(url)) {
+            Matcher regexMatcher = youtubePattern.matcher(url);
+            if (regexMatcher.find()) {
+                return regexMatcher.group(1);
+            }
+            return null;
+        }
+        return null;
     }
 }

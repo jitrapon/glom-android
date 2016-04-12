@@ -22,7 +22,7 @@ android {
         debug {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            buildConfigField "String", "SERVER_URL", "\"http://192.168.1.6:8080\""
+            buildConfigField "String", "SERVER_URL", "\"http://10.11.3.202:8080\""
         }
     }
     compileOptions {
@@ -48,7 +48,7 @@ configurations {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.android.volley:volley:1.0.0'
     compile 'com.android.support:appcompat-v7:23.2.1'
     compile 'com.android.support:recyclerview-v7:23.2.1'
@@ -57,7 +57,7 @@ dependencies {
     compile 'com.github.bumptech.glide:glide:3.6.1'
     compile 'com.android.support:support-v4:23.2.1'
     compile 'com.google.code.gson:gson:2.4'
-    compile "com.google.android.gms:play-services:8.4.0"
+    compile 'com.google.android.gms:play-services:8.4.0'
     compile 'com.oguzdev:CircularFloatingActionMenu:1.0.2'
     compile 'com.google.maps.android:android-maps-utils:0.4.1'
     compile 'com.android.support:cardview-v7:23.2.1'
@@ -67,13 +67,15 @@ dependencies {
     compile 'com.nhaarman.listviewanimations:lib-core-slh:3.1.0@aar'
     compile 'com.nineoldandroids:library:2.4.0'
     compile 'com.flipboard:bottomsheet-core:1.4.3'
-    compile 'com.flipboard:bottomsheet-commons:1.4.3'       // optional
+    compile 'com.flipboard:bottomsheet-commons:1.4.3'
+    // optional
     compile 'me.himanshusoni.chatmessageview:chat-message-view:1.0.3'
-    compile "org.igniterealtime.smack:smack-android-extensions:4.1.6"
-    compile "org.igniterealtime.smack:smack-tcp:4.1.6"
-    compile "org.igniterealtime.smack:smack-android:4.1.6"
+    compile 'org.igniterealtime.smack:smack-android-extensions:4.1.6'
+    compile 'org.igniterealtime.smack:smack-tcp:4.1.6'
+    compile 'org.igniterealtime.smack:smack-android:4.1.6'
     compile('com.github.afollestad:sectioned-recyclerview:0.2.1') {
         transitive = true
     }
-//    compile 'jp.wasabeef:recyclerview-animators:2.2.0'    // commented out for now due to incompatible with new support lib
+    //    compile 'jp.wasabeef:recyclerview-animators:2.2.0'    // commented out for now due to incompatible with new support lib
+    compile files('libs/YouTubeAndroidPlayerApi.jar')
 }

@@ -12,7 +12,6 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import com.abborg.glom.AppState;
 import com.abborg.glom.R;
@@ -106,29 +105,30 @@ public class DiscoverFragment extends Fragment implements SwipeRefreshLayout.OnR
         if (isVisibleToUser) {
             isFragmentVisible = true;
 
-//            // force re-updating of items that need to be updated
-//            adapter.update(null);
-//
-//            // send request to server to get board items
-//            //TODO delay by some timer for request
-//            if (dataUpdater != null) {
-//                if (!firstView) {
-//                    if (refreshView != null) {
-//                        handler.post(new Runnable() {
-//                            @Override
-//                            public void run() {
-//                                refreshView.setRefreshing(true);
-//                            }
-//                        });
-//                    }
-//                    dataUpdater.requestDiscoverItems();
-//                }
-//            }
-//
-//            firstView = true;
+            if (dataUpdater != null) {
+                if (!firstView) {
+                    if (refreshView != null) {
+                        if (handler != null) {
+                            handler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    refreshView.setRefreshing(true);
+                                }
+                            });
+                        }
+                    }
+                    dataUpdater.requestMovies();
+                }
+            }
+
+            if (activity != null) activity.setFloatingActionButtonVisible(false);
+
+            firstView = true;
         }
         else {
             isFragmentVisible = false;
+
+            if (activity != null) activity.setFloatingActionButtonVisible(true);
         }
     }
 
@@ -142,8 +142,6 @@ public class DiscoverFragment extends Fragment implements SwipeRefreshLayout.OnR
             refreshView.setRefreshing(false);
         }
 
-        int size = items == null ? 0 : items.size();
-        adapter.update(type, items);
-        Toast.makeText(getContext(), "Received " + size + " items", Toast.LENGTH_LONG).show();
+        if (adapter != null) adapter.update(type, items);
     }
 }
