@@ -1,5 +1,8 @@
 package com.abborg.glom.model;
 
+/**
+ * Base class for all messages
+ */
 public abstract class BaseChatMessage {
 
     private String id;

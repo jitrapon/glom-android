@@ -2,6 +2,9 @@ package com.abborg.glom.model;
 
 import com.abborg.glom.Const;
 
+/**
+ * A simple text message
+ */
 public class ChatMessage extends BaseChatMessage {
 
     public ChatMessage(String messageId, String message, User user, boolean mine) {
