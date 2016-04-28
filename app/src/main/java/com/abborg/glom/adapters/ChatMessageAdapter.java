@@ -1,9 +1,13 @@
 package com.abborg.glom.adapters;
 
+import android.animation.Animator;
+import android.annotation.TargetApi;
 import android.content.Context;
+import android.os.Build;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewAnimationUtils;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -36,12 +40,13 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
     public static class MyTextMessageViewHolder extends RecyclerView.ViewHolder {
 
         TextView message;
-
+        ImageView outgoingStatusIcon;
 
         public MyTextMessageViewHolder(View itemView) {
             super(itemView);
 
             message = (TextView) itemView.findViewById(R.id.message);
+            outgoingStatusIcon = (ImageView) itemView.findViewById(R.id.outgoing_status);
         }
     }
 
@@ -144,10 +149,27 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         BaseChatMessage message = messages.get(position);
         User sender = message.getSender();
+        BaseChatMessage.OutgoingStatus outgoingStatus = message.getOutgoingStatus();
         String avatar = sender==null ? "" : sender.getAvatar();
         if (holder instanceof MyTextMessageViewHolder) {
             MyTextMessageViewHolder viewHolder = (MyTextMessageViewHolder) holder;
             viewHolder.message.setText(message.getContent());
+            switch(outgoingStatus) {
+                case SERVER_RECEIVED:
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+//                        animateCircularReveal(viewHolder.outgoingStatusIcon);
+                        viewHolder.outgoingStatusIcon.setVisibility(View.VISIBLE);
+                        viewHolder.outgoingStatusIcon.setImageResource(R.drawable.ic_message_server_received);
+                    }
+                    else {
+                        viewHolder.outgoingStatusIcon.setVisibility(View.VISIBLE);
+                        viewHolder.outgoingStatusIcon.setImageResource(R.drawable.ic_message_server_received);
+                    }
+                    break;
+                case SENDING:
+                default:
+                    viewHolder.outgoingStatusIcon.setVisibility(View.INVISIBLE);
+            }
         }
         else if (holder instanceof OtherTextMessageViewHolder) {
             OtherTextMessageViewHolder viewHolder = (OtherTextMessageViewHolder) holder;
@@ -161,6 +183,27 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                     .crossFade(1000)
                     .into(viewHolder.avatar);
         }
+    }
+
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    private void animateCircularReveal(final View view) {
+        view.post(new Runnable() {
+              @Override
+              public void run() {
+                  int cx = (view.getWidth()) / 2;
+                  int cy = (view.getHeight()) / 2;
+                  int radius = Math.max(view.getWidth(),
+                          view.getHeight());
+                  Animator anim = ViewAnimationUtils.createCircularReveal(view,
+                          cx, cy, 0, radius);
+                  anim.setStartDelay(1000);
+                  anim.setDuration(3000);
+
+                  view.setVisibility(View.VISIBLE);
+                  anim.start();
+              }
+            }
+        );
     }
 
     @Override

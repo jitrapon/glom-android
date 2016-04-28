@@ -52,6 +52,7 @@
     <string name="EXTRA_MESSAGE_CONTENT">com.abborg.glom.extra.MESSAGE_CONTENT</string>
     <string name="EXTRA_MESSAGE_CIRCLE_ID">com.abborg.glom.extra.MESSAGE_CIRCLEID</string>
     <string name="EXTRA_MESSAGE_TYPE">com.abborg.glom.extra.MESSAGE_TYPE</string>
+    <string name="ACTION_SERVER_ACK_MESSAGE">com.abborg.glom.action.ACK_MESSAGE</string>
 
     <!-- Profile activity strings -->
     <string name="profile_activity_label">My Profile</string>
@@ -72,7 +73,7 @@
     <string name="marker_msg_placeholder">Online</string>
     <string name="title_activity_main">MainActivity</string>
 
-    <!-- Event cards -->
+    <!-- EventItem cards -->
     <string name="card_host_name_placeholder">Undefined</string>
     <string name="card_host_post_time_placeholder">Some time ago</string>
     <string name="card_event_name_placeholder">Untitled</string>
@@ -145,7 +146,7 @@
     <string name="menu_item_delete">Delete</string>
     <string name="menu_item_copy">Copy</string>
     <string name="menu_item_send">Send</string>
-    <string name="menu_item_bookmark">Bookmark</string>
+    <string name="menu_item_star">Star</string>
     <string name="menu_item_undo">Undo</string>
     <string name="menu_item_try_again">Try Again</string>
 
@@ -164,4 +165,9 @@
     <string name="empty_placeholder">N/A</string>
     <string name="error_unsupported_action">Booking will be implemented in the future</string>
     <string name="error_no_trailer">No videos found for this movie</string>
+
+    <!-- Post images -->
+    <string name="intent_select_images">Select Image(s)</string>
+    <string name="warning_no_image_selected">No image selected</string>
+    <string name="file_name_placeholder">Undefined</string>
 </resources>

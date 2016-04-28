@@ -28,7 +28,7 @@ import com.abborg.glom.R;
 import com.abborg.glom.adapters.PlaceArrayAdapter;
 import com.abborg.glom.data.DataUpdater;
 import com.abborg.glom.model.BoardItem;
-import com.abborg.glom.model.Event;
+import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.User;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
@@ -102,7 +102,7 @@ public class EventActivity extends AppCompatActivity {
 
     private Mode mode;
 
-    private Event editEvent;
+    private EventItem editEvent;
 
     private enum Mode {
         CREATE_EVENT,   // this mode tells the activity on creation that all fields are to remain blank
@@ -268,7 +268,7 @@ public class EventActivity extends AppCompatActivity {
                 if (id != null && !items.isEmpty()) {
                     for (BoardItem item : items) {
                         if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_EVENT) {
-                            editEvent = (Event) item;
+                            editEvent = (EventItem) item;
                             break;
                         }
                     }

@@ -19,8 +19,9 @@ import com.abborg.glom.AppState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.model.BoardItem;
-import com.abborg.glom.model.Event;
+import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FeedAction;
+import com.abborg.glom.model.FileItem;
 import com.abborg.glom.utils.CircleTransform;
 import com.bumptech.glide.Glide;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -51,11 +52,7 @@ public class BoardRecyclerViewAdapter
 
     private static final int TYPE_HEADER = 1;
     private static final int TYPE_EVENT = 2;
-    private static final int TYPE_TODO = 3;
-    private static final int TYPE_NOTE = 4;
-    private static final int TYPE_IMAGE = 5;
-    private static final int TYPE_AUDIO = 6;
-    private static final int TYPE_VIDEO = 7;
+    private static final int TYPE_FILE = 3;
 
     private List<BoardItem> items;
 
@@ -101,6 +98,36 @@ public class BoardRecyclerViewAdapter
         }
     }
 
+    public static class FileHolder extends RecyclerView.ViewHolder {
+        ImageView menuButton;
+        Button actionButton1;
+        Button actionButton2;
+
+        ImageView posterAvatar;
+        TextView posterName;
+        TextView postTime;
+
+        TextView fileName;
+        TextView fileNote;
+        ImageView fileThumbnail;
+
+        public FileHolder(View itemView) {
+            super(itemView);
+
+            menuButton = (ImageView) itemView.findViewById(R.id.card_action_button_menu);
+            actionButton1 = (Button) itemView.findViewById(R.id.card_action_1);
+            actionButton2 = (Button) itemView.findViewById(R.id.card_action_2);
+
+            posterAvatar = (ImageView) itemView.findViewById(R.id.card_user_avatar);
+            posterName = (TextView) itemView.findViewById(R.id.card_user_name);
+            postTime = (TextView) itemView.findViewById(R.id.card_user_post_time);
+
+            fileName = (TextView) itemView.findViewById(R.id.file_name);
+            fileNote = (TextView) itemView.findViewById(R.id.file_note);
+            fileThumbnail = (ImageView) itemView.findViewById(R.id.file_thumbnail);
+        }
+    }
+
     public BoardRecyclerViewAdapter(Context context, List<BoardItem> items, View.OnClickListener onClickListener, Handler handler) {
         this.context = context;
         this.items = items;
@@ -142,14 +169,22 @@ public class BoardRecyclerViewAdapter
             View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.recycler_header, parent, false);
             return new RecyclerHeaderViewHolder(view);
         }
+        else if (viewType == TYPE_FILE) {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_file, parent, false);
+            view.setOnClickListener(onClickListener);
+            return new FileHolder(view);
+        }
         else
             return null;
     }
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder recyclerViewHolder, int position) {
-        if (!isPositionHeader(position) && recyclerViewHolder instanceof EventHolder) {
-            setEventViewHolder(position, recyclerViewHolder);
+        if (!isPositionHeader(position)) {
+            if (recyclerViewHolder instanceof EventHolder)
+                setEventViewHolder(position, recyclerViewHolder);
+            else if (recyclerViewHolder instanceof FileHolder)
+                setFileViewHolder(position, recyclerViewHolder);
         }
     }
 
@@ -165,7 +200,7 @@ public class BoardRecyclerViewAdapter
                 BoardItem item = items.get(position - 1);
                 long id = RecyclerView.NO_ID;
                 if (item.getType() == BoardItem.TYPE_EVENT) {
-                    Event event = (Event) item;
+                    EventItem event = (EventItem) item;
                     String name = TextUtils.isEmpty(event.getName()) ? "" : event.getName();
                     long startTime = event.getStartTime() == null ? 0L : event.getStartTime().getMillis();
                     long endTime = event.getEndTime() == null ? 0l : event.getEndTime().getMillis();
@@ -175,10 +210,20 @@ public class BoardRecyclerViewAdapter
                     String note = TextUtils.isEmpty(event.getNote()) ? "" : event.getNote();
                     id = (event.getId() + event.getType() + event.getUpdatedTime() + name + startTime + endTime +
                             place + lat + lng + note).hashCode();
-                    Log.d(TAG, "Board item hashcode for position " + (position - 1) + " is " + id);
                 }
-                // TODO
-//                else if (item.getType() == BoardItem.TYPE_TODO)
+                else if (item.getType() == BoardItem.TYPE_FILE) {
+                    FileItem file = (FileItem) item;
+                    String name = TextUtils.isEmpty(file.getName()) ? "" : file.getName();
+                    String note = TextUtils.isEmpty(file.getNote()) ? "" : file.getNote();
+                    String mimetype = TextUtils.isEmpty(file.getMimetype()) ? "" : file.getMimetype();
+                    long size = file.getSize();
+                    String path = file.getUri();
+                    long created = file.getCreatedTime() == null ? 0L : file.getCreatedTime().getMillis();
+                    long updated = file.getUpdatedTime() == null ? 0L : file.getUpdatedTime().getMillis();
+                    id = (name + note + mimetype + size + path + created + updated).hashCode();
+                }
+
+                Log.d(TAG, "Board item hashcode for position " + (position - 1) + " is " + id);
 
                 return id;
             }
@@ -191,6 +236,7 @@ public class BoardRecyclerViewAdapter
     public int getItemViewType(int position) {
         if (isPositionHeader(position)) return TYPE_HEADER;
         else if (items.get(position-1).getType() == BoardItem.TYPE_EVENT) return TYPE_EVENT;
+        else if (items.get(position-1).getType() == BoardItem.TYPE_FILE) return TYPE_FILE;
         else return -1;
     }
 
@@ -207,8 +253,142 @@ public class BoardRecyclerViewAdapter
      * View Holder helpers
      **************************************************************/
 
+    private void setFileViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {
+        FileItem file = (FileItem) items.get(position - 1);
+        final String id = file.getId();
+        FileHolder holder = (FileHolder) recyclerViewHolder;
+
+        // set clicklistener for menu buttons
+        holder.menuButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "Menu button clicked");
+                final CharSequence[] items = {
+                        context.getResources().getString(R.string.menu_item_delete),
+                        context.getResources().getString(R.string.menu_item_copy),
+                        context.getResources().getString(R.string.menu_item_send),
+                        context.getResources().getString(R.string.menu_item_star)
+                };
+                AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                builder.setItems(items, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int item) {
+                        switch (item) {
+                            case 0:
+                                break;
+                            case 1:
+
+                                break;
+                            case 2:
+
+                                break;
+                            case 3:
+
+                                break;
+                            default: return;
+                        }
+                    }
+                });
+                AlertDialog alert = builder.create();
+                alert.setCanceledOnTouchOutside(true);
+                alert.show();
+            }
+        });
+
+        // update poster info
+        FeedAction feedAction = file.getLastAction();
+        if (feedAction != null) {
+            if (feedAction.user != null) {
+
+                // set update text
+                switch(feedAction.type) {
+                    case FeedAction.CREATE_EVENT:
+                        holder.posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
+                                context.getResources().getString(R.string.card_post_create_event)));
+                        break;
+                    case FeedAction.CANCEL_EVENT:
+                        holder.posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
+                                context.getResources().getString(R.string.card_post_cancel_event)));
+                        break;
+                    case FeedAction.UPDATE_EVENT:
+                        holder.posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
+                                context.getResources().getString(R.string.card_post_update_event)));
+                        break;
+                    default:
+                        holder.posterName.setText(feedAction.user.getName());
+                }
+
+                // load avatar
+                Glide.with(context)
+                        .load(feedAction.user.getAvatar()).fitCenter()
+                        .transform(new CircleTransform(context))
+                        .override(context.getResources().getDimensionPixelSize(R.dimen.card_avatar_size),
+                                context.getResources().getDimensionPixelSize(R.dimen.card_avatar_size))
+                        .placeholder(R.drawable.ic_profile)
+                        .error(R.drawable.ic_profile)
+                        .crossFade(1000)
+                        .into(holder.posterAvatar);
+            }
+            if (feedAction.dateTime != null) {
+                DateTime now = new DateTime();
+                Duration duration = new Duration(feedAction.dateTime, now);
+                String displayTime = null;
+                if (duration.getStandardSeconds() < 60)
+                    displayTime = duration.getStandardSeconds() + " " + context.getResources().getString(R.string.time_unit_second);
+                else if (duration.getStandardMinutes() < 60)
+                    displayTime = duration.getStandardMinutes() + " " + context.getResources().getString(R.string.time_unit_minute);
+                else if (duration.getStandardHours() < 24)
+                    displayTime = duration.getStandardHours() + " " + context.getResources().getString(R.string.time_unit_hour);
+                else
+                    displayTime = duration.getStandardDays() + " " + context.getResources().getString(R.string.time_unit_day);
+
+                holder.postTime.setText(displayTime);
+            }
+        }
+
+        // update file info and thumbnail
+        String name = !TextUtils.isEmpty(file.getName()) ? file.getName()
+                : context.getResources().getString(R.string.file_name_placeholder);
+        holder.fileName.setText(name);
+        String note = !TextUtils.isEmpty(file.getName()) ? file.getNote()
+                : "";
+        holder.fileNote.setText(note);
+
+        // set up image icons
+        int icon;
+        if (file.isImage()) {
+            icon = R.drawable.ic_placeholder_image;
+            if (file.isGif()) {
+                Glide.with(context)
+                        .load(file.getFile()).asGif().centerCrop()
+                        .placeholder(icon)
+                        .error(icon)
+                        .crossFade(1000)
+                        .into(holder.fileThumbnail);
+            }
+            else {
+                if (file.getFile().exists()) {
+                    Log.d(TAG, file.getFile().getPath());
+                }
+                else Log.e(TAG, file.getFile().getPath());
+                Glide.with(context)
+                        .load(file.getFile()).centerCrop()
+                        .placeholder(icon)
+                        .error(icon)
+                        .crossFade(1000)
+                        .into(holder.fileThumbnail);
+            }
+        }
+        else {
+            icon = R.drawable.ic_placeholder_file;
+            Glide.with(context)
+                    .load(icon).centerCrop()
+                    .crossFade(1000)
+                    .into(holder.fileThumbnail);
+        }
+    }
+
     private void setEventViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {
-        Event event = (Event) items.get(position - 1);
+        EventItem event = (EventItem) items.get(position - 1);
         final String id = event.getId();
         EventHolder holder = (EventHolder) recyclerViewHolder;
 
@@ -221,7 +401,7 @@ public class BoardRecyclerViewAdapter
                         context.getResources().getString(R.string.menu_item_delete),
                         context.getResources().getString(R.string.menu_item_copy),
                         context.getResources().getString(R.string.menu_item_send),
-                        context.getResources().getString(R.string.menu_item_bookmark)
+                        context.getResources().getString(R.string.menu_item_star)
                 };
                 AlertDialog.Builder builder = new AlertDialog.Builder(context);
                 builder.setItems(items, new DialogInterface.OnClickListener() {

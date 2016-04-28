@@ -24,7 +24,8 @@ import com.abborg.glom.adapters.BoardRecyclerViewAdapter;
 import com.abborg.glom.data.DataUpdater;
 import com.abborg.glom.interfaces.BoardItemChangeListener;
 import com.abborg.glom.model.BoardItem;
-import com.abborg.glom.model.Event;
+import com.abborg.glom.model.EventItem;
+import com.abborg.glom.model.FileItem;
 
 import java.util.List;
 
@@ -156,11 +157,11 @@ public class BoardFragment extends Fragment implements View.OnClickListener, Boa
             }
 
             firstView = true;
-            Log.i(TAG, "Event is now visible to user");
+            Log.i(TAG, "EventItem is now visible to user");
         }
         else {
             isFragmentVisible = false;
-            Log.i(TAG, "Event is now INVISIBLE to user");
+            Log.i(TAG, "EventItem is now INVISIBLE to user");
         }
     }
 
@@ -172,14 +173,20 @@ public class BoardFragment extends Fragment implements View.OnClickListener, Boa
     public void onClick(View view) {
         int position = recyclerView.getChildAdapterPosition(view);
         BoardItem selected = items.get(position - 1);
-        if (selected != null && selected instanceof Event) {
-            Event event = (Event) selected;
-            Log.d(TAG, "Event (" + event.getName() + ") selected");
-            Intent intent = new Intent(activity, EventActivity.class);
-            intent.putExtra(getResources().getString(R.string.EXTRA_EVENT_ID), event.getId());
-            intent.setAction(getResources().getString(R.string.ACTION_UPDATE_EVENT));
-            appState.setKeepGoogleApiClientAlive(true);
-            getActivity().startActivityForResult(intent, Const.UPDATE_EVENT_RESULT_CODE);
+        if (selected != null) {
+            if (selected instanceof EventItem) {
+                EventItem event = (EventItem) selected;
+                Log.d(TAG, "EventItem (" + event.getName() + ") selected");
+                Intent intent = new Intent(activity, EventActivity.class);
+                intent.putExtra(getResources().getString(R.string.EXTRA_EVENT_ID), event.getId());
+                intent.setAction(getResources().getString(R.string.ACTION_UPDATE_EVENT));
+                appState.setKeepGoogleApiClientAlive(true);
+                getActivity().startActivityForResult(intent, Const.UPDATE_EVENT_RESULT_CODE);
+            }
+            else if (selected instanceof FileItem) {
+                FileItem item = (FileItem) selected;
+                Log.d(TAG, "FileItem (" + item.getName() + ") selected");
+            }
         }
     }
 

@@ -32,8 +32,8 @@
             app:cmv_arrowGravity="start"
             app:cmv_arrowMargin="5dp"
             app:cmv_arrowPosition="left"
-            app:cmv_backgroundColor="#8800bcd4"
-            app:cmv_backgroundColorPressed="#ff00bcd4"
+            app:cmv_backgroundColor="@color/defaultIncomingTextBackground"
+            app:cmv_backgroundColorPressed="@color/defaultIncomingTextBackgroundPressed"
             app:cmv_contentPadding="10dp"
             app:cmv_cornerRadius="5dp"
             app:cmv_showArrow="true">
@@ -43,8 +43,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-                android:textSize="14sp"
-                android:text="Test Message" />
+                android:textSize="@dimen/chat_text_size_medium"
+                android:text="Test Message"
+                android:textColor="@color/defaultIncomingTextColor"/>
 
         </me.himanshusoni.chatmessageview.ChatMessageView>
 

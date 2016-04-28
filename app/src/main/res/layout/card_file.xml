@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:cardView="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_horizontal"
+    android:padding="@dimen/card_padding">
+
+    <android.support.v7.widget.CardView
+        android:id="@+id/file_card_view"
+        android:layout_gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/card_margin"
+        cardView:cardCornerRadius="@dimen/card_corner_radius"
+        cardView:cardUseCompatPadding="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?android:attr/selectableItemBackground"
+            android:orientation="vertical">
+
+            <RelativeLayout
+                android:id="@+id/card_user_info"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:id="@+id/card_user_avatar"
+                    android:layout_width="@dimen/card_avatar_size"
+                    android:layout_height="@dimen/card_avatar_size"
+                    android:layout_alignParentLeft="true"
+                    android:layout_margin="@dimen/card_avatar_margin"
+                    android:layout_centerVertical="true" />
+
+                <TextView
+                    android:id="@+id/card_user_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toRightOf="@+id/card_user_avatar"
+                    android:paddingTop="@dimen/card_username_padding_top"
+                    android:textSize="@dimen/card_supporting_text_size"
+                    android:textColor="@color/cardPrimaryText"
+                    android:text="@string/card_host_name_placeholder"/>
+
+                <TextView
+                    android:id="@+id/card_user_post_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/card_user_name"
+                    android:layout_toRightOf="@+id/card_user_avatar"
+                    android:paddingBottom="@dimen/card_post_time_padding_bottom"
+                    android:text="@string/card_host_post_time_placeholder"
+                    android:textSize="@dimen/card_supporting_text_size"/>
+
+            </RelativeLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/lineDivider"/>
+
+            <LinearLayout
+                android:id="@+id/file_layout"
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:orientation="horizontal"
+                android:baselineAligned="false">
+
+                <RelativeLayout
+                    android:id="@+id/file_thumbnail_layout"
+                    android:layout_weight="0.4"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent">
+
+                    <ImageView
+                        android:id="@+id/file_thumbnail"
+                        android:layout_width="match_parent"
+                        android:scaleType="centerCrop"
+                        android:layout_height="match_parent" />
+
+                </RelativeLayout>
+
+                <RelativeLayout
+                    android:id="@+id/file_info_layout"
+                    android:layout_weight="0.6"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent">
+
+                    <ImageView
+                        android:id="@+id/card_action_button_menu"
+                        android:layout_width="45dp"
+                        android:layout_height="45dp"
+                        android:padding="8dp"
+                        android:layout_alignParentTop="true"
+                        android:layout_alignParentRight="true"
+                        android:layout_alignParentEnd="true"
+                        android:src="@drawable/ic_action_menu"
+                        android:background="?android:attr/selectableItemBackground"/>
+
+                    <TextView
+                        android:id="@+id/file_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_toStartOf="@id/card_action_button_menu"
+                        android:layout_toLeftOf="@id/card_action_button_menu"
+                        android:paddingLeft="@dimen/event_card_event_info_padding"
+                        android:paddingStart="@dimen/event_card_event_info_padding"
+                        android:paddingRight="2dp"
+                        android:paddingEnd="2dp"
+                        android:paddingTop="@dimen/card_primary_text_padding_top"
+                        android:paddingBottom="@dimen/card_primary_text_padding_bottom"
+                        android:textSize="@dimen/card_supporting_text_size"
+                        android:textColor="@color/cardPrimaryText"
+                        android:text="post_filename_long_upload.pdf"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        android:layout_alignParentStart="true"
+                        android:layout_alignParentLeft="true" />
+
+                    <TextView
+                        android:id="@+id/file_note"
+                        android:layout_below="@id/file_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingLeft="@dimen/event_card_event_info_padding"
+                        android:paddingStart="@dimen/event_card_event_info_padding"
+                        android:paddingRight="@dimen/event_card_event_info_padding"
+                        android:paddingEnd="@dimen/event_card_event_info_padding"
+                        android:paddingBottom="@dimen/card_primary_text_padding_bottom"
+                        android:text="This is where to put a brief description about this file. You know what it is. Some more long long text"
+                        android:maxLines="3"
+                        android:ellipsize="end" />
+
+                    <RelativeLayout
+                        android:id="@+id/file_card_actions"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentBottom="true"
+                        android:layout_alignParentLeft="true"
+                        android:layout_alignParentStart="true">
+
+                        <Button
+                            android:id="@+id/card_action_1"
+                            android:focusable="false"
+                            android:focusableInTouchMode="false"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:padding="@dimen/card_action_padding"
+                            android:background="?android:attr/selectableItemBackground"
+                            android:textColor="@color/actionButtonColor"
+                            android:text="ACTION 1"/>
+
+                        <Button
+                            android:id="@+id/card_action_2"
+                            android:focusable="false"
+                            android:focusableInTouchMode="false"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:padding="@dimen/card_action_padding"
+                            android:background="?android:attr/selectableItemBackground"
+                            android:layout_toRightOf="@+id/card_action_1"
+                            android:textColor="@color/actionButtonColor"
+                            android:text="ACTION 2"/>
+
+                    </RelativeLayout>
+
+                </RelativeLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </android.support.v7.widget.CardView>
+
+</LinearLayout>

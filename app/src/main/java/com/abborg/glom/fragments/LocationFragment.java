@@ -33,7 +33,7 @@ import com.abborg.glom.interfaces.BoardItemChangeListener;
 import com.abborg.glom.interfaces.BroadcastLocationListener;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
-import com.abborg.glom.model.Event;
+import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.User;
 import com.abborg.glom.utils.CircleTransform;
 import com.abborg.glom.utils.LayoutUtils;
@@ -94,7 +94,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
     private AppState appState;
 
     /* List of event markers that need to be updated */
-    private List<Event> staleEvents;
+    private List<EventItem> staleEvents;
 
     /* Datetime formatter for displaying formatted time in the info window */
     private DateTimeFormatter formatter;
@@ -270,7 +270,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
             public void onInfoWindowClick(Marker marker) {
                 for (String eventId : eventMarkers.keySet()) {
                     if (eventMarkers.get(eventId).getId().equals(marker.getId())) {
-                        Log.d(TAG, "Event (" + eventId + ") selected");
+                        Log.d(TAG, "EventItem (" + eventId + ") selected");
                         Intent intent = new Intent(getActivity(), EventActivity.class);
                         intent.putExtra(getResources().getString(R.string.EXTRA_EVENT_ID), eventId);
                         intent.setAction(getResources().getString(R.string.ACTION_UPDATE_EVENT));
@@ -304,9 +304,9 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
     public void onItemAdded(String id) {
         if (id != null) {
             List<BoardItem> items = appState.getActiveCircle().getItems();
-            Event newEvent = null;
+            EventItem newEvent = null;
             for (BoardItem item : items) {
-                if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_EVENT) newEvent = (Event) item;
+                if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_EVENT) newEvent = (EventItem) item;
             }
             if (newEvent == null) return;
 
@@ -318,9 +318,9 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
     public void onItemModified(String id) {
         if (id != null) {
             List<BoardItem> items = appState.getActiveCircle().getItems();
-            Event event = null;
+            EventItem event = null;
             for (BoardItem item : items) {
-                if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_EVENT) event = (Event) item;
+                if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_EVENT) event = (EventItem) item;
             }
             if (event == null) return;
 
@@ -373,7 +373,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         }
     }
 
-    private void addMarker(Event event) {
+    private void addMarker(EventItem event) {
         if (event.getLocation() != null || event.getPlace() != null) {
             MarkerOptions options = new MarkerOptions()
                     .title(event.getName())
@@ -446,7 +446,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
             handler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    for (Event event : staleEvents) {
+                    for (EventItem event : staleEvents) {
                         updateEventMarkers(event);
                     }
                 }
@@ -558,7 +558,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         for (BoardItem item : items) {
 
             if (item.getType() == BoardItem.TYPE_EVENT) {
-                Event event = (Event) item;
+                EventItem event = (EventItem) item;
                 if (event.getLocation() == null && TextUtils.isEmpty(event.getPlace())) {
                     continue;
                 }
@@ -611,7 +611,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         }
     }
 
-    private void updateEventMarkers(final Event event) {
+    private void updateEventMarkers(final EventItem event) {
         // connect to Google's PlaceAPI to update the location
         GoogleApiClient apiClient = AppState.getInstance().getGoogleApiClient();
         if (apiClient != null && apiClient.isConnected() && !TextUtils.isEmpty(event.getPlace())) {

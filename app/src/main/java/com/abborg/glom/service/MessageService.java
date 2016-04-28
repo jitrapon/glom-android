@@ -27,12 +27,13 @@ import com.google.android.gms.gcm.GcmListenerService;
  */
 public class MessageService extends GcmListenerService {
 
-    private static final String TAG = "GcmListenerService";
+    private static final String TAG = "MessageService";
 
     private static final int LOCATION_UPDATE = 0;
     private static final int NEW_MESSAGE = 1;
     private static final int EDIT_MESSAGE = 2;
     private static final int DELETE_MESSAGE = 3;
+    private static final int SERVER_ACK_MESSAGE = 4;
 
     @Override
     public void onMessageSent(String messageId) {
@@ -88,7 +89,7 @@ public class MessageService extends GcmListenerService {
                 //TODO store it in USERS table under column notification
                 switch(opCode) {
 
-                    // MESSAGE TYPE 1: Location updates in circle
+                    // MESSAGE TYPE 0: Location updates in circle
                     case LOCATION_UPDATE:
                         Intent locUpdateIntent = new Intent(getResources().getString(R.string.ACTION_RECEIVE_LOCATION));
 
@@ -106,7 +107,7 @@ public class MessageService extends GcmListenerService {
                         sendNotification(message);
                         break;
 
-                    // MESSAGE TYPE 2: incoming IM message
+                    // MESSAGE TYPE 1: incoming IM message
                     case NEW_MESSAGE: {
                         String senderId =  data.getString(Const.JSON_SERVER_SENDER);
                         String messageId = data.getString(Const.JSON_SERVER_MESSAGE_ID);
@@ -143,6 +144,81 @@ public class MessageService extends GcmListenerService {
                         }
                         break;
                     }
+
+                    // MESSAGE TYPE 2: EDIT MESSAGE
+                    case EDIT_MESSAGE: {
+                        String senderId =  data.getString(Const.JSON_SERVER_SENDER);
+                        String messageId = data.getString(Const.JSON_SERVER_MESSAGE_ID);
+                        String circleId = data.getString(Const.JSON_SERVER_CIRCLEID);
+                        boolean messageIsValid = true;
+                        if (TextUtils.isEmpty(senderId)) {
+                            Log.e(TAG, "Invalid message received, missing sender id");
+                            messageIsValid = false;
+                        }
+                        if (TextUtils.isEmpty(circleId)) {
+                            Log.e(TAG, "Invalid message received, missing circle id");
+                            messageIsValid = false;
+                        }
+                        if (messageIsValid) {
+                            //TODO edit in DB
+
+                            // broadcast update
+                        }
+                        break;
+                    }
+
+                    // MESSAGE TYPE 3: DELETE MESSAGE
+                    case DELETE_MESSAGE: {
+                        String senderId =  data.getString(Const.JSON_SERVER_SENDER);
+                        String messageId = data.getString(Const.JSON_SERVER_MESSAGE_ID);
+                        String circleId = data.getString(Const.JSON_SERVER_CIRCLEID);
+                        boolean messageIsValid = true;
+                        if (TextUtils.isEmpty(senderId)) {
+                            Log.e(TAG, "Invalid message received, missing sender id");
+                            messageIsValid = false;
+                        }
+                        if (TextUtils.isEmpty(circleId)) {
+                            Log.e(TAG, "Invalid message received, missing circle id");
+                            messageIsValid = false;
+                        }
+                        if (messageIsValid) {
+                            //TODO edit in DB
+
+                            // broadcast update
+                        }
+                        break;
+                    }
+
+                    // MESSAGE TYPE 4: SERVER ACK
+                    case SERVER_ACK_MESSAGE: {
+                        String senderId =  data.getString(Const.JSON_SERVER_SENDER);
+                        String messageId = data.getString(Const.JSON_SERVER_MESSAGE_ID);
+                        String circleId = data.getString(Const.JSON_SERVER_CIRCLEID);
+                        boolean messageIsValid = true;
+                        if (TextUtils.isEmpty(senderId) || !TextUtils.equals(senderId, getResources().getString(R.string.gcm_senderId))) {
+                            Log.e(TAG, "Invalid sender id received");
+                            messageIsValid = false;
+                        }
+                        if (TextUtils.isEmpty(circleId)) {
+                            Log.e(TAG, "Invalid message received, missing circle id");
+                            messageIsValid = false;
+                        }
+                        if (TextUtils.isEmpty(messageId)) {
+                            Log.e(TAG, "Invalid messageId received");
+                            messageIsValid = false;
+                        }
+                        if (messageIsValid) {
+                            //TODO edit in DB
+
+                            // broadcast update
+                            Intent intent = new Intent(getResources().getString(R.string.ACTION_SERVER_ACK_MESSAGE));
+                            intent.putExtra(getResources().getString(R.string.EXTRA_MESSAGE_ID), messageId);
+                            intent.putExtra(getResources().getString(R.string.EXTRA_MESSAGE_CIRCLE_ID), circleId);
+                            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+                        }
+                        break;
+                    }
+
                     default:
                         // do nothing for now
                         Log.e(TAG, "Unsupported opcode received, do nothing for now!");

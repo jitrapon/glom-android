@@ -11,6 +11,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SimpleItemAnimator;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
@@ -33,6 +34,8 @@ import com.abborg.glom.model.User;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import static com.abborg.glom.model.BaseChatMessage.OutgoingStatus;
 
 public class ChatActivity extends AppCompatActivity implements View.OnClickListener, Handler.Callback,
         OnMessageClickListener {
@@ -90,6 +93,10 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         chatView.setHasFixedSize(true);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         chatView.setLayoutManager(layoutManager);
+        RecyclerView.ItemAnimator itemAnimator = chatView.getItemAnimator();
+        if (itemAnimator instanceof SimpleItemAnimator) {
+            ((SimpleItemAnimator) itemAnimator).setSupportsChangeAnimations(false);
+        }
 
         adapter = new ChatMessageAdapter(this, messages, this, circle, user);
         sendMessageBtn.setOnClickListener(this);
@@ -101,32 +108,41 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onReceive(Context context, Intent intent) {
 
-                // NEW MESSAGE INCOMING
-                if (intent.getAction().equals(getResources().getString(R.string.ACTION_NEW_MESSAGE))) {
-                    BaseChatMessage chatMessage = null;
-                    User sender = null;
-                    String content = intent.getStringExtra(getResources().getString(R.string.EXTRA_MESSAGE_CONTENT));
-                    String senderId = intent.getStringExtra(getResources().getString(R.string.EXTRA_MESSAGE_SENDER));
-                    String circleId = intent.getStringExtra(getResources().getString(R.string.EXTRA_MESSAGE_CIRCLE_ID));
-                    String messageId = intent.getStringExtra(getResources().getString(R.string.EXTRA_MESSAGE_ID));
-                    String type = intent.getStringExtra(getResources().getString(R.string.EXTRA_MESSAGE_TYPE));
+                String circleId = intent.getStringExtra(getResources().getString(R.string.EXTRA_MESSAGE_CIRCLE_ID));
+                if (circleId != null && circleId.equals(circle.getId())) {
 
-                    List<User> users = circle.getUsers();
-                    if (users != null && !users.isEmpty()) {
-                        for (User user : users) {
-                            if (user.getId().equals(senderId)) {
-                                sender = user;
-                                break;
+                    // NEW MESSAGE INCOMING
+                    if (intent.getAction().equals(getResources().getString(R.string.ACTION_NEW_MESSAGE))) {
+                        BaseChatMessage chatMessage = null;
+                        User sender = null;
+                        String content = intent.getStringExtra(getResources().getString(R.string.EXTRA_MESSAGE_CONTENT));
+                        String senderId = intent.getStringExtra(getResources().getString(R.string.EXTRA_MESSAGE_SENDER));
+                        String messageId = intent.getStringExtra(getResources().getString(R.string.EXTRA_MESSAGE_ID));
+                        String type = intent.getStringExtra(getResources().getString(R.string.EXTRA_MESSAGE_TYPE));
+
+                        List<User> users = circle.getUsers();
+                        if (users != null && !users.isEmpty()) {
+                            for (User user : users) {
+                                if (user.getId().equals(senderId)) {
+                                    sender = user;
+                                    break;
+                                }
                             }
                         }
-                    }
-                    if (sender != null && TextUtils.equals(circleId, circle.getId())) {
-                        if (TextUtils.equals(type, Const.JSON_VALUE_MESSAGE_TYPE_TEXT)) {
-                            chatMessage = new ChatMessage(messageId, content, sender, false);
-                        }
+                        if (sender != null && TextUtils.equals(circleId, circle.getId())) {
+                            if (TextUtils.equals(type, Const.JSON_VALUE_MESSAGE_TYPE_TEXT)) {
+                                chatMessage = new ChatMessage(messageId, content, sender, false);
+                            }
 
-                        // add the message to the adapter
-                        addMessage(chatMessage);
+                            // add the message to the adapter
+                            addMessage(chatMessage);
+                        }
+                    }
+
+                    // ACK MESSAGE
+                    else if (intent.getAction().equals(getResources().getString(R.string.ACTION_SERVER_ACK_MESSAGE))) {
+                        String messageId = intent.getStringExtra(getResources().getString(R.string.EXTRA_MESSAGE_ID));
+                        setOutgoingStatus(messageId, OutgoingStatus.SERVER_RECEIVED);
                     }
                 }
             }
@@ -138,6 +154,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         LocalBroadcastManager broadcastManager = LocalBroadcastManager.getInstance(this);
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(getResources().getString(R.string.ACTION_NEW_MESSAGE));
+        intentFilter.addAction(getResources().getString(R.string.ACTION_SERVER_ACK_MESSAGE));
         broadcastManager.registerReceiver(receiver, intentFilter);
     }
 
@@ -158,7 +175,6 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onClick(View v) {
-        Log.d(TAG, "Clicked event");
         switch (v.getId()) {
             case R.id.send_btn: {
                 Log.d(TAG, "Send message clicked");
@@ -195,6 +211,26 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         int lastPos = messages.size() - 1;
         adapter.notifyItemInserted(lastPos);
         chatView.scrollToPosition(lastPos);
+    }
+
+    private synchronized int getMessagePosition(String id) {
+        if (messages != null && !messages.isEmpty()) {
+            for (int i = 0; i < messages.size(); i++) {
+                if (messages.get(i).getId().equals(id)) return i;
+            }
+        }
+        return -1;
+    }
+
+    private synchronized void setOutgoingStatus(String id, OutgoingStatus status) {
+        int position = getMessagePosition(id);
+        if (position != -1) {
+            BaseChatMessage message = messages.get(position);
+            if (message != null) {
+                message.setOutgoingStatus(status);
+                adapter.notifyItemChanged(position);
+            }
+        }
     }
 
     /***********************************************************************

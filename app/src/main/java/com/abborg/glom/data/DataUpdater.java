@@ -1,5 +1,6 @@
 package com.abborg.glom.data;
 
+import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -11,11 +12,14 @@ import android.database.DatabaseUtils;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.provider.OpenableColumns;
 import android.text.TextUtils;
 import android.util.Log;
+import android.webkit.MimeTypeMap;
 
 import com.abborg.glom.AppState;
 import com.abborg.glom.Const;
@@ -26,14 +30,16 @@ import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CircleInfo;
 import com.abborg.glom.model.DiscoverItem;
-import com.abborg.glom.model.Event;
+import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FeedAction;
+import com.abborg.glom.model.FileItem;
 import com.abborg.glom.model.Movie;
 import com.abborg.glom.model.User;
 import com.abborg.glom.model.WatchableFeed;
 import com.abborg.glom.model.WatchableImage;
 import com.abborg.glom.model.WatchableRating;
 import com.abborg.glom.model.WatchableVideo;
+import com.abborg.glom.utils.PathUtils;
 import com.abborg.glom.utils.RequestHandler;
 import com.android.volley.VolleyError;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
@@ -172,12 +178,8 @@ public class DataUpdater {
         user.setAvatar("");
 
         List<Integer> userPerm = new ArrayList<>();
-//        userPerm.add(User.MEDIA_IMAGE_RECEIVE);
-//        userPerm.add(User.MEDIA_AUDIO_RECEIVE);
-//        userPerm.add(User.MEDIA_VIDEO_RECEIVE);
-//        userPerm.add(User.ALARM_RECEIVE);
-//        userPerm.add(User.NOTE_RECEIVE);
-        userPerm.add(User.LOCATION_REQUEST_RECEIVE);
+        userPerm.add(User.POST_IMAGE_GALLERY);
+        userPerm.add(User.REQUEST_LOCATION);
         userPerm.add(User.CREATE_EVENT);
         user.setUserPermission(userPerm);
         return user;
@@ -393,13 +395,10 @@ public class DataUpdater {
             user = new User(name, userId, null, type);
             user.setAvatar(avatar);
 
+            //TODO retrieve the list of user permissions
             List<Integer> userPerm = new ArrayList<>();
-//            userPerm.add(User.MEDIA_IMAGE_RECEIVE);
-//            userPerm.add(User.MEDIA_AUDIO_RECEIVE);
-//            userPerm.add(User.MEDIA_VIDEO_RECEIVE);
-//            userPerm.add(User.ALARM_RECEIVE);
-//            userPerm.add(User.NOTE_RECEIVE);
-            userPerm.add(User.LOCATION_REQUEST_RECEIVE);
+            userPerm.add(User.POST_IMAGE_GALLERY);
+            userPerm.add(User.REQUEST_LOCATION);
             userPerm.add(User.CREATE_EVENT);
             user.setUserPermission(userPerm);
         }
@@ -631,23 +630,10 @@ public class DataUpdater {
 
         //TODO set all user permission to receive everything
         List<Integer> userPerm = new ArrayList<>();
-//        userPerm.add(User.MEDIA_IMAGE_RECEIVE);
-//        userPerm.add(User.MEDIA_AUDIO_RECEIVE);
-//        userPerm.add(User.MEDIA_VIDEO_RECEIVE);
-//        userPerm.add(User.ALARM_RECEIVE);
-//        userPerm.add(User.NOTE_RECEIVE);
-        userPerm.add(User.LOCATION_REQUEST_RECEIVE);
+        userPerm.add(User.REQUEST_LOCATION);
         if (activeUser.getId().equals(user.getId())) {
             userPerm.add(User.CREATE_EVENT);
-//            userPerm.add(User.CREATE_TODO);
-//             userPerm.add(User.CREATE_CALENDAR);
-//            userPerm.add(User.INVITE_GAME);
         }
-//        userPerm.add(User.POST_LINK);
-//        userPerm.add(User.SHOUT_RECEIVE);
-//        userPerm.add(User.SECRET_MESSAGE);
-//        userPerm.add(User.SONG_SNIPPET_RECEIVE);
-//        userPerm.add(User.POLL_RECEIVE);
         user.setUserPermission(userPerm);
         user.setCurrentCircle(circle);
 
@@ -836,12 +822,12 @@ public class DataUpdater {
                                                             }
                                                             note = note.equals("null") ? null : note;
 
-                                                            Event event = null;
+                                                            EventItem event = null;
 
                                                             if (items != null) {
                                                                 for (BoardItem item : items) {
                                                                     if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_EVENT) {
-                                                                        event = (Event) item;
+                                                                        event = (EventItem) item;
                                                                     }
                                                                 }
                                                                 if (event == null) {
@@ -917,7 +903,7 @@ public class DataUpdater {
             int type = cursor.getInt(cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_TYPE));
             switch (type) {
                 case BoardItem.TYPE_EVENT:
-                    Event event = serializeEvent(cursor, circle);
+                    EventItem event = serializeEvent(cursor, circle);
                     int action = event.getUpdatedTime().equals(event.getCreatedTime()) ? FeedAction.CREATE_EVENT :
                             FeedAction.UPDATE_EVENT;
                     event.setLastAction(new FeedAction(action, activeUser, event.getUpdatedTime()));
@@ -939,8 +925,8 @@ public class DataUpdater {
     public void createEventAsync(final Circle circle, final DateTime createdTime,
                                  final String id, final String name, final DateTime startTime, final DateTime endTime, final String placeId,
                              final Location location, final String note, final boolean sync) {
-        final Event event = TextUtils.isEmpty(id) ? Event.createEvent(circle, createdTime, createdTime)
-                : Event.createEvent(id, circle, createdTime, createdTime);
+        final EventItem event = TextUtils.isEmpty(id) ? EventItem.createEvent(circle, createdTime, createdTime)
+                : EventItem.createEvent(id, circle, createdTime, createdTime);
         event.setEventInfo(name, startTime, endTime, placeId, location, note);
         event.setLastAction(new FeedAction(FeedAction.CREATE_EVENT, activeUser, createdTime));
 
@@ -960,7 +946,7 @@ public class DataUpdater {
         });
     }
 
-    public void createEventDB(Circle circle, DateTime createdTime, Event event) {
+    public void createEventDB(Circle circle, DateTime createdTime, EventItem event) {
         if (!database.isOpen()) open();
         database.beginTransaction();
 
@@ -1006,11 +992,11 @@ public class DataUpdater {
         }
     }
 
-    private Event createEvent(Circle circle, DateTime createdTime, String id, String name, DateTime startTime, DateTime endTime, String placeId,
-                             Location location, String note) {
+    private EventItem createEvent(Circle circle, DateTime createdTime, String id, String name, DateTime startTime, DateTime endTime, String placeId,
+                                  Location location, String note) {
         createdTime = createdTime==null ? DateTime.now() : createdTime;
-        final Event event = TextUtils.isEmpty(id) ? Event.createEvent(circle, createdTime, createdTime)
-                : Event.createEvent(id, circle, createdTime, createdTime);
+        final EventItem event = TextUtils.isEmpty(id) ? EventItem.createEvent(circle, createdTime, createdTime)
+                : EventItem.createEvent(id, circle, createdTime, createdTime);
         event.setEventInfo(name, startTime, endTime, placeId, location, note);
         event.setLastAction(new FeedAction(FeedAction.CREATE_EVENT, activeUser, createdTime));
         circle.addItem(event);
@@ -1020,7 +1006,7 @@ public class DataUpdater {
         return event;
     }
 
-    public void requestCreateEvent(Circle circle, final Event event) {
+    public void requestCreateEvent(Circle circle, final EventItem event) {
         if (event != null) {
             try {
                 JSONObject body = new JSONObject();
@@ -1057,7 +1043,7 @@ public class DataUpdater {
                     info.put(Const.JSON_SERVER_EVENT_NOTE, JSONObject.NULL);
                 body.put(Const.JSON_SERVER_INFO, info);
 
-                RequestHandler.getInstance(context).post("Create Event", String.format(Const.API_BOARD, circle.getId()), body,
+                RequestHandler.getInstance(context).post("Create EventItem", String.format(Const.API_BOARD, circle.getId()), body,
                         new ResponseListener() {
                             @Override
                             public void onSuccess(JSONObject response) {
@@ -1084,16 +1070,16 @@ public class DataUpdater {
     public void updateEventAsync(final Circle circle, final DateTime updatedTime, String id, String name, DateTime startTime, DateTime endTime,
                                  String place, Location location, String note, final boolean sync) {
         List<BoardItem> events = circle.getItems();
-        Event e = null;
+        EventItem e = null;
         for (BoardItem item : events) {
-            if (item.getId().equals(id) && item instanceof Event) {
-                e = (Event) item;
+            if (item.getId().equals(id) && item instanceof EventItem) {
+                e = (EventItem) item;
                 break;
             }
         }
 
         if (e != null) {
-            final Event event = e;
+            final EventItem event = e;
             event.setLastAction(new FeedAction(FeedAction.UPDATE_EVENT, activeUser, updatedTime));
             event.setName(name);
             event.setStartTime(startTime);
@@ -1117,13 +1103,13 @@ public class DataUpdater {
         }
     }
 
-    private Event updateEvent(Circle circle, DateTime updatedTime, String id, String name, DateTime startTime, DateTime endTime,
-                             String place, Location location, String note) {
+    private EventItem updateEvent(Circle circle, DateTime updatedTime, String id, String name, DateTime startTime, DateTime endTime,
+                                  String place, Location location, String note) {
         List<BoardItem> events = circle.getItems();
-        Event event = null;
+        EventItem event = null;
         for (BoardItem item : events) {
-            if (item.getId().equals(id) && item instanceof Event) {
-                event = (Event) item;
+            if (item.getId().equals(id) && item instanceof EventItem) {
+                event = (EventItem) item;
                 break;
             }
         }
@@ -1144,7 +1130,7 @@ public class DataUpdater {
         return event;
     }
 
-    private void updateEventDB(DateTime updatedTime, Event event) {
+    private void updateEventDB(DateTime updatedTime, EventItem event) {
         if (!database.isOpen()) open();
         database.beginTransaction();
 
@@ -1188,7 +1174,7 @@ public class DataUpdater {
         }
     }
 
-    public void requestUpdateEvent(Circle circle, final Event event) {
+    public void requestUpdateEvent(Circle circle, final EventItem event) {
         if (event != null) {
             try {
                 JSONObject body = new JSONObject();
@@ -1220,7 +1206,7 @@ public class DataUpdater {
                 else
                     body.put(Const.JSON_SERVER_EVENT_NOTE, JSONObject.NULL);
 
-                RequestHandler.getInstance(context).post("Update Event", String.format(Const.API_BOARD_ITEM, circle.getId(), event.getId()), body,
+                RequestHandler.getInstance(context).post("Update EventItem", String.format(Const.API_BOARD_ITEM, circle.getId(), event.getId()), body,
                         new ResponseListener() {
                             @Override
                             public void onSuccess(JSONObject response) {
@@ -1314,7 +1300,7 @@ public class DataUpdater {
         }
     }
 
-    private Event serializeEvent(Cursor cursor, Circle circle) {
+    private EventItem serializeEvent(Cursor cursor, Circle circle) {
         int createdTimeColumn = cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_CREATED_TIME);
         int updatedTimeColumn = cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME);
 
@@ -1347,9 +1333,77 @@ public class DataUpdater {
         }
         String note = cursor.getString(noteColumn);
 
-        Event event = Event.createEvent(id, circle, createdTime, updatedTime);
+        EventItem event = EventItem.createEvent(id, circle, createdTime, updatedTime);
         event.setEventInfo(name, time, endTime, place,location, note);
         return event;
+    }
+
+    /*************************************************
+     * FILE OPERATIONS
+     *************************************************/
+    public void postFilesAsync(final List<Uri> uriList, final Circle circle, final boolean sync) {
+        run(new Runnable() {
+            @Override
+            public void run() {
+                if (uriList != null && uriList.size() > 0) {
+                    for (Uri uri : uriList) {
+                        Cursor cursor = null;
+                        try {
+                            String mimetype = getFileMimeType(uri);
+                            FileItem item = FileItem.createFile(circle, uri);
+                            item.setMimetype(mimetype);
+                            cursor = context.getContentResolver().query(uri, null, null, null, null);
+                            if (cursor != null) {
+                                int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                                int sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE);
+                                cursor.moveToFirst();
+                                item.setName(cursor.getString(nameIndex));
+                                item.setSize(cursor.getLong(sizeIndex));
+                                String path = PathUtils.getPath(context, uri);
+                                item.setPath(path);
+                                Log.d(TAG, "Mimetype found is " + mimetype);
+                                Log.d(TAG, "Name found is " + item.getName());
+                                Log.d(TAG, "Size found is " + item.getSize());
+                                Log.d(TAG, "Path is " + path);
+
+                                //TODO
+                                //update db
+
+                                // this 1000 ms delayed is set due to recyclerview animation bug where it needs some time
+                                // for animation to work
+                                if (handler != null && sync)
+                                    handler.sendMessageDelayed(handler.obtainMessage(Const.MSG_FILE_POSTED, item), 1000);
+
+                                // whether or not to sync with the server
+//                              if (sync) requestPostFile(circle, item);
+                            }
+                        }
+                        catch (Exception ex) {
+                            ex.printStackTrace();
+                            Log.e(TAG, ex.getMessage());
+                        }
+                        finally {
+                            if (cursor != null) cursor.close();
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    private String getFileMimeType(Uri uri) {
+        String mimeType;
+        if (uri.getScheme().equals(ContentResolver.SCHEME_CONTENT)) {
+            ContentResolver cr = context.getContentResolver();
+            mimeType = cr.getType(uri);
+        }
+        else {
+            String fileExtension = MimeTypeMap.getFileExtensionFromUrl(uri
+                    .toString());
+            mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(
+                    fileExtension.toLowerCase());
+        }
+        return mimeType;
     }
 
     /*************************************************

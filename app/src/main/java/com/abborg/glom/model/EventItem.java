@@ -12,7 +12,7 @@ import org.joda.time.DateTime;
  *
  * Created by Boat on 11/10/58.
  */
-public class Event extends BoardItem {
+public class EventItem extends BoardItem {
 
     /* The display name of the event - REQUIRED */
     private String name;
@@ -32,14 +32,14 @@ public class Event extends BoardItem {
     /* Notes about this event - OPTIONAL */
     private String note;
 
-    private Event() {}
+    private EventItem() {}
 
-    public static Event createEvent(Circle circle, DateTime createdTime, DateTime updatedTime) {
+    public static EventItem createEvent(Circle circle, DateTime createdTime, DateTime updatedTime) {
         return createEvent(generateId(), circle, createdTime, updatedTime);
     }
 
-    public static Event createEvent(String id, Circle circle, DateTime createdTime, DateTime updatedTime) {
-        Event event = new Event();
+    public static EventItem createEvent(String id, Circle circle, DateTime createdTime, DateTime updatedTime) {
+        EventItem event = new EventItem();
         event.id = id;
         event.type = TYPE_EVENT;
         event.circle = circle;

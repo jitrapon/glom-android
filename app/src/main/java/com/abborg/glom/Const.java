@@ -10,8 +10,8 @@ public class Const {
     /**
      * TEST INFO
      * **/
-    public static final String TEST_USER_ID = "yoshi3003";
-//    public static final String TEST_USER_ID = "fatcat18";
+//    public static final String TEST_USER_ID = "yoshi3003";
+    public static final String TEST_USER_ID = "fatcat18";
     public static final String TEST_CIRCLE_ID = "dev-test-circle-1";
     public static final String TEST_API_AUTHORIZATION_HEADER = "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -26,6 +26,7 @@ public class Const {
      */
     public static final int CREATE_EVENT_RESULT_CODE = 700;
     public static final int UPDATE_EVENT_RESULT_CODE = 701;
+    public static final int IMAGE_SELECTED_RESULT_CODE = 702;
 
     /**
      * API
@@ -108,4 +109,16 @@ public class Const {
     public static final int MSG_INIT_SUCCESS = 5012;
     public static final int MSG_DISCOVER_ITEM = 5013;
     public static final int MSG_PLAY_YOUTUBE_VIDEO = 5014;
+    public static final int MSG_FILE_POSTED = 5015;
+
+    /**
+     * Mimetypes
+     */
+    public static final String FILE_TYPE_JPEG = "image/jpeg";
+    public static final String FILE_TYPE_JPG = "image/jpg";
+    public static final String FILE_TYPE_GIF = "image/gif";
+    public static final String FILE_TYPE_PNG = "image/png";
+    public static final String FILE_TYPE_BMP = "image/x-ms-bmp";
+    public static final String FILE_TYPE_WBMP = "image/vnd.wap.wbmp";
+    public static final String FILE_TYPE_WEBP = "image/webp";
 }

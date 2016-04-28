@@ -20,7 +20,9 @@ public class BoardItem {
 
     protected FeedAction info;
 
+    /** Board item types - this must match with what is stored server-side **/
     public static final int TYPE_EVENT = 1;
+    public static final int TYPE_FILE = 2;
 
     public void setDirty(boolean dirty) { this.dirty = dirty; }
 

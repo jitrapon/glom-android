@@ -9,12 +9,38 @@ public abstract class BaseChatMessage {
     private String content;
     private boolean isMine;
     private User sender;
+    private OutgoingStatus outgoingStatus;
+    private ContentStatus contentStatus;
+
+    /**
+     * Status of the outgoing message
+     */
+    public enum OutgoingStatus {
+        SENDING,
+        SERVER_RECEIVED,
+        DEVICE_RECEIVED,
+        READ,
+        FAILED,
+        UNKNOWN
+    }
+
+    /**
+     * Status of the content of the message
+     */
+    public enum ContentStatus {
+        UNMODIFIED,
+        EDITED,
+        DELETED
+    }
 
     public BaseChatMessage(String messageId, String message, User user, boolean mine) {
         id = messageId;
         content = message;
         isMine = mine;
         sender = user;
+        if (isMine) outgoingStatus = OutgoingStatus.SENDING;
+        else outgoingStatus = OutgoingStatus.UNKNOWN;
+        contentStatus = ContentStatus.UNMODIFIED;
     }
 
     public abstract String getType();
@@ -34,4 +60,12 @@ public abstract class BaseChatMessage {
     }
 
     public User getSender() { return sender; }
+
+    public void setOutgoingStatus(OutgoingStatus status) { outgoingStatus = status; }
+
+    public OutgoingStatus getOutgoingStatus() { return outgoingStatus; }
+
+    public void setContentStatus(ContentStatus status) { contentStatus = status; }
+
+    public ContentStatus getContentStatus() { return contentStatus; }
 }

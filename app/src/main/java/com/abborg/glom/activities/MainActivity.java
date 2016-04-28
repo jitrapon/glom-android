@@ -2,11 +2,14 @@ package com.abborg.glom.activities;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
+import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.SQLException;
 import android.location.Location;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -55,7 +58,8 @@ import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CircleInfo;
 import com.abborg.glom.model.DiscoverItem;
-import com.abborg.glom.model.Event;
+import com.abborg.glom.model.EventItem;
+import com.abborg.glom.model.FileItem;
 import com.abborg.glom.model.User;
 import com.abborg.glom.service.CirclePushService;
 import com.abborg.glom.service.RegistrationIntentService;
@@ -672,16 +676,17 @@ public class MainActivity extends AppCompatActivity
     private SubActionButton setIconFromPermission(final Activity activity, SubActionButton.Builder builder,
                                                   FrameLayout.LayoutParams params, final User user, int userPerm) {
         ImageView icon = new ImageView(activity);
-        SubActionButton actionButton = null;
+        SubActionButton actionButton;
 
         switch(userPerm) {
-            case User.MEDIA_IMAGE_RECEIVE:
+            case User.POST_IMAGE_GALLERY:
                 icon.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_picture));
                 actionButton = builder.setContentView(icon, params).build();
                 actionButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        Toast.makeText(activity, "Sending image is not supported yet", Toast.LENGTH_SHORT).show();
+                        openFileBrowser("image/*");
+                        hideMenuOverlay(false);
                     }
                 });
                 break;
@@ -722,7 +727,7 @@ public class MainActivity extends AppCompatActivity
                     }
                 });
                 break;
-            case User.LOCATION_REQUEST_RECEIVE: icon.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_place));
+            case User.REQUEST_LOCATION: icon.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_place));
                 actionButton = builder.setContentView(icon, params).build();
                 actionButton.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -759,6 +764,16 @@ public class MainActivity extends AppCompatActivity
         }
 
         return actionButton;
+    }
+
+    private void openFileBrowser(String fileType) {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT)
+                .setType(fileType);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        }
+        startActivityForResult(Intent.createChooser(intent,
+                getString(R.string.intent_select_images)), Const.IMAGE_SELECTED_RESULT_CODE);
     }
 
     private void showBroadcastLocationMenuOptions() {
@@ -915,7 +930,7 @@ public class MainActivity extends AppCompatActivity
                 break;
 
             case Const.MSG_EVENT_CREATED: {
-                final Event event = msg.obj == null ? null : (Event) msg.obj;
+                final EventItem event = msg.obj == null ? null : (EventItem) msg.obj;
 
                 if (event != null) {
                     appState.getActiveCircle().addItem(event);
@@ -931,7 +946,7 @@ public class MainActivity extends AppCompatActivity
 
             /* Request: create event successfully synced with server */
             case Const.MSG_EVENT_CREATED_SUCCESS: {
-                final Event event = msg.obj == null ? null : (Event) msg.obj;
+                final EventItem event = msg.obj == null ? null : (EventItem) msg.obj;
 
                 Toast.makeText(getApplicationContext(), getResources().getString(R.string.notification_created_item_success),
                         Toast.LENGTH_LONG).show();
@@ -940,7 +955,7 @@ public class MainActivity extends AppCompatActivity
 
             /* Request: create event failed to sync with server */
             case Const.MSG_EVENT_CREATED_FAILED: {
-                final Event event = msg.obj == null ? null : (Event) msg.obj;
+                final EventItem event = msg.obj == null ? null : (EventItem) msg.obj;
 
                 Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_created_item_failed),
                         Snackbar.LENGTH_LONG)
@@ -958,7 +973,7 @@ public class MainActivity extends AppCompatActivity
 
             /* Request: update event successfully */
             case Const.MSG_EVENT_UPDATED: {
-                final Event event = msg.obj == null ? null : (Event) msg.obj;
+                final EventItem event = msg.obj == null ? null : (EventItem) msg.obj;
 
                 if (event != null) {
                     if (boardItemChangeListeners != null) {
@@ -979,7 +994,7 @@ public class MainActivity extends AppCompatActivity
 
             /* Request: update event failed to sync with server */
             case Const.MSG_EVENT_UPDATED_FAILED: {
-                final Event event = msg.obj == null ? null : (Event) msg.obj;
+                final EventItem event = msg.obj == null ? null : (EventItem) msg.obj;
 
                 Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_updated_item_failed),
                         Snackbar.LENGTH_LONG)
@@ -1061,6 +1076,22 @@ public class MainActivity extends AppCompatActivity
                 startActivity(intent);
                 break;
             }
+
+            /* File posted */
+            case Const.MSG_FILE_POSTED: {
+                final FileItem file = msg.obj == null ? null : (FileItem) msg.obj;
+
+                if (file != null) {
+                    appState.getActiveCircle().addItem(file);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemAdded(file.getId());
+                        }
+                    }
+                }
+
+                break;
+            }
         }
 
         return false;
@@ -1119,6 +1150,8 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (requestCode) {
+
+            /* User has created an event */
             case Const.CREATE_EVENT_RESULT_CODE:
                 if (resultCode == RESULT_OK) {
                     long create = data.getLongExtra(getResources().getString(R.string.EXTRA_ITEM_CREATE_TIME), 0L);
@@ -1136,6 +1169,7 @@ public class MainActivity extends AppCompatActivity
                 }
                 break;
 
+            /* User has updated an event */
             case Const.UPDATE_EVENT_RESULT_CODE:
                 if (resultCode == RESULT_OK) {
                     String id = data.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_ID));
@@ -1153,8 +1187,48 @@ public class MainActivity extends AppCompatActivity
                             startTime, endTime, placeId, location, note, true);
                 }
                 break;
+
+            /* User has selected image(s) from gallery */
+            case Const.IMAGE_SELECTED_RESULT_CODE: {
+                if (resultCode == RESULT_OK && data != null) {
+                    onFilesSelected(data);
+                }
+                break;
+            }
             default:
                 break;
+        }
+    }
+
+    private void onFilesSelected(Intent data) {
+        List<Uri> uriList = new ArrayList<>();
+        try {
+            if (data.getData() != null) {
+                uriList.add(data.getData());
+            }
+            else {
+                // when selecting multiple images, this will be populated
+                if (data.getClipData() != null) {
+                    ClipData clipData = data.getClipData();
+                    for (int i = 0; i < clipData.getItemCount(); i++) {
+                        uriList.add(clipData.getItemAt(i).getUri());
+                    }
+                }
+            }
+
+            // begin creating file board item(s)
+            if (uriList.size() > 0) {
+                Log.d(TAG, "Selected " + uriList.size() + " file(s)");
+                dataUpdater.postFilesAsync(uriList, appState.getActiveCircle(), true);
+            }
+            else {
+                Log.d(TAG, "No files selected");
+                Toast.makeText(this, getString(R.string.warning_no_image_selected), Toast.LENGTH_LONG).show();
+            }
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            Log.e(TAG, ex.getMessage());
         }
     }
 

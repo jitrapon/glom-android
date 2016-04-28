@@ -12,4 +12,10 @@
     <color name="cardPrimaryText">#000000</color>
     <color name="actionButtonColor">#5766BD</color>
     <color name="movieCardReleaseDateBackground">#00e5ff</color>
+    <color name="defaultIncomingTextBackground">#cfd8dc</color>
+    <color name="defaultIncomingTextBackgroundPressed">#9e9e9e</color>
+    <color name="defaultOutgoingTextBackground">@color/colorPrimary</color>
+    <color name="defaultOutgoingTextBackgroundPressed">#c62828</color>
+    <color name="defaultIncomingTextColor">#000000</color>
+    <color name="defaultOutgoingTextColor">#FFFFFF</color>
 </resources>

@@ -33,12 +33,14 @@ public class User implements Parcelable {
 
     private boolean dirty;
 
-    public static final int MEDIA_IMAGE_RECEIVE = 1;
+    /** All user permissions **/
+    public static final int POST_IMAGE_GALLERY = 1;                        // permission to post images from gallery
+    public static final int POST_IMAGE_CAMERA = 2;                         // permission to post images from camera
     public static final int MEDIA_AUDIO_RECEIVE = 2;
     public static final int MEDIA_VIDEO_RECEIVE = 3;
     public static final int ALARM_RECEIVE = 4;
     public static final int NOTE_RECEIVE = 5;
-    public static final int LOCATION_REQUEST_RECEIVE = 6;
+    public static final int REQUEST_LOCATION = 6;                          // permission to send/receive location requests
     public static final int CREATE_EVENT = 7;
 
     public static final int TYPE_USER = 1;
