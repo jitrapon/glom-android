@@ -20,9 +20,17 @@ public class BoardItem {
 
     protected FeedAction info;
 
+    protected int sync;
+
     /** Board item types - this must match with what is stored server-side **/
     public static final int TYPE_EVENT = 1;
     public static final int TYPE_FILE = 2;
+
+    /** Board item sync status **/
+    public static final int NO_SYNC = 0;            // indicates that this item is marked for no syncing with the server
+    public static final int SYNC_COMPLETE = 1;      // indicates that this item has been synced with the server
+    public static final int SYNC_ERROR = 2;         // indicates that this item is not synced, and may not be up-to-date
+    public static final int SYNC_IN_PROGRESS = 3;   // indicates that this item is in the process of syncing
 
     public void setDirty(boolean dirty) { this.dirty = dirty; }
 
@@ -51,4 +59,8 @@ public class BoardItem {
     public DateTime getUpdatedTime() { return updatedTime; }
 
     public void setUpdatedTime(DateTime date) { updatedTime = date; }
+
+    public int getSyncStatus() { return sync; }
+
+    public void setSyncStatus(int status) { sync = status; }
 }

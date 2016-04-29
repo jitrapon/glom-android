@@ -1350,7 +1350,7 @@ public class DataUpdater {
                         Cursor cursor = null;
                         try {
                             String mimetype = getFileMimeType(uri);
-                            FileItem item = FileItem.createFile(circle, uri);
+                            FileItem item = FileItem.createFile(circle);
                             item.setMimetype(mimetype);
                             cursor = context.getContentResolver().query(uri, null, null, null, null);
                             if (cursor != null) {
@@ -1368,6 +1368,7 @@ public class DataUpdater {
 
                                 //TODO
                                 //update db
+                                createFileDB(circle, item.getCreatedTime(), item);
 
                                 // this 1000 ms delayed is set due to recyclerview animation bug where it needs some time
                                 // for animation to work
@@ -1404,6 +1405,40 @@ public class DataUpdater {
                     fileExtension.toLowerCase());
         }
         return mimeType;
+    }
+
+    private void createFileDB(Circle circle, DateTime createdTime, FileItem item) {
+        if (!database.isOpen()) open();
+        database.beginTransaction();
+
+        try {
+            ContentValues values = new ContentValues();
+            values.put(DBHelper.CIRCLEITEM_COLUMN_CIRCLEID, circle.getId());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_ITEMID, item.getId());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_TYPE, item.getType());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_CREATED_TIME, createdTime.getMillis());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME, createdTime.getMillis());
+            long insertId = database.insert(DBHelper.TABLE_CIRCLE_ITEMS, null, values);
+            Log.d(TAG, "[" + insertId + "] Inserted new item to circle (" + circle.getId() + ") with id = " + item.getId());
+
+            values.clear();
+            values.put(DBHelper.FILE_COLUMN_ID, item.getId());
+            values.put(DBHelper.FILE_COLUMN_NAME, item.getName());
+            values.put(DBHelper.FILE_COLUMN_SIZE, item.getSize());
+            values.put(DBHelper.FILE_COLUMN_PATH, item.getFile()==null ? null : item.getFile().getPath());
+            values.put(DBHelper.FILE_COLUMN_MIMETYPE, item.getMimetype());
+            values.put(DBHelper.FILE_COLUMN_NOTE, item.getNote());
+            insertId = database.insert(DBHelper.TABLE_FILES, null, values);
+            Log.d(TAG, "[" + insertId + "] Inserted new file successfully");
+
+            database.setTransactionSuccessful();
+        }
+        catch (SQLException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
+        finally {
+            database.endTransaction();
+        }
     }
 
     /*************************************************

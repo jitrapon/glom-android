@@ -13,7 +13,7 @@ import android.util.Log;
 public class DBHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "app.db";
-    private static final int DATABASE_VERSION = 3;
+    private static final int DATABASE_VERSION = 1;
     private static final String TAG = "DB";
 
     // circle table columns
@@ -41,6 +41,7 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String CIRCLEITEM_COLUMN_CIRCLEID = "circle_id";
     public static final String CIRCLEITEM_COLUMN_ITEMID = "id";
     public static final String CIRCLEITEM_COLUMN_TYPE = "type";
+    public static final String CIRCLEITEM_COLUMN_SYNC = "sync";
     public static final String CIRCLEITEM_COLUMN_CREATED_TIME = "created_time";
     public static final String CIRCLEITEM_COLUMN_UPDATED_TIME = "updated_time";
 
@@ -54,6 +55,15 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String EVENT_COLUMN_LATITUDE = "latitude";
     public static final String EVENT_COLUMN_LONGITUDE = "longitude";
     public static final String EVENT_COLUMN_NOTE = "note";
+
+    // item_file table
+    public static final String TABLE_FILES = "files";
+    public static final String FILE_COLUMN_ID = "id";
+    public static final String FILE_COLUMN_NAME = "name";
+    public static final String FILE_COLUMN_SIZE = "size";
+    public static final String FILE_COLUMN_PATH = "path";
+    public static final String FILE_COLUMN_MIMETYPE = "mimetype";
+    public static final String FILE_COLUMN_NOTE = "note";
 
     private static final String DATABASE_CASCADE = "ON DELETE CASCADE ON UPDATE CASCADE";
 
@@ -89,6 +99,7 @@ public class DBHelper extends SQLiteOpenHelper {
             CIRCLEITEM_COLUMN_CIRCLEID + " TEXT, " +
             CIRCLEITEM_COLUMN_ITEMID + " TEXT UNIQUE, " +
             CIRCLEITEM_COLUMN_TYPE + " INTEGER, " +
+            CIRCLEITEM_COLUMN_SYNC + " INTEGER, " +
             CIRCLEITEM_COLUMN_CREATED_TIME + " INTEGER, " +
             CIRCLEITEM_COLUMN_UPDATED_TIME + " INTEGER, " +
             "FOREIGN KEY (" + CIRCLEITEM_COLUMN_CIRCLEID + ") REFERENCES " + TABLE_CIRCLES + "(" + CIRCLE_COLUMN_ID + ") " + DATABASE_CASCADE +
@@ -107,6 +118,16 @@ public class DBHelper extends SQLiteOpenHelper {
             "FOREIGN KEY (" + EVENT_COLUMN_ID + ") REFERENCES " + TABLE_CIRCLE_ITEMS + "(" + CIRCLEITEM_COLUMN_ITEMID + ") " + DATABASE_CASCADE +
             ");";
 
+    /* Create item_files table statement */
+    private static final String DATABASE_CREATE_FILES_TABLE = "CREATE TABLE " + TABLE_FILES + " (" +
+            FILE_COLUMN_ID + " TEXT, " +
+            FILE_COLUMN_NAME + " TEXT, " +
+            FILE_COLUMN_SIZE + " INTEGER, " +
+            FILE_COLUMN_MIMETYPE + "TEXT, " +
+            FILE_COLUMN_PATH + "TEXT, " +
+            FILE_COLUMN_NOTE + "TEXT, " +
+            "FOREIGN KEY (" + FILE_COLUMN_ID + ") REFERENCES " + TABLE_CIRCLE_ITEMS + "(" + CIRCLEITEM_COLUMN_ITEMID + ") " + DATABASE_CASCADE +
+            ");";
 
     public DBHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -123,6 +144,7 @@ public class DBHelper extends SQLiteOpenHelper {
             database.execSQL(DATABASE_CREATE_USERCIRCLE_TABLE);
             database.execSQL(DATABASE_CREATE_CIRCLE_ITEMS_TABLE);
             database.execSQL(DATABASE_CREATE_EVENTS_TABLE);
+            database.execSQL(DATABASE_CREATE_FILES_TABLE);
 
             database.setTransactionSuccessful();
         }
@@ -141,14 +163,6 @@ public class DBHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase database, int oldVersion, int newVersion) {
-        Log.w(DBHelper.class.getName(),
-                "Upgrading database from version " + oldVersion + " to "
-                        + newVersion + ", which will destroy all old data");
-        database.execSQL("DROP TABLE IF EXISTS " + TABLE_CIRCLES);
-        database.execSQL("DROP TABLE IF EXISTS " + TABLE_USERS);
-        database.execSQL("DROP TABLE IF EXISTS " + TABLE_USER_CIRCLE);
-        database.execSQL("DROP TABLE IF EXISTS " + TABLE_CIRCLE_ITEMS);
-        database.execSQL("DROP TABLE IF EXISTS " + TABLE_EVENTS);
-        onCreate(database);
+        Log.w(TAG, "Upgrading database from version " + oldVersion + " to " + newVersion);
     }
 }

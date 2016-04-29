@@ -1,6 +1,5 @@
 package com.abborg.glom.model;
 
-import android.net.Uri;
 import android.text.TextUtils;
 
 import com.abborg.glom.Const;
@@ -8,7 +7,6 @@ import com.abborg.glom.Const;
 import org.joda.time.DateTime;
 
 import java.io.File;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -28,9 +26,6 @@ public class FileItem extends BoardItem {
     /* Note about this file */
     private String note;
 
-    /* File uri in the local system */
-    private Uri uri;
-
     /* File mimetype */
     private String mimetype;
 
@@ -47,17 +42,24 @@ public class FileItem extends BoardItem {
             Const.FILE_TYPE_WEBP
     );
 
-    public static FileItem createFile(Circle circle, Uri uri) throws URISyntaxException {
-        return new FileItem(generateId(), circle, uri);
+    public static FileItem createFile(Circle circle) {
+        return new FileItem(generateId(), circle, null);
     }
 
-    private FileItem(String fileId, Circle c, Uri fileUri) throws URISyntaxException {
+    public static FileItem createFile(String id, Circle circle, String path, DateTime created, DateTime updated) {
+        FileItem item = new FileItem(id, circle, path);
+        item.setCreatedTime(created);
+        item.setUpdatedTime(updated);
+        return item;
+    }
+
+    private FileItem(String fileId, Circle c, String path) {
         id = fileId;
         type = BoardItem.TYPE_FILE;
         circle = c;
         createdTime = DateTime.now();
         updatedTime = DateTime.now();
-        uri = fileUri;
+        file = TextUtils.isEmpty(path) ? null : new File(path);
     }
 
     public void setPath(String path) {
@@ -75,8 +77,6 @@ public class FileItem extends BoardItem {
     public boolean isImage() {
         return !TextUtils.isEmpty(mimetype) && imageFileTypes.contains(mimetype);
     }
-
-    public String getUri() { return uri==null ? "" : uri.getPath(); }
 
     public void setNote(String note) {
         this.note = note;

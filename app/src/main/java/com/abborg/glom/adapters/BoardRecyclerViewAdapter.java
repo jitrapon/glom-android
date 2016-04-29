@@ -217,7 +217,7 @@ public class BoardRecyclerViewAdapter
                     String note = TextUtils.isEmpty(file.getNote()) ? "" : file.getNote();
                     String mimetype = TextUtils.isEmpty(file.getMimetype()) ? "" : file.getMimetype();
                     long size = file.getSize();
-                    String path = file.getUri();
+                    String path = file.getFile()==null? "" : file.getFile().getPath();
                     long created = file.getCreatedTime() == null ? 0L : file.getCreatedTime().getMillis();
                     long updated = file.getUpdatedTime() == null ? 0L : file.getUpdatedTime().getMillis();
                     id = (name + note + mimetype + size + path + created + updated).hashCode();
