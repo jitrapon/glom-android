@@ -34,8 +34,7 @@
 
 # Intellij
 *.iml
-/.idea/workspace.xml
-/.idea/libraries
+/.idea/
 
 # OSX
 .DS_Store
