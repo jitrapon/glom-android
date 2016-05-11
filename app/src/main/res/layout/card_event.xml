@@ -55,6 +55,16 @@
                     android:text="@string/card_host_post_time_placeholder"
                     android:textSize="@dimen/card_supporting_text_size"/>
 
+                <ImageView
+                    android:id="@+id/card_sync_status"
+                    android:layout_width="@dimen/card_sync_status_size"
+                    android:layout_height="@dimen/card_sync_status_size"
+                    android:layout_marginEnd="@dimen/card_sync_status_margin"
+                    android:layout_marginRight="@dimen/card_sync_status_margin"
+                    android:layout_centerVertical="true"
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignParentRight="true"/>
+
             </RelativeLayout>
 
             <View

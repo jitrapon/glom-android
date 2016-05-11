@@ -778,9 +778,13 @@ public class DataUpdater {
                                         JSONArray jsonArray = respJson.getJSONArray(Const.JSON_SERVER_ITEMS);
                                         int numItem = jsonArray.length();
                                         List<BoardItem> items = circle.getItems();
+
+                                        // mark all board items as dirty so we know which ones to delete later
                                         if (items != null) {
                                             for (BoardItem item : items) {
-                                                item.setDirty(true);
+                                                if (item.getSyncStatus() != BoardItem.NO_SYNC &&
+                                                        item.getSyncStatus() != BoardItem.SYNC_ERROR)
+                                                    item.setDirty(true);
                                             }
                                         }
                                         else return;
@@ -797,7 +801,7 @@ public class DataUpdater {
                                                     JSONObject info = json.getJSONObject(Const.JSON_SERVER_INFO);
 
                                                     switch (type) {
-                                                        case BoardItem.TYPE_EVENT:
+                                                        case BoardItem.TYPE_EVENT: {
                                                             String name = info.getString(Const.JSON_SERVER_EVENT_NAME);
                                                             long start = info.optLong(Const.JSON_SERVER_EVENT_START_TIME);
                                                             long end = info.optLong(Const.JSON_SERVER_EVENT_END_TIME);
@@ -812,7 +816,8 @@ public class DataUpdater {
                                                             DateTime endTime = null;
                                                             if (start != 0L)
                                                                 startTime = new DateTime(start);
-                                                            if (end != 0L) endTime = new DateTime(end);
+                                                            if (end != 0L)
+                                                                endTime = new DateTime(end);
                                                             placeId = placeId.equals("null") ? null : placeId;
                                                             Location location = null;
                                                             if (lat != -1 && lng != -1) {
@@ -831,18 +836,19 @@ public class DataUpdater {
                                                                     }
                                                                 }
                                                                 if (event == null) {
-                                                                    DateTime createdTime = createdMillis==null ? null : new DateTime(createdMillis);
+                                                                    DateTime createdTime = createdMillis == null ? null : new DateTime(createdMillis);
                                                                     createEvent(circle, createdTime, id, name, startTime, endTime, placeId, location,
                                                                             note);
                                                                 }
-                                                                else {
-                                                                    DateTime updatedTime = updatedMillis==null ? null : new DateTime(updatedMillis);
+                                                                else if (event.getSyncStatus() != BoardItem.NO_SYNC) {
+                                                                    DateTime updatedTime = updatedMillis == null ? null : new DateTime(updatedMillis);
                                                                     updateEvent(circle, updatedTime, id, name, startTime, endTime,
                                                                             placeId, location, note);
                                                                     event.setDirty(false);
                                                                 }
                                                             }
                                                             break;
+                                                        }
                                                         default:
                                                             break;
                                                     }
@@ -851,7 +857,7 @@ public class DataUpdater {
                                         }
                                         Log.d(TAG, "Found " + numItem + " items");
 
-                                        // remove dirty BoardItems
+                                        // board items that are marked dirty and not marked as no-sync
                                         Iterator<BoardItem> iterator = items.iterator();
                                         while (iterator.hasNext()) {
                                             BoardItem item = iterator.next();
@@ -890,32 +896,69 @@ public class DataUpdater {
         // credit http://stackoverflow.com/questions/2440448/sql-join-different-tables-depending-on-row-information
         String query =
                 "SELECT * FROM " + DBHelper.TABLE_CIRCLE_ITEMS + " " +
-                "LEFT JOIN " + DBHelper.TABLE_EVENTS + " ON " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_ITEMID + "=" + DBHelper.TABLE_EVENTS + "." + DBHelper.EVENT_COLUMN_ID + " " +
+                "JOIN " + DBHelper.TABLE_EVENTS + " ON " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_ITEMID + "=" + DBHelper.TABLE_EVENTS + "." + DBHelper.EVENT_COLUMN_ID + " " +
                 "AND " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_CIRCLEID + "='" + circle.getId() + "' " +
                 "AND " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_TYPE + "=" + BoardItem.TYPE_EVENT + " " +
                 "ORDER BY " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME + " ASC";
+
         Cursor cursor = database.rawQuery(query, null);
         String result = DatabaseUtils.dumpCursorToString(cursor);
-        Log.d(TAG, "Result found is " + result);
-
+        Log.d(TAG, "Found events: " + result);
         cursor.moveToFirst();
         while (!cursor.isAfterLast()) {
-            int type = cursor.getInt(cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_TYPE));
-            switch (type) {
-                case BoardItem.TYPE_EVENT:
-                    EventItem event = serializeEvent(cursor, circle);
-                    int action = event.getUpdatedTime().equals(event.getCreatedTime()) ? FeedAction.CREATE_EVENT :
-                            FeedAction.UPDATE_EVENT;
-                    event.setLastAction(new FeedAction(action, activeUser, event.getUpdatedTime()));
-                    items.add(event);
-                    break;
-                default: break;
-            }
+            EventItem event = serializeEvent(cursor, circle);
+            int action = event.getUpdatedTime().equals(event.getCreatedTime()) ? FeedAction.CREATE_EVENT :
+                    FeedAction.UPDATE_EVENT;
+            event.setLastAction(new FeedAction(action, activeUser, event.getUpdatedTime()));
+            items.add(event);
+            cursor.moveToNext();
+        }
+        cursor.close();
+
+        query =
+                "SELECT * FROM " + DBHelper.TABLE_CIRCLE_ITEMS + " " +
+                "JOIN " + DBHelper.TABLE_FILES + " ON " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_ITEMID + "=" + DBHelper.TABLE_FILES + "." + DBHelper.FILE_COLUMN_ID + " " +
+                "AND " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_CIRCLEID + "='" + circle.getId() + "' " +
+                "AND " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_TYPE + "=" + BoardItem.TYPE_FILE + " " +
+                "ORDER BY " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME + " ASC";
+        cursor = database.rawQuery(query, null);
+        result = DatabaseUtils.dumpCursorToString(cursor);
+        Log.d(TAG, "Found files: " + result);
+        cursor.moveToFirst();
+        while (!cursor.isAfterLast()) {
+            FileItem file = serializeFile(cursor, circle);
+            items.add(file);
             cursor.moveToNext();
         }
         cursor.close();
 
         return items;
+    }
+
+    public void setSyncStatus(final BoardItem item, final int action, final int status) {
+        if (item != null) {
+            run(new Runnable() {
+                @Override
+                public void run() {
+                    if (!database.isOpen()) open();
+
+                    try {
+                        ContentValues values = new ContentValues();
+                        values.put(DBHelper.CIRCLEITEM_COLUMN_SYNC, status);
+                        int rows = database.update(DBHelper.TABLE_CIRCLE_ITEMS, values, DBHelper.CIRCLEITEM_COLUMN_ITEMID
+                                + "='" + item.getId() + "'", null);
+                        Log.d(TAG, "Updated item sync status to " + status + ", " + rows + " rows affected");
+
+                        if (handler != null) {
+                            handler.sendMessage(handler.obtainMessage(action, status, -1, item));
+                        }
+                    }
+                    catch (SQLException ex) {
+                        Log.e(TAG, ex.getMessage());
+                    }
+                }
+            });
+        }
     }
 
     /*************************************************
@@ -933,7 +976,7 @@ public class DataUpdater {
         run(new Runnable() {
             @Override
             public void run() {
-                createEventDB(circle, createdTime, event);
+                createEventDB(circle, createdTime, event, sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
 
                 // this 1000 ms delayed is set due to recyclerview animation bug where it needs some time
                 // for animation to work
@@ -946,7 +989,7 @@ public class DataUpdater {
         });
     }
 
-    public void createEventDB(Circle circle, DateTime createdTime, EventItem event) {
+    public void createEventDB(Circle circle, DateTime createdTime, EventItem event, int syncStatus) {
         if (!database.isOpen()) open();
         database.beginTransaction();
 
@@ -955,6 +998,7 @@ public class DataUpdater {
             values.put(DBHelper.CIRCLEITEM_COLUMN_CIRCLEID, circle.getId());
             values.put(DBHelper.CIRCLEITEM_COLUMN_ITEMID, event.getId());
             values.put(DBHelper.CIRCLEITEM_COLUMN_TYPE, event.getType());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_SYNC, syncStatus);
             values.put(DBHelper.CIRCLEITEM_COLUMN_CREATED_TIME, createdTime.getMillis());
             values.put(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME, createdTime.getMillis());
             long insertId = database.insert(DBHelper.TABLE_CIRCLE_ITEMS, null, values);
@@ -1001,7 +1045,7 @@ public class DataUpdater {
         event.setLastAction(new FeedAction(FeedAction.CREATE_EVENT, activeUser, createdTime));
         circle.addItem(event);
 
-        createEventDB(circle, createdTime, event);
+        createEventDB(circle, createdTime, event, BoardItem.SYNC_COMPLETE);
 
         return event;
     }
@@ -1047,22 +1091,18 @@ public class DataUpdater {
                         new ResponseListener() {
                             @Override
                             public void onSuccess(JSONObject response) {
-                                if (handler != null) {
-                                    handler.sendMessage(handler.obtainMessage(Const.MSG_EVENT_CREATED_SUCCESS, event));
-                                }
+                                setSyncStatus(event, Const.MSG_EVENT_CREATED_SUCCESS, BoardItem.SYNC_COMPLETE);
                             }
 
                             @Override
                             public void onError(VolleyError error) {
-                                if (handler != null) {
-                                    handler.sendMessage(handler.obtainMessage(Const.MSG_EVENT_CREATED_FAILED, event));
-                                }
+                                setSyncStatus(event, Const.MSG_EVENT_CREATED_FAILED, BoardItem.SYNC_ERROR);
                             }
                         });
             }
             catch (Exception ex) {
                 ex.printStackTrace();
-                if (handler != null) handler.sendMessage(handler.obtainMessage(Const.MSG_EVENT_CREATED_FAILED, event));
+                setSyncStatus(event, Const.MSG_EVENT_CREATED_FAILED, BoardItem.SYNC_ERROR);
             }
         }
     }
@@ -1091,7 +1131,7 @@ public class DataUpdater {
             run(new Runnable() {
                 @Override
                 public void run() {
-                    updateEventDB(updatedTime, event);
+                    updateEventDB(updatedTime, event, sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
 
                     if (handler != null)
                         handler.sendMessage(handler.obtainMessage(Const.MSG_EVENT_UPDATED, event));
@@ -1124,22 +1164,23 @@ public class DataUpdater {
             event.setLocation(location);
             event.setNote(note);
 
-            updateEventDB(updatedTime, event);
+            updateEventDB(updatedTime, event, BoardItem.SYNC_COMPLETE);
         }
 
         return event;
     }
 
-    private void updateEventDB(DateTime updatedTime, EventItem event) {
+    private void updateEventDB(DateTime updatedTime, EventItem event, int syncStatus) {
         if (!database.isOpen()) open();
         database.beginTransaction();
 
         try {
             ContentValues values = new ContentValues();
             values.put(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME, updatedTime.getMillis());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_SYNC, syncStatus);
             int rows = database.update(DBHelper.TABLE_CIRCLE_ITEMS, values, DBHelper.CIRCLEITEM_COLUMN_ITEMID + "='" +
                     event.getId() + "'", null);
-            Log.d(TAG, "Updated item with id " + event.getId() + ", " + rows + " row(s) affected");
+            Log.d(TAG, "Updated item with id " + event.getId() + " with status " + syncStatus + ", " + rows + " row(s) affected");
             values.clear();
 
             values.put(DBHelper.EVENT_COLUMN_NAME, event.getName());
@@ -1210,20 +1251,18 @@ public class DataUpdater {
                         new ResponseListener() {
                             @Override
                             public void onSuccess(JSONObject response) {
-                                if (handler != null) handler.sendEmptyMessage(Const.MSG_EVENT_UPDATED_SUCCESS);
+                                setSyncStatus(event, Const.MSG_EVENT_UPDATED_SUCCESS, BoardItem.SYNC_COMPLETE);
                             }
 
                             @Override
                             public void onError(VolleyError error) {
-                                if (handler != null) {
-                                    handler.sendMessage(handler.obtainMessage(Const.MSG_EVENT_UPDATED_FAILED, event));
-                                }
+                                setSyncStatus(event, Const.MSG_EVENT_UPDATED_FAILED, BoardItem.SYNC_ERROR);
                             }
                         });
             }
             catch (Exception ex) {
                 ex.printStackTrace();
-                if (handler != null) handler.sendMessage(handler.obtainMessage(Const.MSG_EVENT_UPDATED_FAILED, event));
+                setSyncStatus(event, Const.MSG_EVENT_UPDATED_FAILED, BoardItem.SYNC_ERROR);
             }
         }
     }
@@ -1277,6 +1316,10 @@ public class DataUpdater {
                 rows = database.delete(DBHelper.TABLE_EVENTS, DBHelper.EVENT_COLUMN_ID + "='" + id + "'", null);
                 Log.d(TAG, "Deleted event id " + id + " from event table, affected " + rows + " row(s)");
             }
+            else if (item.getType() == BoardItem.TYPE_FILE) {
+                rows = database.delete(DBHelper.TABLE_FILES, DBHelper.FILE_COLUMN_ID + "='" + id + "'", null);
+                Log.d(TAG, "Deleted file id " + id + " from file table, affected " + rows + " row(s)");
+            }
         }
     }
 
@@ -1301,6 +1344,7 @@ public class DataUpdater {
     }
 
     private EventItem serializeEvent(Cursor cursor, Circle circle) {
+        int syncColumn = cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_SYNC);
         int createdTimeColumn = cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_CREATED_TIME);
         int updatedTimeColumn = cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME);
 
@@ -1313,7 +1357,7 @@ public class DataUpdater {
         int longColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_LONGITUDE);
         int noteColumn = cursor.getColumnIndex(DBHelper.EVENT_COLUMN_NOTE);
 
-
+        int syncStatus = cursor.getInt(syncColumn);
         DateTime createdTime = new DateTime(cursor.getLong(createdTimeColumn));
         DateTime updatedTime = new DateTime(cursor.getLong(updatedTimeColumn));
         String id = cursor.getString(idColumn);
@@ -1335,6 +1379,7 @@ public class DataUpdater {
 
         EventItem event = EventItem.createEvent(id, circle, createdTime, updatedTime);
         event.setEventInfo(name, time, endTime, place,location, note);
+        event.setSyncStatus(syncStatus);
         return event;
     }
 
@@ -1366,9 +1411,9 @@ public class DataUpdater {
                                 Log.d(TAG, "Size found is " + item.getSize());
                                 Log.d(TAG, "Path is " + path);
 
-                                //TODO
                                 //update db
-                                createFileDB(circle, item.getCreatedTime(), item);
+                                createFileDB(circle, item.getCreatedTime(), item,
+                                        sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
 
                                 // this 1000 ms delayed is set due to recyclerview animation bug where it needs some time
                                 // for animation to work
@@ -1407,7 +1452,7 @@ public class DataUpdater {
         return mimeType;
     }
 
-    private void createFileDB(Circle circle, DateTime createdTime, FileItem item) {
+    private void createFileDB(Circle circle, DateTime createdTime, FileItem item, int syncStatus) {
         if (!database.isOpen()) open();
         database.beginTransaction();
 
@@ -1416,6 +1461,7 @@ public class DataUpdater {
             values.put(DBHelper.CIRCLEITEM_COLUMN_CIRCLEID, circle.getId());
             values.put(DBHelper.CIRCLEITEM_COLUMN_ITEMID, item.getId());
             values.put(DBHelper.CIRCLEITEM_COLUMN_TYPE, item.getType());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_SYNC, syncStatus);
             values.put(DBHelper.CIRCLEITEM_COLUMN_CREATED_TIME, createdTime.getMillis());
             values.put(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME, createdTime.getMillis());
             long insertId = database.insert(DBHelper.TABLE_CIRCLE_ITEMS, null, values);
@@ -1439,6 +1485,27 @@ public class DataUpdater {
         finally {
             database.endTransaction();
         }
+    }
+
+    private FileItem serializeFile(Cursor cursor, Circle circle) {
+        int syncStatus = cursor.getInt(cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_SYNC));
+        DateTime created = new DateTime(cursor.getLong(cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_CREATED_TIME)));
+        DateTime updated = new DateTime(cursor.getLong(cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME)));
+        String id = cursor.getString(cursor.getColumnIndex(DBHelper.FILE_COLUMN_ID));
+        String name = cursor.getString(cursor.getColumnIndex(DBHelper.FILE_COLUMN_NAME));
+        long size = cursor.getLong(cursor.getColumnIndex(DBHelper.FILE_COLUMN_SIZE));
+        String path = cursor.getString(cursor.getColumnIndex(DBHelper.FILE_COLUMN_PATH));
+        String mimetype = cursor.getString(cursor.getColumnIndex(DBHelper.FILE_COLUMN_MIMETYPE));
+        String note = cursor.getString(cursor.getColumnIndex(DBHelper.FILE_COLUMN_NOTE));
+
+        FileItem file = FileItem.createFile(id, circle, path, created, updated);
+        file.setName(name);
+        file.setSize(size);
+        file.setMimetype(mimetype);
+        file.setPath(path);
+        file.setNote(note);
+        file.setSyncStatus(syncStatus);
+        return file;
     }
 
     /*************************************************

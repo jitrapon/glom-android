@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Handler;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
 import android.text.Html;
 import android.text.TextUtils;
@@ -72,6 +73,7 @@ public class BoardRecyclerViewAdapter
         ImageView posterAvatar;
         TextView posterName;
         TextView postTime;
+        ImageView syncStatus;
 
         TextView eventName;
         TextView eventVenue;
@@ -89,6 +91,7 @@ public class BoardRecyclerViewAdapter
             posterAvatar = (ImageView) itemView.findViewById(R.id.cardUserAvatar);
             posterName = (TextView) itemView.findViewById(R.id.cardUserName);
             postTime = (TextView) itemView.findViewById(R.id.cardUserPostTime);
+            syncStatus = (ImageView) itemView.findViewById(R.id.card_sync_status);
 
             eventName = (TextView) itemView.findViewById(R.id.cardEventName);
             eventVenue = (TextView) itemView.findViewById(R.id.cardEventVenue);
@@ -106,6 +109,7 @@ public class BoardRecyclerViewAdapter
         ImageView posterAvatar;
         TextView posterName;
         TextView postTime;
+        ImageView syncStatus;
 
         TextView fileName;
         TextView fileNote;
@@ -121,6 +125,7 @@ public class BoardRecyclerViewAdapter
             posterAvatar = (ImageView) itemView.findViewById(R.id.card_user_avatar);
             posterName = (TextView) itemView.findViewById(R.id.card_user_name);
             postTime = (TextView) itemView.findViewById(R.id.card_user_post_time);
+            syncStatus = (ImageView) itemView.findViewById(R.id.card_sync_status);
 
             fileName = (TextView) itemView.findViewById(R.id.file_name);
             fileNote = (TextView) itemView.findViewById(R.id.file_note);
@@ -140,7 +145,7 @@ public class BoardRecyclerViewAdapter
     public void update(List<BoardItem> events) {
         // update from specific list of items
         if (events != null) {
-            this.items = events;
+            items = events;
             notifyDataSetChanged();
         }
 
@@ -209,7 +214,7 @@ public class BoardRecyclerViewAdapter
                     double lng = event.getLocation() == null ? 0 : event.getLocation().getLongitude();
                     String note = TextUtils.isEmpty(event.getNote()) ? "" : event.getNote();
                     id = (event.getId() + event.getType() + event.getUpdatedTime() + name + startTime + endTime +
-                            place + lat + lng + note).hashCode();
+                            place + lat + lng + note + event.getSyncStatus()).hashCode();
                 }
                 else if (item.getType() == BoardItem.TYPE_FILE) {
                     FileItem file = (FileItem) item;
@@ -220,7 +225,7 @@ public class BoardRecyclerViewAdapter
                     String path = file.getFile()==null? "" : file.getFile().getPath();
                     long created = file.getCreatedTime() == null ? 0L : file.getCreatedTime().getMillis();
                     long updated = file.getUpdatedTime() == null ? 0L : file.getUpdatedTime().getMillis();
-                    id = (name + note + mimetype + size + path + created + updated).hashCode();
+                    id = (name + note + mimetype + size + path + created + updated + + file.getSyncStatus()).hashCode();
                 }
 
                 Log.d(TAG, "Board item hashcode for position " + (position - 1) + " is " + id);
@@ -274,6 +279,7 @@ public class BoardRecyclerViewAdapter
                     public void onClick(DialogInterface dialog, int item) {
                         switch (item) {
                             case 0:
+                                if (handler != null) handler.sendMessage(handler.obtainMessage(Const.MSG_ITEM_TO_DELETE, id));
                                 break;
                             case 1:
 
@@ -293,6 +299,17 @@ public class BoardRecyclerViewAdapter
                 alert.show();
             }
         });
+
+        if (file.getSyncStatus() == BoardItem.SYNC_COMPLETE)
+            holder.syncStatus.setVisibility(View.INVISIBLE);
+        else {
+            holder.syncStatus.setVisibility(View.VISIBLE);
+
+            if (file.getSyncStatus() == BoardItem.SYNC_ERROR)
+                holder.syncStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync_failed));
+            else if (file.getSyncStatus() == BoardItem.SYNC_IN_PROGRESS)
+                holder.syncStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync));
+        }
 
         // update poster info
         FeedAction feedAction = file.getLastAction();
@@ -432,6 +449,18 @@ public class BoardRecyclerViewAdapter
         // if the hosts contains the user, set action and text accordingly (Edit, Share)
         // if the hosts doesn't contain the user, set action to (Attend, Miss)
         //TODO
+
+        // set sync status
+        if (event.getSyncStatus() == BoardItem.SYNC_COMPLETE)
+            holder.syncStatus.setVisibility(View.INVISIBLE);
+        else {
+            holder.syncStatus.setVisibility(View.VISIBLE);
+
+            if (event.getSyncStatus() == BoardItem.SYNC_ERROR)
+                holder.syncStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync_failed));
+            else if (event.getSyncStatus() == BoardItem.SYNC_IN_PROGRESS)
+                holder.syncStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync));
+        }
 
         // update poster info
         FeedAction feedAction = event.getLastAction();

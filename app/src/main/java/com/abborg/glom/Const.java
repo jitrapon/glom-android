@@ -10,8 +10,8 @@ public class Const {
     /**
      * TEST INFO
      * **/
-//    public static final String TEST_USER_ID = "yoshi3003";
-    public static final String TEST_USER_ID = "fatcat18";
+    public static final String TEST_USER_ID = "yoshi3003";
+//    public static final String TEST_USER_ID = "fatcat18";
     public static final String TEST_CIRCLE_ID = "dev-test-circle-1";
     public static final String TEST_API_AUTHORIZATION_HEADER = "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -110,6 +110,7 @@ public class Const {
     public static final int MSG_DISCOVER_ITEM = 5013;
     public static final int MSG_PLAY_YOUTUBE_VIDEO = 5014;
     public static final int MSG_FILE_POSTED = 5015;
+    public static final int MSG_CHANGE_SYNC_STATUS = 5016;
 
     /**
      * Mimetypes

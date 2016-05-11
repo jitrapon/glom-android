@@ -123,9 +123,9 @@ public class DBHelper extends SQLiteOpenHelper {
             FILE_COLUMN_ID + " TEXT, " +
             FILE_COLUMN_NAME + " TEXT, " +
             FILE_COLUMN_SIZE + " INTEGER, " +
-            FILE_COLUMN_MIMETYPE + "TEXT, " +
-            FILE_COLUMN_PATH + "TEXT, " +
-            FILE_COLUMN_NOTE + "TEXT, " +
+            FILE_COLUMN_MIMETYPE + " TEXT, " +
+            FILE_COLUMN_PATH + " TEXT, " +
+            FILE_COLUMN_NOTE + " TEXT, " +
             "FOREIGN KEY (" + FILE_COLUMN_ID + ") REFERENCES " + TABLE_CIRCLE_ITEMS + "(" + CIRCLEITEM_COLUMN_ITEMID + ") " + DATABASE_CASCADE +
             ");";
 

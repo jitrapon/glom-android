@@ -946,7 +946,17 @@ public class MainActivity extends AppCompatActivity
 
             /* Request: create event successfully synced with server */
             case Const.MSG_EVENT_CREATED_SUCCESS: {
-                final EventItem event = msg.obj == null ? null : (EventItem) msg.obj;
+                EventItem item = msg.obj == null ? null : (EventItem) msg.obj;
+                int status = msg.arg1;
+
+                if (item != null) {
+                    item.setSyncStatus(status);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
 
                 Toast.makeText(getApplicationContext(), getResources().getString(R.string.notification_created_item_success),
                         Toast.LENGTH_LONG).show();
@@ -955,15 +965,25 @@ public class MainActivity extends AppCompatActivity
 
             /* Request: create event failed to sync with server */
             case Const.MSG_EVENT_CREATED_FAILED: {
-                final EventItem event = msg.obj == null ? null : (EventItem) msg.obj;
+                final EventItem item = msg.obj == null ? null : (EventItem) msg.obj;
+                int status = msg.arg1;
+
+                if (item != null) {
+                    item.setSyncStatus(status);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
 
                 Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_created_item_failed),
                         Snackbar.LENGTH_LONG)
                         .setAction(getResources().getString(R.string.menu_item_try_again), new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
-                                if (event != null) {
-                                    dataUpdater.requestCreateEvent(appState.getActiveCircle(), event);
+                                if (item != null) {
+                                    dataUpdater.requestCreateEvent(appState.getActiveCircle(), item);
                                 }
                             }
                         })
@@ -987,22 +1007,45 @@ public class MainActivity extends AppCompatActivity
             }
 
             /* Request: update event successfully synced with server */
-            case Const.MSG_EVENT_UPDATED_SUCCESS:
+            case Const.MSG_EVENT_UPDATED_SUCCESS: {
+                EventItem item = msg.obj == null ? null : (EventItem) msg.obj;
+                int status = msg.arg1;
+
+                if (item != null) {
+                    item.setSyncStatus(status);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
+
                 Toast.makeText(getApplicationContext(), getResources().getString(R.string.notification_updated_item_success),
                         Toast.LENGTH_LONG).show();
                 break;
+            }
 
             /* Request: update event failed to sync with server */
             case Const.MSG_EVENT_UPDATED_FAILED: {
-                final EventItem event = msg.obj == null ? null : (EventItem) msg.obj;
+                final EventItem item = msg.obj == null ? null : (EventItem) msg.obj;
+                int status = msg.arg1;
+
+                if (item != null) {
+                    item.setSyncStatus(status);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
 
                 Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_updated_item_failed),
                         Snackbar.LENGTH_LONG)
                         .setAction(getResources().getString(R.string.menu_item_try_again), new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
-                                if (event != null) {
-                                    dataUpdater.requestUpdateEvent(appState.getActiveCircle(), event);
+                                if (item != null) {
+                                    dataUpdater.requestUpdateEvent(appState.getActiveCircle(), item);
                                 }
                             }
                         })
@@ -1011,7 +1054,7 @@ public class MainActivity extends AppCompatActivity
             }
 
             /* Request: delete board item from a circle */
-            case Const.MSG_ITEM_TO_DELETE:
+            case Const.MSG_ITEM_TO_DELETE: {
                 String id = (String) msg.obj;
                 if (boardItemChangeListeners != null) {
                     for (BoardItemChangeListener listener : boardItemChangeListeners) {
@@ -1021,6 +1064,7 @@ public class MainActivity extends AppCompatActivity
                 dataUpdater.deleteItemAsync(id, appState.getActiveCircle(), true);
 
                 break;
+            }
 
             /* Request: delete board item successfully */
             case Const.MSG_ITEM_DELETED_SUCCESS:

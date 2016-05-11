@@ -56,6 +56,8 @@
     <dimen name="card_primary_text_size">24sp</dimen>
     <dimen name="card_supporting_text_size">14sp</dimen>
     <dimen name="card_post_time_padding_bottom">20dp</dimen>
+    <dimen name="card_sync_status_size">35dp</dimen>
+    <dimen name="card_sync_status_margin">14dp</dimen>
     <dimen name="card_primary_text_padding_top">24dp</dimen>
     <dimen name="event_card_event_info_padding">16dp</dimen>
     <dimen name="card_primary_text_padding_bottom">12dp</dimen>
