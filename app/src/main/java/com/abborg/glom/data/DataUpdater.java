@@ -1541,8 +1541,8 @@ public class DataUpdater {
             values.put(DBHelper.FILE_COLUMN_PATH, file.getFile()==null ? null : file.getFile().getPath());
             values.put(DBHelper.FILE_COLUMN_MIMETYPE, file.getMimetype());
             values.put(DBHelper.FILE_COLUMN_NOTE, file.getNote());
-            rows = database.update(DBHelper.TABLE_EVENTS, values,
-                    DBHelper.EVENT_COLUMN_ID + "='" + file.getId() + "'", null);
+            rows = database.update(DBHelper.TABLE_FILES, values,
+                    DBHelper.FILE_COLUMN_ID + "='" + file.getId() + "'", null);
             Log.d(TAG, "Updated file id: " + file.getId() + ", name: " +
                     file.getName() + ", size: " + file.getSize() + ", mimetype: " + file.getMimetype() + ", " + rows + " row(s) affected");
 
