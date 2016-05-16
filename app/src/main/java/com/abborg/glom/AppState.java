@@ -90,12 +90,13 @@ public class AppState
         if (!apiClient.isConnected()) apiClient.connect();
         keepGoogleApiAlive = false;
 
+        // initialize the date format
         dateTimeFormatter = DateTimeFormat.forPattern(context.getResources().getString(R.string.action_create_event_datetime_format));
 
+        // initialize the google API key
         GOOGLE_API_KEY = context.getResources().getString(R.string.google_maps_key);
 
-        //TODO initialize XMPP connection
-
+        // initialize model and data provider
         DataUpdater.init(this, context, handler);
     }
 

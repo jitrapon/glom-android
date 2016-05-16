@@ -32,6 +32,9 @@ public class FileItem extends BoardItem {
     /* Reference to file */
     private File file;
 
+    /* Current progress of upload/download */
+    private int progress;
+
     private static List<String> imageFileTypes = Arrays.asList(
             Const.FILE_TYPE_JPEG,
             Const.FILE_TYPE_JPG,
@@ -97,4 +100,8 @@ public class FileItem extends BoardItem {
     public void setName(String name) { this.name = name; }
 
     public void setSize(long size) { this.size = size; }
+
+    public void setProgress(int progress) { this.progress = progress; }
+
+    public int getProgress() { return progress; }
 }

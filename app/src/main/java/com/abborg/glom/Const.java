@@ -4,14 +4,16 @@ public class Const {
 
 //    public static final String HOST_ADDRESS = "http://putsreq.com/KJVQCdWbHg0xXf2aHWf1";
     public static String HOST_ADDRESS = BuildConfig.SERVER_URL;
+    public static String AWS_IDENTIY_POOL_ID = BuildConfig.AWS_COGNITO_IDENTITY_POOL;
+    public static String AWS_S3_BUCKET = BuildConfig.AWS_S3_BUCKET;
     public static final String SENT_TOKEN_TO_SERVER = "sentTokenToServer";
     public static final String REGISTRATION_COMPLETE = "registrationComplete";
 
     /**
      * TEST INFO
      * **/
-    public static final String TEST_USER_ID = "yoshi3003";
-//    public static final String TEST_USER_ID = "fatcat18";
+//    public static final String TEST_USER_ID = "yoshi3003";
+    public static final String TEST_USER_ID = "fatcat18";
     public static final String TEST_CIRCLE_ID = "dev-test-circle-1";
     public static final String TEST_API_AUTHORIZATION_HEADER = "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -91,6 +93,11 @@ public class Const {
     public static final String JSON_SERVER_RELEASE_DATE = "release_date";
     public static final String JSON_SERVER_DIRECTOR = "director";
     public static final String JSON_SERVER_CAST = "cast";
+    public static final String JSON_SERVER_FILE_NAME = "file_name";
+    public static final String JSON_SERVER_FILE_SIZE = "size";
+    public static final String JSON_SERVER_FILE_MIMETYPE = "mimetype";
+    public static final String JSON_SERVER_FILE_NOTE = "note";
+    public static final String JSON_SERVER_FILE_PROVIDER = "provider";
 
     /**
      * HANDLER WHAT CONSTANTS
@@ -110,7 +117,9 @@ public class Const {
     public static final int MSG_DISCOVER_ITEM = 5013;
     public static final int MSG_PLAY_YOUTUBE_VIDEO = 5014;
     public static final int MSG_FILE_POSTED = 5015;
-    public static final int MSG_CHANGE_SYNC_STATUS = 5016;
+    public static final int MSG_FILE_POST_FAILED = 5016;
+    public static final int MSG_FILE_POST_SUCCESS = 5017;
+    public static final int MSG_FILE_POST_IN_PROGRESS = 5018;
 
     /**
      * Mimetypes

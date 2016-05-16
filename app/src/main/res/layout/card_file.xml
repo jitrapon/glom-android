@@ -67,10 +67,21 @@
 
             </RelativeLayout>
 
-            <View
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="@color/lineDivider"/>
+                android:layout_height="wrap_content">
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/lineDivider"/>
+
+                <ProgressBar
+                    android:id="@+id/file_progress"
+                    android:layout_width="match_parent"
+                    android:layout_height="3dp" />
+
+            </FrameLayout>
 
             <LinearLayout
                 android:id="@+id/file_layout"

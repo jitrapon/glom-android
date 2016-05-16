@@ -18,11 +18,15 @@ android {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             buildConfigField "String", "SERVER_URL", "\"http://glom-betec.rhcloud.com\""
+            buildConfigField "String", "AWS_COGNITO_IDENTITY_POOL", "\"us-east-1:e2e96c7b-f9cd-4e94-a4c6-4345fb289c83\""
+            buildConfigField "String", "AWS_S3_BUCKET", "\"betec-glom\""
         }
         debug {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             buildConfigField "String", "SERVER_URL", "\"http://10.11.3.201:8080\""
+            buildConfigField "String", "AWS_COGNITO_IDENTITY_POOL", "\"us-east-1:e2e96c7b-f9cd-4e94-a4c6-4345fb289c83\""
+            buildConfigField "String", "AWS_S3_BUCKET", "\"betec-glom\""
         }
     }
     compileOptions {
@@ -78,4 +82,8 @@ dependencies {
     }
     //    compile 'jp.wasabeef:recyclerview-animators:2.2.0'    // commented out for now due to incompatible with new support lib
     compile files('libs/YouTubeAndroidPlayerApi.jar')
+    compile 'com.amazonaws:aws-android-sdk-core:2.2.16'
+    compile 'com.amazonaws:aws-android-sdk-cognito:2.2.16'
+    compile 'com.amazonaws:aws-android-sdk-s3:2.2.16'
+    compile 'com.amazonaws:aws-android-sdk-ddb:2.2.16'
 }

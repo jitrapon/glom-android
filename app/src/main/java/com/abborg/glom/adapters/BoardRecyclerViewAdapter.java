@@ -14,6 +14,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.abborg.glom.AppState;
@@ -115,6 +116,8 @@ public class BoardRecyclerViewAdapter
         TextView fileNote;
         ImageView fileThumbnail;
 
+        ProgressBar progressBar;
+
         public FileHolder(View itemView) {
             super(itemView);
 
@@ -130,6 +133,8 @@ public class BoardRecyclerViewAdapter
             fileName = (TextView) itemView.findViewById(R.id.file_name);
             fileNote = (TextView) itemView.findViewById(R.id.file_note);
             fileThumbnail = (ImageView) itemView.findViewById(R.id.file_thumbnail);
+
+            progressBar = (ProgressBar) itemView.findViewById(R.id.file_progress);
         }
     }
 
@@ -300,15 +305,26 @@ public class BoardRecyclerViewAdapter
             }
         });
 
-        if (file.getSyncStatus() == BoardItem.SYNC_COMPLETE)
+        if (file.getSyncStatus() == BoardItem.SYNC_COMPLETE) {
             holder.syncStatus.setVisibility(View.INVISIBLE);
+            holder.progressBar.setVisibility(View.GONE);
+        }
         else {
             holder.syncStatus.setVisibility(View.VISIBLE);
+            holder.progressBar.setVisibility(View.VISIBLE);
 
             if (file.getSyncStatus() == BoardItem.SYNC_ERROR)
                 holder.syncStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync_failed));
-            else if (file.getSyncStatus() == BoardItem.SYNC_IN_PROGRESS)
+            else if (file.getSyncStatus() == BoardItem.SYNC_IN_PROGRESS) {
                 holder.syncStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync));
+                if (file.getProgress() > 0) {
+                    holder.progressBar.setIndeterminate(false);
+                    holder.progressBar.setProgress(file.getProgress());
+                }
+                else {
+                    holder.progressBar.setIndeterminate(true);
+                }
+            }
         }
 
         // update poster info
@@ -383,16 +399,20 @@ public class BoardRecyclerViewAdapter
                         .into(holder.fileThumbnail);
             }
             else {
-                if (file.getFile().exists()) {
-                    Log.d(TAG, file.getFile().getPath());
+                if (file.getFile() != null && file.getFile().exists()) {
+                    Glide.with(context)
+                            .load(file.getFile()).centerCrop()
+                            .placeholder(icon)
+                            .error(icon)
+                            .crossFade(1000)
+                            .into(holder.fileThumbnail);
                 }
-                else Log.e(TAG, file.getFile().getPath());
-                Glide.with(context)
-                        .load(file.getFile()).centerCrop()
-                        .placeholder(icon)
-                        .error(icon)
-                        .crossFade(1000)
-                        .into(holder.fileThumbnail);
+                else {
+                    Glide.with(context)
+                            .load(icon).centerCrop()
+                            .crossFade(1000)
+                            .into(holder.fileThumbnail);
+                }
             }
         }
         else {

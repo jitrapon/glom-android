@@ -29,6 +29,7 @@ import com.abborg.glom.model.BaseChatMessage;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CircleInfo;
+import com.abborg.glom.model.CloudProvider;
 import com.abborg.glom.model.DiscoverItem;
 import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FeedAction;
@@ -39,6 +40,7 @@ import com.abborg.glom.model.WatchableFeed;
 import com.abborg.glom.model.WatchableImage;
 import com.abborg.glom.model.WatchableRating;
 import com.abborg.glom.model.WatchableVideo;
+import com.abborg.glom.utils.FileTransfer;
 import com.abborg.glom.utils.PathUtils;
 import com.abborg.glom.utils.RequestHandler;
 import com.android.volley.VolleyError;
@@ -58,7 +60,7 @@ import java.util.concurrent.Executors;
 
 /**
  * Class that wraps around model to perform CRUD operations on database and 
- * make necessary network operations
+ * make necessary network operations.
  *
  * Created by Jitrapon Tiachunpun on 22/9/58.
  */
@@ -90,6 +92,9 @@ public class DataUpdater {
     /* Executor service thread pool */
     private final ExecutorService threadPool;
 
+    /* File transfer helper */
+    private FileTransfer fileTransfer;
+
     /* Determines the type of app start */
     public enum AppStart {
         FIRST_TIME, FIRST_TIME_VERSION, NORMAL;
@@ -99,6 +104,10 @@ public class DataUpdater {
     private static final String LAST_APP_VERSION = "last_app_version";
 
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
+
+    /*************************************************
+     * INITIALIZATION OPERATIONS
+     *************************************************/
 
     public void run(Runnable runnable) {
         threadPool.submit(runnable);
@@ -242,7 +251,9 @@ public class DataUpdater {
     public void close() {
         Log.d(TAG, "Closing database");
         dbHelper.close();
-    }
+
+
+       }
 
     /*************************************************
      * CIRCLE OPERATIONS
@@ -784,6 +795,7 @@ public class DataUpdater {
                                             for (BoardItem item : items) {
                                                 if (item.getSyncStatus() != BoardItem.NO_SYNC &&
                                                         item.getSyncStatus() != BoardItem.SYNC_ERROR)
+                                                    Log.d(TAG, "Setting item " + item.getId() + " dirty");
                                                     item.setDirty(true);
                                             }
                                         }
@@ -849,6 +861,38 @@ public class DataUpdater {
                                                             }
                                                             break;
                                                         }
+
+                                                        case BoardItem.TYPE_FILE: {
+                                                            String name = info.getString(Const.JSON_SERVER_FILE_NAME);
+                                                            long size = info.getLong(Const.JSON_SERVER_FILE_SIZE);
+                                                            String mimetype = info.getString(Const.JSON_SERVER_FILE_MIMETYPE);
+                                                            String note = info.getString(Const.JSON_SERVER_FILE_NOTE);
+                                                            int provider = info.getInt(Const.JSON_SERVER_FILE_PROVIDER);
+
+                                                            name = name.equals("null") ? null : name;
+                                                            note = note.equals("null") ? null : note;
+
+                                                            FileItem file = null;
+
+                                                            if (items != null) {
+                                                                for (BoardItem item : items) {
+                                                                    if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_FILE) {
+                                                                        file = (FileItem) item;
+                                                                    }
+                                                                }
+                                                                if (file == null) {
+                                                                    DateTime createdTime = createdMillis == null ? null : new DateTime(createdMillis);
+                                                                    createFile(circle, createdTime, id, name, size, mimetype, note, provider);
+                                                                }
+                                                                else if (file.getSyncStatus() != BoardItem.NO_SYNC) {
+                                                                    DateTime updatedTime = updatedMillis == null ? null : new DateTime(updatedMillis);
+                                                                    updateFile(circle, updatedTime, id, name, size, mimetype, note, provider);
+                                                                    file.setDirty(false);
+                                                                }
+                                                            }
+
+                                                            break;
+                                                        }
                                                         default:
                                                             break;
                                                     }
@@ -862,7 +906,7 @@ public class DataUpdater {
                                         while (iterator.hasNext()) {
                                             BoardItem item = iterator.next();
                                             if (item.isDirty()) {
-                                                iterator.remove();
+                                                Log.d(TAG, "Item " + item.getId() + " is dirty, deleting...");
                                                 deleteItemDB(item);
                                             }
                                         }
@@ -1042,6 +1086,7 @@ public class DataUpdater {
         final EventItem event = TextUtils.isEmpty(id) ? EventItem.createEvent(circle, createdTime, createdTime)
                 : EventItem.createEvent(id, circle, createdTime, createdTime);
         event.setEventInfo(name, startTime, endTime, placeId, location, note);
+        event.setSyncStatus(BoardItem.SYNC_COMPLETE);
         event.setLastAction(new FeedAction(FeedAction.CREATE_EVENT, activeUser, createdTime));
         circle.addItem(event);
 
@@ -1163,6 +1208,7 @@ public class DataUpdater {
             event.setPlace(place);
             event.setLocation(location);
             event.setNote(note);
+            event.setSyncStatus(BoardItem.SYNC_COMPLETE);
 
             updateEventDB(updatedTime, event, BoardItem.SYNC_COMPLETE);
         }
@@ -1267,41 +1313,33 @@ public class DataUpdater {
         }
     }
 
-    public void deleteItemAsync(String id, final Circle circle, final boolean sync) {
-        List<BoardItem> items = circle.getItems();
-        BoardItem deleted = null;
-        for (int index = 0; index < items.size(); index++) {
-            if (items.get(index).getId().equals(id)) {
-                deleted = items.remove(index);
-                break;
-            }
-        }
-
-        final BoardItem item = deleted;
+    public void deleteItemAsync(final String id, final Circle circle, final boolean sync) {
         run(new Runnable() {
             @Override
             public void run() {
-                deleteItemDB(item);
+                List<BoardItem> items = circle.getItems();
+                BoardItem item = null;
+                for (int index = 0; index < items.size(); index++) {
+                    if (items.get(index).getId().equals(id)) {
+                        item = items.get(index);
+                        break;
+                    }
+                }
 
-                if (sync) requestDeleteItem(circle, item);
-                else if (handler != null) handler.sendEmptyMessage(Const.MSG_ITEM_DELETED_SUCCESS);
+                if (item == null) return;
+                if (item.getSyncStatus() == BoardItem.NO_SYNC || item.getSyncStatus() == BoardItem.SYNC_ERROR) {
+                    Log.d(TAG, "Deleting item because sync status is either none or error");
+                    final BoardItem deletedItem = item;
+                    deleteItemDB(deletedItem);
+                }
+                else {
+                    Log.d(TAG, "Sending request to delete item");
+                    if (item.getType() == BoardItem.TYPE_FILE)
+                        requestDeleteFileRemote(circle, (FileItem) item, CloudProvider.AMAZON_S3);
+                    else requestDeleteItem(circle, item);
+                }
             }
         });
-    }
-
-    public void deleteItem(String id, Circle circle, boolean sync) {
-        List<BoardItem> items = circle.getItems();
-        BoardItem deleted = null;
-        for (int index = 0; index < items.size(); index++) {
-            if (items.get(index).getId().equals(id)) {
-                deleted = items.remove(index);
-                break;
-            }
-        }
-
-        deleteItemDB(deleted);
-
-        if (sync) requestDeleteItem(circle, deleted);
     }
 
     public void deleteItemDB(BoardItem item) {
@@ -1320,6 +1358,10 @@ public class DataUpdater {
                 rows = database.delete(DBHelper.TABLE_FILES, DBHelper.FILE_COLUMN_ID + "='" + id + "'", null);
                 Log.d(TAG, "Deleted file id " + id + " from file table, affected " + rows + " row(s)");
             }
+
+            if (handler != null) {
+                handler.sendMessage(handler.obtainMessage(Const.MSG_ITEM_DELETED_SUCCESS, -1, -1, item));
+            }
         }
     }
 
@@ -1329,8 +1371,12 @@ public class DataUpdater {
                     new ResponseListener() {
                         @Override
                         public void onSuccess(JSONObject response) {
-                            if (handler != null)
-                                handler.sendEmptyMessage(Const.MSG_ITEM_DELETED_SUCCESS);
+                            run(new Runnable() {
+                                @Override
+                                public void run() {
+                                    deleteItemDB(item);
+                                }
+                            });
                         }
 
                         @Override
@@ -1421,7 +1467,7 @@ public class DataUpdater {
                                     handler.sendMessageDelayed(handler.obtainMessage(Const.MSG_FILE_POSTED, item), 1000);
 
                                 // whether or not to sync with the server
-//                              if (sync) requestPostFile(circle, item);
+                                if (sync) requestUploadFileRemote(circle, item, CloudProvider.AMAZON_S3);
                             }
                         }
                         catch (Exception ex) {
@@ -1435,6 +1481,79 @@ public class DataUpdater {
                 }
             }
         });
+    }
+
+    private FileItem createFile(Circle circle, DateTime createdTime,
+                                String id, String name, long size, String mimetype, String note, int provider) {
+        createdTime = createdTime==null ? DateTime.now() : createdTime;
+        final FileItem file = TextUtils.isEmpty(id) ? FileItem.createFile(circle)
+                : FileItem.createFile(id, circle, null, createdTime, createdTime);
+        file.setName(name);
+        file.setSize(size);
+        file.setMimetype(mimetype);
+        file.setNote(note);
+        file.setSyncStatus(BoardItem.SYNC_COMPLETE);
+        circle.addItem(file);
+
+        createFileDB(circle, createdTime, file, BoardItem.SYNC_COMPLETE);
+
+        return file;
+    }
+
+    private void updateFile(Circle circle, DateTime updatedTime,
+                            String id, String name, long size, String mimetype, String note, int provider) {
+        List<BoardItem> items = circle.getItems();
+        FileItem file = null;
+        for (BoardItem item : items) {
+            if (item.getId().equals(id) && item instanceof FileItem) {
+                file = (FileItem) item;
+                break;
+            }
+        }
+
+        if (file != null) {
+            updatedTime = updatedTime==null? DateTime.now() : updatedTime;
+            file.setName(name);
+            file.setSize(size);
+            file.setMimetype(mimetype);
+            file.setNote(note);
+            file.setSyncStatus(BoardItem.SYNC_COMPLETE);
+
+            updateFileDB(updatedTime, file, BoardItem.SYNC_COMPLETE);
+        }
+    }
+
+    private void updateFileDB(DateTime updatedTime, FileItem file, int syncStatus) {
+        if (!database.isOpen()) open();
+        database.beginTransaction();
+
+        try {
+            ContentValues values = new ContentValues();
+            values.put(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME, updatedTime.getMillis());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_SYNC, syncStatus);
+            int rows = database.update(DBHelper.TABLE_CIRCLE_ITEMS, values, DBHelper.CIRCLEITEM_COLUMN_ITEMID + "='" +
+                    file.getId() + "'", null);
+            Log.d(TAG, "Updated item with id " + file.getId() + " with status " + syncStatus + ", " + rows + " row(s) affected");
+            values.clear();
+
+            values.put(DBHelper.FILE_COLUMN_NAME, file.getName());
+            values.put(DBHelper.FILE_COLUMN_SIZE, file.getSize());
+            values.put(DBHelper.FILE_COLUMN_PATH, file.getFile()==null ? null : file.getFile().getPath());
+            values.put(DBHelper.FILE_COLUMN_MIMETYPE, file.getMimetype());
+            values.put(DBHelper.FILE_COLUMN_NOTE, file.getNote());
+            rows = database.update(DBHelper.TABLE_EVENTS, values,
+                    DBHelper.EVENT_COLUMN_ID + "='" + file.getId() + "'", null);
+            Log.d(TAG, "Updated file id: " + file.getId() + ", name: " +
+                    file.getName() + ", size: " + file.getSize() + ", mimetype: " + file.getMimetype() + ", " + rows + " row(s) affected");
+
+            database.setTransactionSuccessful();
+        }
+        catch (SQLException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
+        finally {
+            database.endTransaction();
+        }
     }
 
     private String getFileMimeType(Uri uri) {
@@ -1502,10 +1621,66 @@ public class DataUpdater {
         file.setName(name);
         file.setSize(size);
         file.setMimetype(mimetype);
-        file.setPath(path);
+        if (!TextUtils.isEmpty(path)) file.setPath(path);
         file.setNote(note);
         file.setSyncStatus(syncStatus);
         return file;
+    }
+
+    public void requestUploadFileRemote(final Circle circle, final FileItem file, final CloudProvider provider) {
+        final DataUpdater dataUpdater = this;
+        run(new Runnable() {
+            @Override
+            public void run() {
+                if (fileTransfer == null) fileTransfer = new FileTransfer(dataUpdater, context, handler);
+                fileTransfer.upload(provider, circle, file);
+            }
+        });
+    }
+
+    public void requestDeleteFileRemote(final Circle circle, final FileItem file, final CloudProvider provider) {
+        final DataUpdater dataUpdater = this;
+        run(new Runnable() {
+            @Override
+            public void run() {
+                if (fileTransfer == null) fileTransfer = new FileTransfer(dataUpdater, context, handler);
+                fileTransfer.delete(provider, circle, file);
+            }
+        });
+    }
+
+    public void requestPostFile(final Circle circle, final FileItem file, final CloudProvider provider) {
+        try {
+            JSONObject info = new JSONObject()
+                    .put(Const.JSON_SERVER_FILE_NAME, file.getName())
+                    .put(Const.JSON_SERVER_FILE_SIZE, file.getSize())
+                    .put(Const.JSON_SERVER_FILE_MIMETYPE, file.getMimetype())
+                    .put(Const.JSON_SERVER_FILE_NOTE, file.getNote())
+                    .put(Const.JSON_SERVER_FILE_PROVIDER, provider.getId());
+            JSONObject body = new JSONObject()
+                    .put(Const.JSON_SERVER_ITEM_ID, file.getId())
+                    .put(Const.JSON_SERVER_ITEM_TYPE, BoardItem.TYPE_FILE)
+                    .put(Const.JSON_SERVER_TIME, file.getCreatedTime().getMillis())
+                    .put(Const.JSON_SERVER_INFO, info);
+
+            RequestHandler.getInstance(context).post("Post File", String.format(Const.API_BOARD, circle.getId()), body,
+                    new ResponseListener() {
+                        @Override
+                        public void onSuccess(JSONObject response) {
+                            setSyncStatus(file, Const.MSG_FILE_POST_SUCCESS, BoardItem.SYNC_COMPLETE);
+                        }
+
+                        @Override
+                        public void onError(VolleyError error) {
+                            setSyncStatus(file, Const.MSG_FILE_POST_FAILED, BoardItem.SYNC_ERROR);
+                            // send delete request to s3
+                        }
+                    });
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            setSyncStatus(file, Const.MSG_FILE_POST_FAILED, BoardItem.SYNC_ERROR);
+        }
     }
 
     /*************************************************

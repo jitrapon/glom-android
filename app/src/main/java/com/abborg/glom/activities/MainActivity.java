@@ -1056,27 +1056,35 @@ public class MainActivity extends AppCompatActivity
             /* Request: delete board item from a circle */
             case Const.MSG_ITEM_TO_DELETE: {
                 String id = (String) msg.obj;
-                if (boardItemChangeListeners != null) {
-                    for (BoardItemChangeListener listener : boardItemChangeListeners) {
-                        listener.onItemDeleted(id);
-                    }
-                }
+
                 dataUpdater.deleteItemAsync(id, appState.getActiveCircle(), true);
 
                 break;
             }
 
             /* Request: delete board item successfully */
-            case Const.MSG_ITEM_DELETED_SUCCESS:
-                Snackbar.make(mainCoordinatorLayout, getResources().getQuantityString(R.plurals.notification_delete_item, 1, 1),
-                        Snackbar.LENGTH_LONG)
-                        .setAction(getResources().getString(R.string.menu_item_undo), new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                //TODO
-                            }
-                        }).show();
+            case Const.MSG_ITEM_DELETED_SUCCESS: {
+                BoardItem item = msg.obj == null ? null : (BoardItem) msg.obj;
+                if (item != null) {
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemDeleted(item.getId());
+                        }
+                    }
+                    appState.getActiveCircle().removeItem(item);
+
+                    Snackbar.make(mainCoordinatorLayout, getResources().getQuantityString(R.plurals.notification_delete_item, 1, 1),
+                            Snackbar.LENGTH_LONG)
+                            .setAction(getResources().getString(R.string.menu_item_undo), new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    //TODO
+                                }
+                            }).show();
+                }
+
                 break;
+            }
 
             /* Request: delete board item failed */
             case Const.MSG_ITEM_DELETED_FAILED: {
@@ -1088,7 +1096,7 @@ public class MainActivity extends AppCompatActivity
                             @Override
                             public void onClick(View v) {
                                 if (item != null) {
-                                    dataUpdater.requestDeleteItem(appState.getActiveCircle(), item);
+                                    dataUpdater.deleteItemAsync(item.getId(), appState.getActiveCircle(), true);
                                 }
                             }
                         }).show();
@@ -1134,6 +1142,63 @@ public class MainActivity extends AppCompatActivity
                     }
                 }
 
+                break;
+            }
+
+            /* File is in sync progress with the server */
+            case Const.MSG_FILE_POST_IN_PROGRESS: {
+                FileItem file = msg.obj == null ? null : (FileItem) msg.obj;
+                int status = msg.arg1;
+                int progress = msg.arg2;
+
+                if (file != null) {
+                    file.setSyncStatus(status);
+                    file.setProgress(progress);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(file.getId());
+                        }
+                    }
+                }
+
+                break;
+            }
+
+            /* File has been posted and synced to the server successfully */
+            case Const.MSG_FILE_POST_SUCCESS: {
+                FileItem file = msg.obj == null ? null : (FileItem) msg.obj;
+                int status = msg.arg1;
+
+                if (file != null) {
+                    file.setSyncStatus(status);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(file.getId());
+                        }
+                    }
+                }
+
+                Toast.makeText(getApplicationContext(), getResources().getString(R.string.notification_created_item_success),
+                        Toast.LENGTH_LONG).show();
+                break;
+            }
+
+            /* File failed to sync to the server */
+            case Const.MSG_FILE_POST_FAILED: {
+                final FileItem item = msg.obj == null ? null : (FileItem) msg.obj;
+                int status = msg.arg1;
+
+                if (item != null) {
+                    item.setSyncStatus(status);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
+
+                Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_created_item_failed),
+                        Snackbar.LENGTH_LONG).show();
                 break;
             }
         }

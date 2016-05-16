@@ -190,6 +190,10 @@ public class Circle implements Parcelable {
         items.add(0, item);
     }
 
+    public void removeItem(BoardItem item) {
+        items.remove(item);
+    }
+
     public void setItems(List<BoardItem> items) {
         this.items = items;
     }
