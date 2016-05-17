@@ -181,4 +181,7 @@
     <string name="intent_select_images">Select Image(s)</string>
     <string name="warning_no_image_selected">No image selected</string>
     <string name="file_name_placeholder">Undefined</string>
+
+    <!-- Note -->
+    <string name="title_activity_note_unsaved">Untitled</string>
 </resources>

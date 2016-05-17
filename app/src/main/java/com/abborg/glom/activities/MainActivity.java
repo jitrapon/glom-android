@@ -725,7 +725,9 @@ public class MainActivity extends AppCompatActivity
                 actionButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        Toast.makeText(activity, "Sending note is not supported yet", Toast.LENGTH_SHORT).show();
+                        Intent intent = new Intent(activity, NoteActivity.class);
+                        startActivityForResult(intent, Const.CREATE_NOTE_RESULT_CODE);
+                        hideMenuOverlay(false);
                     }
                 });
                 break;

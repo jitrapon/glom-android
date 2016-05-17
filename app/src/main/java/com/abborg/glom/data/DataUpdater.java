@@ -190,6 +190,7 @@ public class DataUpdater {
         userPerm.add(User.POST_IMAGE_GALLERY);
         userPerm.add(User.REQUEST_LOCATION);
         userPerm.add(User.CREATE_EVENT);
+        userPerm.add(User.NOTE_RECEIVE);
         user.setUserPermission(userPerm);
         return user;
     }
@@ -411,6 +412,7 @@ public class DataUpdater {
             userPerm.add(User.POST_IMAGE_GALLERY);
             userPerm.add(User.REQUEST_LOCATION);
             userPerm.add(User.CREATE_EVENT);
+            userPerm.add(User.NOTE_RECEIVE);
             user.setUserPermission(userPerm);
         }
         cursor.close();

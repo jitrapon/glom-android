@@ -29,6 +29,7 @@ public class Const {
     public static final int CREATE_EVENT_RESULT_CODE = 700;
     public static final int UPDATE_EVENT_RESULT_CODE = 701;
     public static final int IMAGE_SELECTED_RESULT_CODE = 702;
+    public static final int CREATE_NOTE_RESULT_CODE = 703;
 
     /**
      * API
