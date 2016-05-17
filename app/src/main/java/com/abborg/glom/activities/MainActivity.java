@@ -57,6 +57,7 @@ import com.abborg.glom.interfaces.DiscoverItemChangeListener;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CircleInfo;
+import com.abborg.glom.model.CloudProvider;
 import com.abborg.glom.model.DiscoverItem;
 import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FileItem;
@@ -148,6 +149,7 @@ public class MainActivity extends AppCompatActivity
     private android.support.design.widget.FloatingActionButton fab;
     private boolean isRadialMenuOptionsOpening;
     private static final int MENU_OVERLAY_ANIM_TIME = 150;
+    private static final boolean START_YOUTUBE_VIDEO_LIGHTBOX = false;
 
     /**
      * View pager adapter that controls the pages
@@ -1124,7 +1126,8 @@ public class MainActivity extends AppCompatActivity
             /* Play Youtube video */
             case Const.MSG_PLAY_YOUTUBE_VIDEO: {
                 String videoId = (String) msg.obj;
-                Intent intent = YouTubeStandalonePlayer.createVideoIntent(this, appState.getGoogleApiKey(), videoId, 0, true, true);
+                Intent intent = YouTubeStandalonePlayer.createVideoIntent(
+                        this, appState.getGoogleApiKey(), videoId, 0, true, START_YOUTUBE_VIDEO_LIGHTBOX);
                 startActivity(intent);
                 break;
             }
@@ -1199,6 +1202,49 @@ public class MainActivity extends AppCompatActivity
 
                 Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_created_item_failed),
                         Snackbar.LENGTH_LONG).show();
+                break;
+            }
+
+            /* Start downloading of a file */
+            case Const.MSG_DOWNLOAD_ITEM: {
+                final FileItem item = msg.obj == null ? null : (FileItem) msg.obj;
+
+                if (item != null) {
+                    dataUpdater.requestDownloadFileRemote(appState.getActiveCircle(), item, CloudProvider.AMAZON_S3);
+                }
+
+                break;
+            }
+
+            /* When download completes successfully */
+            case Const.MSG_FILE_DOWNLOAD_COMPLETE: {
+                final FileItem item = msg.obj == null ? null : (FileItem) msg.obj;
+
+                if (item != null) {
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+
+                    Toast.makeText(getApplicationContext(),
+                            String.format(getResources().getString(R.string.notification_download_item_success), item.getName()),
+                            Toast.LENGTH_LONG).show();
+                }
+
+                break;
+            }
+
+            /* When download failed */
+            case Const.MSG_FILE_DOWNLOAD_FAILED: {
+                final FileItem item = msg.obj == null ? null : (FileItem) msg.obj;
+
+                if (item != null) {
+                    Toast.makeText(getApplicationContext(),
+                            String.format(getResources().getString(R.string.notification_download_item_failed), item.getName()),
+                            Toast.LENGTH_LONG).show();
+                }
+
                 break;
             }
         }

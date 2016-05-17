@@ -4,6 +4,7 @@ package com.abborg.glom.fragments;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
@@ -186,6 +187,16 @@ public class BoardFragment extends Fragment implements View.OnClickListener, Boa
             else if (selected instanceof FileItem) {
                 FileItem item = (FileItem) selected;
                 Log.d(TAG, "FileItem (" + item.getName() + ") selected");
+
+                // if file does not exist, download, otherwise view it
+                if (item.getFile() == null || !item.getFile().exists()) {
+                    if (handler != null) handler.sendMessage(handler.obtainMessage(Const.MSG_DOWNLOAD_ITEM, item));
+                }
+                else {
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setDataAndType(Uri.fromFile(item.getFile()), item.getMimetype());
+                    startActivity(Intent.createChooser(intent, getString(R.string.card_select_app_to_launch)));
+                }
             }
         }
     }

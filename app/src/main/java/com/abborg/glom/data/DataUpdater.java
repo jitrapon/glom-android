@@ -1467,7 +1467,10 @@ public class DataUpdater {
                                     handler.sendMessageDelayed(handler.obtainMessage(Const.MSG_FILE_POSTED, item), 1000);
 
                                 // whether or not to sync with the server
-                                if (sync) requestUploadFileRemote(circle, item, CloudProvider.AMAZON_S3);
+                                if (sync) {
+                                    Log.d(TAG, "Proceed to uploading file to remote server for item " + item.getName());
+                                    requestUploadFileRemote(circle, item, CloudProvider.AMAZON_S3);
+                                }
                             }
                         }
                         catch (Exception ex) {
@@ -1520,6 +1523,25 @@ public class DataUpdater {
             file.setSyncStatus(BoardItem.SYNC_COMPLETE);
 
             updateFileDB(updatedTime, file, BoardItem.SYNC_COMPLETE);
+        }
+    }
+
+    public void updateFilePath(Circle circle, String id, String path) {
+        List<BoardItem> items = circle.getItems();
+        FileItem file = null;
+        for (BoardItem item : items) {
+            if (item.getId().equals(id) && item instanceof FileItem) {
+                file = (FileItem) item;
+                break;
+            }
+        }
+
+        if (file != null) {
+            file.setPath(path);
+            updateFileDB(file.getUpdatedTime(), file, BoardItem.SYNC_COMPLETE);
+
+            if (handler != null)
+                handler.sendMessage(handler.obtainMessage(Const.MSG_FILE_DOWNLOAD_COMPLETE, file));
         }
     }
 
@@ -1649,6 +1671,17 @@ public class DataUpdater {
         });
     }
 
+    public void requestDownloadFileRemote(final Circle circle, final FileItem file, final CloudProvider provider) {
+        final DataUpdater dataUpdater = this;
+        run(new Runnable() {
+            @Override
+            public void run() {
+                if (fileTransfer == null) fileTransfer = new FileTransfer(dataUpdater, context, handler);
+                fileTransfer.download(provider, circle, file);
+            }
+        });
+    }
+
     public void requestPostFile(final Circle circle, final FileItem file, final CloudProvider provider) {
         try {
             JSONObject info = new JSONObject()
@@ -1673,7 +1706,9 @@ public class DataUpdater {
                         @Override
                         public void onError(VolleyError error) {
                             setSyncStatus(file, Const.MSG_FILE_POST_FAILED, BoardItem.SYNC_ERROR);
-                            // send delete request to s3
+
+                            // send delete request to s3 because sync has failed
+                            requestDeleteFileRemote(circle, file, provider);
                         }
                     });
         }

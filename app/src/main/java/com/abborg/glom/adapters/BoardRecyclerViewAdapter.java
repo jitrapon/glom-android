@@ -3,6 +3,8 @@ package com.abborg.glom.adapters;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Handler;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
@@ -42,6 +44,7 @@ import org.joda.time.format.DateTimeFormatter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Handles the view logic to display items in a RecyclerView. The adapter can support
@@ -69,7 +72,6 @@ public class BoardRecyclerViewAdapter
     public static class EventHolder extends RecyclerView.ViewHolder {
         ImageView menuButton;
         Button actionButton1;
-        Button actionButton2;
 
         ImageView posterAvatar;
         TextView posterName;
@@ -87,7 +89,6 @@ public class BoardRecyclerViewAdapter
 
             menuButton = (ImageView) itemView.findViewById(R.id.cardActionButtonMenu);
             actionButton1 = (Button) itemView.findViewById(R.id.cardActionButton1);
-            actionButton2 = (Button) itemView.findViewById(R.id.cardActionButton2);
 
             posterAvatar = (ImageView) itemView.findViewById(R.id.cardUserAvatar);
             posterName = (TextView) itemView.findViewById(R.id.cardUserName);
@@ -263,16 +264,10 @@ public class BoardRecyclerViewAdapter
      * View Holder helpers
      **************************************************************/
 
-    private void setFileViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {
-        FileItem file = (FileItem) items.get(position - 1);
-        final String id = file.getId();
-        FileHolder holder = (FileHolder) recyclerViewHolder;
-
-        // set clicklistener for menu buttons
-        holder.menuButton.setOnClickListener(new View.OnClickListener() {
+    private void attachMenuOptions(ImageView menuBtn, final String id) {
+        menuBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d(TAG, "Menu button clicked");
                 final CharSequence[] items = {
                         context.getResources().getString(R.string.menu_item_delete),
                         context.getResources().getString(R.string.menu_item_copy),
@@ -304,7 +299,93 @@ public class BoardRecyclerViewAdapter
                 alert.show();
             }
         });
+    }
 
+    private void attachPostInfo(FeedAction feedAction, TextView posterName, ImageView posterAvatar, TextView postTime) {
+        if (feedAction != null) {
+            if (feedAction.user != null) {
+
+                // set update text
+                switch(feedAction.type) {
+                    case FeedAction.CREATE_EVENT:
+                        posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
+                                context.getResources().getString(R.string.card_post_create_event)));
+                        break;
+                    case FeedAction.CANCEL_EVENT:
+                        posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
+                                context.getResources().getString(R.string.card_post_cancel_event)));
+                        break;
+                    case FeedAction.UPDATE_EVENT:
+                        posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
+                                context.getResources().getString(R.string.card_post_update_event)));
+                        break;
+                    default:
+                        posterName.setText(feedAction.user.getName());
+                }
+
+                // load avatar
+                Glide.with(context)
+                        .load(feedAction.user.getAvatar()).fitCenter()
+                        .transform(new CircleTransform(context))
+                        .override(context.getResources().getDimensionPixelSize(R.dimen.card_avatar_size),
+                                context.getResources().getDimensionPixelSize(R.dimen.card_avatar_size))
+                        .placeholder(R.drawable.ic_profile)
+                        .error(R.drawable.ic_profile)
+                        .crossFade(1000)
+                        .into(posterAvatar);
+            }
+            if (feedAction.dateTime != null) {
+                DateTime now = new DateTime();
+                Duration duration = new Duration(feedAction.dateTime, now);
+                String displayTime;
+                if (duration.getStandardMinutes() < 5)
+                    displayTime = context.getResources().getString(R.string.time_info_just_now);
+                else if (duration.getStandardMinutes() < 60)
+                    displayTime = duration.getStandardMinutes() + " " + context.getResources().getString(R.string.time_unit_minute);
+                else if (duration.getStandardHours() < 24)
+                    displayTime = duration.getStandardHours() + " " + context.getResources().getString(R.string.time_unit_hour);
+                else
+                    displayTime = duration.getStandardDays() + " " + context.getResources().getString(R.string.time_unit_day);
+
+                postTime.setText(displayTime);
+            }
+        }
+    }
+
+    private void setFileViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {
+        FileItem file = (FileItem) items.get(position - 1);
+        final String id = file.getId();
+        final FileHolder holder = (FileHolder) recyclerViewHolder;
+
+        // attach context menu button
+        attachMenuOptions(holder.menuButton, id);
+
+        // attach the last feed info about this post
+        attachPostInfo(file.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);
+
+        // set action buttons
+        if (file.getFile() == null || !file.getFile().exists()) {
+            holder.actionButton1.setText(context.getResources().getString(R.string.card_action_download));
+            holder.actionButton2.setText(context.getResources().getString(R.string.card_action_share));
+            holder.actionButton1.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    holder.itemView.performClick();
+                }
+            });
+        }
+        else {
+            holder.actionButton1.setText(context.getResources().getString(R.string.card_action_view));
+            holder.actionButton2.setText(context.getResources().getString(R.string.card_action_share));
+            holder.actionButton1.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    holder.itemView.performClick();
+                }
+            });
+        }
+
+        // set sync status and progress bar
         if (file.getSyncStatus() == BoardItem.SYNC_COMPLETE) {
             holder.syncStatus.setVisibility(View.INVISIBLE);
             holder.progressBar.setVisibility(View.GONE);
@@ -324,57 +405,6 @@ public class BoardRecyclerViewAdapter
                 else {
                     holder.progressBar.setIndeterminate(true);
                 }
-            }
-        }
-
-        // update poster info
-        FeedAction feedAction = file.getLastAction();
-        if (feedAction != null) {
-            if (feedAction.user != null) {
-
-                // set update text
-                switch(feedAction.type) {
-                    case FeedAction.CREATE_EVENT:
-                        holder.posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
-                                context.getResources().getString(R.string.card_post_create_event)));
-                        break;
-                    case FeedAction.CANCEL_EVENT:
-                        holder.posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
-                                context.getResources().getString(R.string.card_post_cancel_event)));
-                        break;
-                    case FeedAction.UPDATE_EVENT:
-                        holder.posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
-                                context.getResources().getString(R.string.card_post_update_event)));
-                        break;
-                    default:
-                        holder.posterName.setText(feedAction.user.getName());
-                }
-
-                // load avatar
-                Glide.with(context)
-                        .load(feedAction.user.getAvatar()).fitCenter()
-                        .transform(new CircleTransform(context))
-                        .override(context.getResources().getDimensionPixelSize(R.dimen.card_avatar_size),
-                                context.getResources().getDimensionPixelSize(R.dimen.card_avatar_size))
-                        .placeholder(R.drawable.ic_profile)
-                        .error(R.drawable.ic_profile)
-                        .crossFade(1000)
-                        .into(holder.posterAvatar);
-            }
-            if (feedAction.dateTime != null) {
-                DateTime now = new DateTime();
-                Duration duration = new Duration(feedAction.dateTime, now);
-                String displayTime = null;
-                if (duration.getStandardSeconds() < 60)
-                    displayTime = duration.getStandardSeconds() + " " + context.getResources().getString(R.string.time_unit_second);
-                else if (duration.getStandardMinutes() < 60)
-                    displayTime = duration.getStandardMinutes() + " " + context.getResources().getString(R.string.time_unit_minute);
-                else if (duration.getStandardHours() < 24)
-                    displayTime = duration.getStandardHours() + " " + context.getResources().getString(R.string.time_unit_hour);
-                else
-                    displayTime = duration.getStandardDays() + " " + context.getResources().getString(R.string.time_unit_day);
-
-                holder.postTime.setText(displayTime);
             }
         }
 
@@ -429,46 +459,64 @@ public class BoardRecyclerViewAdapter
         final String id = event.getId();
         EventHolder holder = (EventHolder) recyclerViewHolder;
 
-        // set clicklistener for menu buttons
-        holder.menuButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.d(TAG, "Menu button clicked");
-                final CharSequence[] items = {
-                        context.getResources().getString(R.string.menu_item_delete),
-                        context.getResources().getString(R.string.menu_item_copy),
-                        context.getResources().getString(R.string.menu_item_send),
-                        context.getResources().getString(R.string.menu_item_star)
-                };
-                AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                builder.setItems(items, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int item) {
-                        switch (item) {
-                            case 0:
-                                if (handler != null) handler.sendMessage(handler.obtainMessage(Const.MSG_ITEM_TO_DELETE, id));
-                                break;
-                            case 1:
+        // attach context menu button
+        attachMenuOptions(holder.menuButton, id);
 
-                                break;
-                            case 2:
-
-                                break;
-                            case 3:
-
-                                break;
-                            default: return;
-                        }
-                    }
-                });
-                AlertDialog alert = builder.create();
-                alert.setCanceledOnTouchOutside(true);
-                alert.show();
-            }
-        });
+        // attach the last feed info about this post
+        attachPostInfo(event.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);
 
         // if the hosts contains the user, set action and text accordingly (Edit, Share)
         // if the hosts doesn't contain the user, set action to (Attend, Miss)
-        //TODO
+        if (event.getPlace() != null || event.getLocation() != null) {
+            holder.actionButton1.setVisibility(View.VISIBLE);
+            holder.actionButton1.setText(context.getResources().getString(R.string.card_action_get_directions));
+
+            final String placeId = event.getPlace();
+            if (!TextUtils.isEmpty(placeId)) {
+                holder.actionButton1.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        GoogleApiClient apiClient = AppState.getInstance().getGoogleApiClient();
+                        if (apiClient != null && apiClient.isConnected()) {
+                            PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(apiClient, placeId);
+                            placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {
+
+                                @Override
+                                public void onResult(PlaceBuffer places) {
+                                    if (!places.getStatus().isSuccess()) {
+                                        Log.e(TAG, "Place query did not complete. Error: " + places.getStatus().toString());
+                                        places.release();
+                                        return;
+                                    }
+
+                                    final Place place = places.get(0);
+                                    Log.d(TAG, "Place query succeeded for " + place.getName());
+                                    double lat = place.getLatLng().latitude;
+                                    double lng = place.getLatLng().longitude;
+                                    places.release();
+
+                                    launchGoogleMapsNavigation(lat, lng);
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+            else if (event.getLocation() != null) {
+                final double lat = event.getLocation().getLatitude();
+                final double lng = event.getLocation().getLongitude();
+
+                holder.actionButton1.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        launchGoogleMapsNavigation(lat, lng);
+                    }
+                });
+            }
+        }
+        else {
+            holder.actionButton1.setVisibility(View.GONE);
+        }
 
         // set sync status
         if (event.getSyncStatus() == BoardItem.SYNC_COMPLETE)
@@ -480,57 +528,6 @@ public class BoardRecyclerViewAdapter
                 holder.syncStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync_failed));
             else if (event.getSyncStatus() == BoardItem.SYNC_IN_PROGRESS)
                 holder.syncStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync));
-        }
-
-        // update poster info
-        FeedAction feedAction = event.getLastAction();
-        if (feedAction != null) {
-            if (feedAction.user != null) {
-
-                // set update text
-                switch(feedAction.type) {
-                    case FeedAction.CREATE_EVENT:
-                        holder.posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
-                                context.getResources().getString(R.string.card_post_create_event)));
-                        break;
-                    case FeedAction.CANCEL_EVENT:
-                        holder.posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
-                                context.getResources().getString(R.string.card_post_cancel_event)));
-                        break;
-                    case FeedAction.UPDATE_EVENT:
-                        holder.posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
-                                context.getResources().getString(R.string.card_post_update_event)));
-                        break;
-                    default:
-                        holder.posterName.setText(feedAction.user.getName());
-                }
-
-                // load avatar
-                Glide.with(context)
-                        .load(feedAction.user.getAvatar()).fitCenter()
-                        .transform(new CircleTransform(context))
-                        .override(context.getResources().getDimensionPixelSize(R.dimen.card_avatar_size),
-                                context.getResources().getDimensionPixelSize(R.dimen.card_avatar_size))
-                        .placeholder(R.drawable.ic_profile)
-                        .error(R.drawable.ic_profile)
-                        .crossFade(1000)
-                        .into(holder.posterAvatar);
-            }
-            if (feedAction.dateTime != null) {
-                DateTime now = new DateTime();
-                Duration duration = new Duration(feedAction.dateTime, now);
-                String displayTime = null;
-                if (duration.getStandardSeconds() < 60)
-                    displayTime = duration.getStandardSeconds() + " " + context.getResources().getString(R.string.time_unit_second);
-                else if (duration.getStandardMinutes() < 60)
-                    displayTime = duration.getStandardMinutes() + " " + context.getResources().getString(R.string.time_unit_minute);
-                else if (duration.getStandardHours() < 24)
-                    displayTime = duration.getStandardHours() + " " + context.getResources().getString(R.string.time_unit_hour);
-                else
-                    displayTime = duration.getStandardDays() + " " + context.getResources().getString(R.string.time_unit_day);
-
-                holder.postTime.setText(displayTime);
-            }
         }
 
         // update event info
@@ -726,5 +723,16 @@ public class BoardRecyclerViewAdapter
             holder.googleLogo.setVisibility(View.INVISIBLE);
         }
         holder.eventNote.setText(event.getNote());
+    }
+
+    /**************************************************************
+     * CARD ACTION OPERATIONS
+     **************************************************************/
+    private void launchGoogleMapsNavigation(double lat, double lng) {
+        Uri gmmIntentUri = Uri.parse(
+                String.format(Locale.ENGLISH, "google.navigation:q=%1f,%2f", lat, lng));
+        Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+        mapIntent.setPackage("com.google.android.apps.maps");
+        context.startActivity(mapIntent);
     }
 }

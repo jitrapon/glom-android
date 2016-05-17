@@ -12,8 +12,8 @@ public class Const {
     /**
      * TEST INFO
      * **/
-    public static final String TEST_USER_ID = "yoshi3003";
-//    public static final String TEST_USER_ID = "fatcat18";
+//    public static final String TEST_USER_ID = "yoshi3003";
+    public static final String TEST_USER_ID = "fatcat18";
     public static final String TEST_CIRCLE_ID = "dev-test-circle-1";
     public static final String TEST_API_AUTHORIZATION_HEADER = "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -120,6 +120,10 @@ public class Const {
     public static final int MSG_FILE_POST_FAILED = 5016;
     public static final int MSG_FILE_POST_SUCCESS = 5017;
     public static final int MSG_FILE_POST_IN_PROGRESS = 5018;
+    public static final int MSG_DOWNLOAD_ITEM = 5019;
+    public static final int MSG_FILE_DOWNLOAD_FAILED = 5020;
+    public static final int MSG_FILE_DOWNLOAD_COMPLETE = 5021;
+    public static final int MSG_FILE_DOWNLOAD_IN_PROGRESS = 5022;
 
     /**
      * Mimetypes

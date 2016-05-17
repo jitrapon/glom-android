@@ -73,7 +73,7 @@
     <string name="marker_msg_placeholder">Online</string>
     <string name="title_activity_main">MainActivity</string>
 
-    <!-- EventItem cards -->
+    <!-- Card item -->
     <string name="card_host_name_placeholder">Undefined</string>
     <string name="card_host_post_time_placeholder">Some time ago</string>
     <string name="card_event_name_placeholder">Untitled</string>
@@ -82,6 +82,7 @@
     <string name="card_post_create_event">created an event</string>
     <string name="card_post_cancel_event">cancelled an event</string>
     <string name="card_post_update_event">updated an event</string>
+    <string name="time_info_just_now">Just now</string>
     <string name="time_unit_second">secs</string>
     <string name="time_unit_minute">mins</string>
     <string name="time_unit_hour">hrs</string>
@@ -94,6 +95,14 @@
     <string name="card_event_datetime_format">MM/dd/yyyy, h:mm aa</string>
     <string name="card_event_time_format">h:mm aa</string>
     <string name="undefined">undefined</string>
+    <string name="card_action_edit">Edit</string>
+    <string name="card_action_share">Share</string>
+    <string name="card_action_attend">Attend</string>
+    <string name="card_action_decline">Decline</string>
+    <string name="card_action_view">View</string>
+    <string name="card_action_download">Download</string>
+    <string name="card_action_get_directions">Get Directions</string>
+    <string name="card_select_app_to_launch">Complete action using</string>
 
     <!-- Notification messages -->
     <string name="notification_title_location_update">Message from GlomServer</string>
@@ -109,6 +118,8 @@
         <item quantity="other">Deleted %1$d items</item>
     </plurals>
     <string name="notification_delete_item_failed">Failed to sync the delete, please try again</string>
+    <string name="notification_download_item_success">Downloaded %s successfully</string>
+    <string name="notification_download_item_failed">Failed to downloaded %s</string>
 
     <!-- Broadcast location options -->
     <string name="bottom_sheet_broadcast_location_toggle">Broadcast my location</string>
