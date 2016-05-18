@@ -1,0 +1,43 @@
+<html>
+<head>
+</head>
+<body>
+    <script src="http://cdn.jsdelivr.net/sockjs/1/sockjs.min.js" type="text/javascript"></script>
+    <script type="text/javascript">
+        var tag = "javascript";
+        var sock;
+
+        function run(serverUrl) {
+            try {
+                App.log(tag, "Attempting to connecting to " + serverUrl);
+                sock = new SockJS(serverUrl);
+                App.log(tag, "Socket initialized");
+
+                sock.onopen = function() {
+                    App.log(tag, "Connected to " + serverUrl);
+                };
+
+                sock.onmessage = function(e) {
+                    App.log(tag, e.data);
+                };
+
+                sock.onclose = function() {
+                    App.log(tag, "Disconnected from " + serverUrl);
+                };
+            }
+            catch (e) {
+                App.error(tag, e.message);
+            }
+        }
+
+        function send(posX, posY) {
+            App.log(tag, "Sending data to server: " + posX + ", " + posY);
+            sock.send(posX + ", " + posY);
+        }
+
+        function stop() {
+            sock.close();
+        }
+    </script>
+</body>
+</html>

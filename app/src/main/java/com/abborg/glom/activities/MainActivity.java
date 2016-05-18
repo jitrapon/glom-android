@@ -725,8 +725,8 @@ public class MainActivity extends AppCompatActivity
                 actionButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        Intent intent = new Intent(activity, NoteActivity.class);
-                        startActivityForResult(intent, Const.CREATE_NOTE_RESULT_CODE);
+                        Intent intent = new Intent(activity, DrawActivity.class);
+                        startActivityForResult(intent, Const.CREATE_DRAWING_RESULT_CODE);
                         hideMenuOverlay(false);
                     }
                 });

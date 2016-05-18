@@ -8,6 +8,7 @@ public class Const {
     public static String AWS_S3_BUCKET = BuildConfig.AWS_S3_BUCKET;
     public static final String SENT_TOKEN_TO_SERVER = "sentTokenToServer";
     public static final String REGISTRATION_COMPLETE = "registrationComplete";
+    public static final String SERVER_URL = BuildConfig.SERVER_URL;
 
     /**
      * TEST INFO
@@ -29,7 +30,7 @@ public class Const {
     public static final int CREATE_EVENT_RESULT_CODE = 700;
     public static final int UPDATE_EVENT_RESULT_CODE = 701;
     public static final int IMAGE_SELECTED_RESULT_CODE = 702;
-    public static final int CREATE_NOTE_RESULT_CODE = 703;
+    public static final int CREATE_DRAWING_RESULT_CODE = 703;
 
     /**
      * API
@@ -136,4 +137,11 @@ public class Const {
     public static final String FILE_TYPE_BMP = "image/x-ms-bmp";
     public static final String FILE_TYPE_WBMP = "image/vnd.wap.wbmp";
     public static final String FILE_TYPE_WEBP = "image/webp";
+
+    /**
+     * WEB RELATED
+     */
+    public static final String ASSETS_FOLDER = "file:///android_asset/";
+    public static final String SERVER_APP_URL = SERVER_URL + "/app";
+    public static final String SOCKET_IO_EVENT_CONNECTED = "connected";
 }
