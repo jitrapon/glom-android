@@ -19,6 +19,7 @@ import com.google.android.gms.maps.model.LatLngBounds;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -33,7 +34,7 @@ public class PlaceArrayAdapter extends ArrayAdapter<PlaceArrayAdapter.PlaceAutoc
 
     private LatLngBounds bounds;
 
-    private ArrayList<PlaceAutocomplete> resultList;
+    private List<PlaceAutocomplete> resultList;
 
     private static final long AUTO_COMPLETE_TIMEOUT = 60;
 
@@ -62,7 +63,7 @@ public class PlaceArrayAdapter extends ArrayAdapter<PlaceArrayAdapter.PlaceAutoc
         return resultList.get(position);
     }
 
-    private ArrayList<PlaceAutocomplete> getPredictions(CharSequence constraint) {
+    private List<PlaceAutocomplete> getPredictions(CharSequence constraint) {
         GoogleApiClient apiClient = AppState.getInstance().getGoogleApiClient();
         if (apiClient != null) {
             Log.d(TAG, "Executing autocomplete query for: " + constraint);
@@ -87,11 +88,11 @@ public class PlaceArrayAdapter extends ArrayAdapter<PlaceArrayAdapter.PlaceAutoc
             Log.i(TAG, "Query completed. Received " + autocompletePredictions.getCount()
                     + " predictions.");
             Iterator<AutocompletePrediction> iterator = autocompletePredictions.iterator();
-            ArrayList resultList = new ArrayList<>(autocompletePredictions.getCount());
+            List<PlaceArrayAdapter.PlaceAutocomplete> resultList = new ArrayList<>(autocompletePredictions.getCount());
             while (iterator.hasNext()) {
                 AutocompletePrediction prediction = iterator.next();
                 resultList.add(new PlaceAutocomplete(prediction.getPlaceId(),
-                        prediction.getDescription()));
+                        prediction.getPrimaryText(null)));
             }
 
             // Buffer release

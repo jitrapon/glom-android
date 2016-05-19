@@ -126,6 +126,10 @@ public class Const {
     public static final int MSG_FILE_DOWNLOAD_FAILED = 5020;
     public static final int MSG_FILE_DOWNLOAD_COMPLETE = 5021;
     public static final int MSG_FILE_DOWNLOAD_IN_PROGRESS = 5022;
+    public static final int MSG_SHOW_TOAST = 5023;
+    public static final int MSG_ROOM_SESSION_CONNECTED = 5024;
+    public static final int MSG_ROOM_SESSION_DISCONNECTED = 5025;
+    public static final int MSG_SOCKET_DATA_RECEIVED = 5026;
 
     /**
      * Mimetypes

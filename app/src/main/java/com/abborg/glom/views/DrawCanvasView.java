@@ -25,9 +25,9 @@ public class DrawCanvasView extends View {
 
     public interface DrawCanvasChangeListener {
 
-        void onDraw(float x, float y);
+        void onDraw(boolean moved, float x, float y);
 
-        void onFinished();
+        void onExit();
     }
 
     /************************************
@@ -66,11 +66,11 @@ public class DrawCanvasView extends View {
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 path.moveTo(x, y);
-                if (listener != null) listener.onDraw(x, y);
+                if (listener != null) listener.onDraw(true, x, y);
                 return true;
             case MotionEvent.ACTION_MOVE:
                 path.lineTo(x, y);
-                if (listener != null) listener.onDraw(x, y);
+                if (listener != null) listener.onDraw(false, x, y);
                 break;
             default: return false;
         }
@@ -84,6 +84,15 @@ public class DrawCanvasView extends View {
         super.onDetachedFromWindow();
 
         Log.d(TAG, "Canvas is about to be detached and disposed");
-        if (listener != null) listener.onFinished();
+        if (listener != null) listener.onExit();
+    }
+
+    public void draw(boolean moved, float x, float y) {
+        if (moved) {
+            path.moveTo(x, y);
+            return;
+        }
+        else path.lineTo(x, y);
+        invalidate();
     }
 }

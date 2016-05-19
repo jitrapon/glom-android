@@ -15,14 +15,17 @@
 
                 sock.onopen = function() {
                     App.log(tag, "Connected to " + serverUrl);
+                    App.onConnected();
                 };
 
                 sock.onmessage = function(e) {
-                    App.log(tag, e.data);
+                    App.log(tag, "<-- " + e.data);
+                    App.onReceived(e.data);
                 };
 
                 sock.onclose = function() {
                     App.log(tag, "Disconnected from " + serverUrl);
+                    App.onDisconnected();
                 };
             }
             catch (e) {
@@ -30,12 +33,13 @@
             }
         }
 
-        function send(posX, posY) {
-            App.log(tag, "Sending data to server: " + posX + ", " + posY);
-            sock.send(posX + ", " + posY);
+        function send(data) {
+            App.log(tag, "--> " + data);
+            sock.send(data);
         }
 
         function stop() {
+            App.log(tag, "Closing connection");
             sock.close();
         }
     </script>

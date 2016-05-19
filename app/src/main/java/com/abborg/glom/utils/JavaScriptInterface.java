@@ -1,24 +1,29 @@
 package com.abborg.glom.utils;
 
-import android.content.Context;
+import android.os.Handler;
+import android.text.TextUtils;
 import android.util.Log;
 import android.webkit.JavascriptInterface;
-import android.widget.Toast;
+
+import com.abborg.glom.Const;
 
 /**
+ * Bridge between Android and Javscript. All function calls are done in a thread 'JavaBridge'.
+ *
  * Created by jitrapon on 18/5/16.
  */
 public class JavaScriptInterface {
 
-    Context context;
+    Handler handler;
 
-    public JavaScriptInterface(Context c) {
-        context = c;
+    public JavaScriptInterface(Handler h) {
+        handler = h;
     }
 
     @JavascriptInterface
     public void message(String msg) {
-        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
+        if (handler != null)
+            handler.sendMessage(handler.obtainMessage(Const.MSG_SHOW_TOAST, msg));
     }
 
     @JavascriptInterface
@@ -29,5 +34,25 @@ public class JavaScriptInterface {
     @JavascriptInterface
     public void error(String tag, String msg) {
         Log.e(tag, msg);
+    }
+
+    @JavascriptInterface
+    public void onConnected() {
+        if (handler != null)
+            handler.sendMessage(handler.obtainMessage(Const.MSG_ROOM_SESSION_CONNECTED));
+    }
+
+    @JavascriptInterface
+    public void onDisconnected() {
+        if (handler != null)
+            handler.sendMessage(handler.obtainMessage(Const.MSG_ROOM_SESSION_DISCONNECTED));
+    }
+
+    /** Data will be in the format of '[action-code],[data payload],[data payload]...' **/
+    @JavascriptInterface
+    public void onReceived(String data) {
+        if (handler != null && !TextUtils.isEmpty(data)) {
+            handler.sendMessage(handler.obtainMessage(Const.MSG_SOCKET_DATA_RECEIVED, data));
+        }
     }
 }

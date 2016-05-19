@@ -184,4 +184,8 @@
 
     <!-- Note -->
     <string name="title_activity_note_unsaved">Untitled</string>
+    <string name="notification_app_connected">You have joined the drawing session</string>
+    <string name="notification_app_disconnected">You have left the drawing session</string>
+    <string name="notification_user_joined">%s has joined the session</string>
+    <string name="notification_user_left">%s has left the session</string>
 </resources>
