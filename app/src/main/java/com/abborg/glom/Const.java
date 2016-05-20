@@ -13,8 +13,8 @@ public class Const {
     /**
      * TEST INFO
      * **/
-//    public static final String TEST_USER_ID = "yoshi3003";
-    public static final String TEST_USER_ID = "fatcat18";
+    public static final String TEST_USER_ID = "yoshi3003";
+//    public static final String TEST_USER_ID = "fatcat18";
     public static final String TEST_CIRCLE_ID = "dev-test-circle-1";
     public static final String TEST_API_AUTHORIZATION_HEADER = "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789";
 

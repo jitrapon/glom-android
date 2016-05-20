@@ -43,7 +43,6 @@ public class DiscoverRecyclerViewAdapter
 
     private Handler handler;
 
-    // datetime format
     private DateTimeFormatter dateFormatter;
 
     /** the main model in this adapter, maps the item type to list of the items so we can easily

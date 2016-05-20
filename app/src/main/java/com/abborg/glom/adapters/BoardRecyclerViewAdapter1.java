@@ -28,6 +28,7 @@ import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FeedAction;
 import com.abborg.glom.model.FileItem;
 import com.abborg.glom.utils.CircleTransform;
+import com.afollestad.sectionedrecyclerview.SectionedRecyclerViewAdapter;
 import com.bumptech.glide.Glide;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
@@ -44,22 +45,23 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
- * Handles the view logic to display items in a RecyclerView. The adapter can support
- * showing items in two layouts: the traditional linear layout and in a staggered grid.
+ * Handles the view logic to display mappedItems in a RecyclerView. The adapter can support
+ * showing mappedItems in two layouts: the traditional linear layout and in a staggered grid.
  */
-public class BoardRecyclerViewAdapter
-        extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class BoardRecyclerViewAdapter1 extends SectionedRecyclerViewAdapter<RecyclerView.ViewHolder> {
 
     private static String TAG = "BoardRecyclerViewAdapter";
 
-    private static final int TYPE_HEADER = 1;
-    private static final int TYPE_EVENT = 2;
-    private static final int TYPE_FILE = 3;
-
+    /** the main model in this adapter, maps the item type to list of the mappedItems so we can easily
+     * retrieve the item list based on their types
+     */
+    private Map<Integer, List<BoardItem>> mappedItems;
     private List<BoardItem> items;
 
     private Context context;
@@ -69,6 +71,189 @@ public class BoardRecyclerViewAdapter
     private BoardItemClickListener listener;
 
     private Handler handler;
+
+    /** How to categorize the map **/
+    private enum Category {
+        TAG,
+        TYPE
+    }
+
+    /** Maps section to view types **/
+    private static final int[] sections = {
+            BoardItem.TYPE_EVENT,
+            BoardItem.TYPE_FILE
+    };
+
+    public BoardRecyclerViewAdapter1(Context ctx, List<BoardItem> models, BoardItemClickListener clickListener, Handler h) {
+        context = ctx;
+        items = models;
+        mappedItems = new HashMap<>(sections.length);
+        updateMap(Category.TYPE, -1);
+        listener = clickListener;
+        staleItems = new ArrayList<>();
+        handler = h;
+        setHasStableIds(true);
+    }
+
+    private int updateMap(Category category, int originalIndex) {
+        if (category == Category.TAG) return -1;
+        else if (category == Category.TYPE) {
+            if (originalIndex == -1) {
+                for (Integer section : sections) {
+                    mappedItems.put(section, new ArrayList<BoardItem>());
+                    Log.d(TAG, "Initialized new section of type " + section);
+                }
+
+                if (items != null && !items.isEmpty()) {
+                    for (BoardItem item : items) {
+                        mappedItems.get(item.getType()).add(item);
+                        Log.d(TAG, "Adding item " + item.getId() + " of type " + item.getType() + " to map");
+                    }
+                }
+                return -1;
+            }
+            else {
+                BoardItem updatedItem = items.get(originalIndex);
+                List<BoardItem> listToUpdate = mappedItems.get(updatedItem.getType());
+                for (int i = 0; i < listToUpdate.size(); i++) {
+                    BoardItem e = listToUpdate.get(i);
+                    if (e.getId().equals(updatedItem.getId())) {
+                        listToUpdate.set(i, updatedItem);
+
+                        int sectionIndex = 0;
+                        int numTotal = 0;
+                        int itemIndex = 0;
+                        for (Integer section : sections) {
+                            if (section == updatedItem.getType()) {
+                                itemIndex = i;
+                                break;
+                            }
+                            else {
+                                numTotal += mappedItems.get(updatedItem.getType()).size();
+                            }
+                            sectionIndex++;
+                        }
+                        int adapterIndex = sectionIndex + numTotal + itemIndex + 1;
+                        Log.d(TAG, "Updated an item " + updatedItem.getId() + " of type "
+                                + updatedItem.getType() + " at " + adapterIndex);
+                        return adapterIndex;
+                    }
+                }
+            }
+        }
+        return -1;
+    }
+
+    private int addToMap(int originalIndex) {
+        BoardItem addedItem = items.get(originalIndex);
+        List<BoardItem> listToAdd = mappedItems.get(addedItem.getType());
+        listToAdd.add(0, addedItem);
+
+        int sectionIndex = 0;
+        int numTotal = 0;
+        int itemIndex = 0;
+        for (Integer section : sections) {
+            if (section == addedItem.getType()) {
+                itemIndex = 0;
+                break;
+            }
+            else {
+                numTotal += mappedItems.get(addedItem.getType()).size();
+            }
+            sectionIndex++;
+        }
+        int adapterIndex = sectionIndex + numTotal + itemIndex + 1;
+        Log.d(TAG, "Added an item " + addedItem.getId() + " of type " + addedItem.getType() + " at " + adapterIndex);
+        return adapterIndex;
+    }
+
+    private int removeFromMap(int originalIndex) {
+        BoardItem removedItem = items.get(originalIndex);
+        List<BoardItem> listToRemove = mappedItems.get(removedItem.getType());
+        int index = -1;
+        for (int i = 0; i < listToRemove.size(); i++) {
+            if (listToRemove.get(i).getId().equals(removedItem.getId())) {
+                index = i;
+                break;
+            }
+        }
+        if (index != -1) {
+            int sectionIndex = 0;
+            int numTotal = 0;
+            int itemIndex = 0;
+            for (Integer section : sections) {
+                if (section == removedItem.getType()) {
+                    itemIndex = index;
+                    break;
+                }
+                else {
+                    numTotal += mappedItems.get(removedItem.getType()).size();
+                }
+                sectionIndex++;
+            }
+            int adapterIndex = sectionIndex + numTotal + itemIndex + 1;
+            Log.d(TAG, "Deleted an item " + removedItem.getId() + " of type " + removedItem.getType() + " at " + adapterIndex);
+
+            listToRemove.remove(index);
+            return adapterIndex;
+        }
+        return -1;
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return position;
+    }
+
+    /**
+     * The number of sections
+     */
+    @Override
+    public int getSectionCount() {
+        return sections.length;
+    }
+
+    /**
+     * The number of items in the specified section
+     */
+    @Override
+    public int getItemCount(int section) {
+        List<BoardItem> items = getItems(section);
+        return items == null ? 0 : items.size();
+    }
+
+    @Override
+    public void onBindHeaderViewHolder(RecyclerView.ViewHolder viewHolder, int section) {
+        SectionHeaderViewHolder holder = (SectionHeaderViewHolder) viewHolder;
+        if (sections[section] == BoardItem.TYPE_EVENT)
+            holder.title.setText("Events");
+        else if (sections[section] == BoardItem.TYPE_FILE)
+            holder.title.setText("Files");
+    }
+
+    private List<BoardItem> getItems(int section) {
+        return mappedItems.get(sections[section]);
+    }
+
+    private BoardItem getItem(int section, int sectionPosition) {
+        List<BoardItem> items = getItems(section);
+        if (items != null && !items.isEmpty()) return items.get(sectionPosition);
+        else return null;
+    }
+
+    /**
+     * Header of the section
+     */
+    public static class SectionHeaderViewHolder extends RecyclerView.ViewHolder {
+
+        TextView title;
+
+        public SectionHeaderViewHolder(View itemView) {
+            super(itemView);
+
+            title = (TextView) itemView.findViewById(R.id.section_title_text);
+        }
+    }
 
     public static class EventHolder extends RecyclerView.ViewHolder {
         ImageView menuButton;
@@ -156,19 +341,40 @@ public class BoardRecyclerViewAdapter
         }
     }
 
-    public BoardRecyclerViewAdapter(Context context, List<BoardItem> items, BoardItemClickListener clickListener, Handler handler) {
-        this.context = context;
-        this.items = items;
-        listener = clickListener;
-        staleItems = new ArrayList<>();
-        this.handler = handler;
-        setHasStableIds(true);
+    public void addItem(String id) {
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i).getId().equals(id)) {
+                int index = addToMap(i);
+                notifyDataSetChanged();
+                break;
+            }
+        }
     }
 
-    public void update(List<BoardItem> events) {
-        // update from specific list of items
-        if (events != null) {
-            items = events;
+    public void updateItem(String id) {
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i).getId().equals(id)) {
+                int index = updateMap(Category.TYPE, i);
+                notifyDataSetChanged();
+                break;
+            }
+        }
+    }
+
+    public void deleteItem(String id) {
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i).getId().equals(id)) {
+                removeFromMap(i);
+                notifyDataSetChanged();
+                break;
+            }
+        }
+    }
+
+    public void update(List<BoardItem> models) {
+        if (models != null) {
+            items = models;
+            updateMap(Category.TYPE, -1);
             notifyDataSetChanged();
         }
 
@@ -181,22 +387,18 @@ public class BoardRecyclerViewAdapter
         }
     }
 
-    public void updateAt(boolean add, int index) {
-        if (add) notifyItemInserted(index);
-        else notifyItemRemoved(index);
-    }
-
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        if (viewType == TYPE_EVENT) {
+        if (viewType == VIEW_TYPE_HEADER) {
+            View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.discover_section_header, parent, false);
+            return new SectionHeaderViewHolder(view);
+        }
+        else if (viewType == BoardItem.TYPE_EVENT) {
             View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_event, parent, false);
             return new EventHolder(view);
         }
-        else if (viewType == TYPE_HEADER) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.recycler_header, parent, false);
-            return new RecyclerHeaderViewHolder(view);
-        }
-        else if (viewType == TYPE_FILE) {
+        else if (viewType == BoardItem.TYPE_FILE) {
             View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_file, parent, false);
             return new FileHolder(view);
         }
@@ -205,108 +407,19 @@ public class BoardRecyclerViewAdapter
     }
 
     @Override
-    public void onBindViewHolder(RecyclerView.ViewHolder recyclerViewHolder, int position) {
-        if (!isPositionHeader(position)) {
-            if (recyclerViewHolder instanceof EventHolder)
-                setEventViewHolder(position, recyclerViewHolder);
-            else if (recyclerViewHolder instanceof FileHolder)
-                setFileViewHolder(position, recyclerViewHolder);
-        }
+    public void onBindViewHolder(RecyclerView.ViewHolder recyclerViewHolder,
+                                 int section, int sectionPosition, int absolutePosition) {
+        if (recyclerViewHolder instanceof EventHolder)
+            setEventViewHolder(recyclerViewHolder, section, sectionPosition, absolutePosition);
+        else if (recyclerViewHolder instanceof FileHolder)
+            setFileViewHolder(recyclerViewHolder, section, sectionPosition, absolutePosition);
     }
 
     @Override
-    /**
-     * When notifyDataSetChanged() is called, getItemId will depend upon the values of what is
-     * combined to be the hashcode
-     */
-    public long getItemId(int position) {
-        if (isPositionHeader(position)) return super.getItemId(position);
-        else {
-            if (items != null && !items.isEmpty()) {
-                BoardItem item = items.get(position - 1);
-                long id = RecyclerView.NO_ID;
-                if (item.getType() == BoardItem.TYPE_EVENT) {
-                    EventItem event = (EventItem) item;
-                    String name = TextUtils.isEmpty(event.getName()) ? "" : event.getName();
-                    long startTime = event.getStartTime() == null ? 0L : event.getStartTime().getMillis();
-                    long endTime = event.getEndTime() == null ? 0l : event.getEndTime().getMillis();
-                    String place = TextUtils.isEmpty(event.getPlace()) ? "" : event.getPlace();
-                    double lat = event.getLocation() == null ? 0 : event.getLocation().getLatitude();
-                    double lng = event.getLocation() == null ? 0 : event.getLocation().getLongitude();
-                    String note = TextUtils.isEmpty(event.getNote()) ? "" : event.getNote();
-                    id = (event.getId() + event.getType() + event.getUpdatedTime() + name + startTime + endTime +
-                            place + lat + lng + note + event.getSyncStatus()).hashCode();
-                }
-                else if (item.getType() == BoardItem.TYPE_FILE) {
-                    FileItem file = (FileItem) item;
-                    String name = TextUtils.isEmpty(file.getName()) ? "" : file.getName();
-                    String note = TextUtils.isEmpty(file.getNote()) ? "" : file.getNote();
-                    String mimetype = TextUtils.isEmpty(file.getMimetype()) ? "" : file.getMimetype();
-                    long size = file.getSize();
-                    String path = file.getFile()==null? "" : file.getFile().getPath();
-                    long created = file.getCreatedTime() == null ? 0L : file.getCreatedTime().getMillis();
-                    long updated = file.getUpdatedTime() == null ? 0L : file.getUpdatedTime().getMillis();
-                    id = (name + note + mimetype + size + path + created + updated + + file.getSyncStatus()).hashCode();
-                }
-
-                Log.d(TAG, "Board item hashcode for position " + (position - 1) + " is " + id);
-
-                return id;
-            }
-
-            return super.getItemId(position);
-        }
-    }
-
-    @Override
-    public int getItemViewType(int position) {
-        if (isPositionHeader(position)) return TYPE_HEADER;
-        else if (items.get(position-1).getType() == BoardItem.TYPE_EVENT) return TYPE_EVENT;
-        else if (items.get(position-1).getType() == BoardItem.TYPE_FILE) return TYPE_FILE;
-        else return -1;
-    }
-
-    private boolean isPositionHeader(int position) {
-        return position == 0;
-    }
-
-    @Override
-    public int getItemCount() {
-        return items.size() + 1;
-    }
-
-    public void addItem(String id) {
-        notifyItemInserted(0);
-    }
-
-    public void updateItem(String id) {
-        int index = -1;
-        for (int i = 0; i < items.size(); i++) {
-            if (items.get(i).getId().equals(id)) {
-                index = i;
-                break;
-            }
-        }
-        if (index == -1) return;
-
-        index = index + 1;
-
-        notifyItemChanged(index);
-    }
-
-    public void deleteItem(String id) {
-        int index = -1;
-        for (int i = 0; i < items.size(); i++) {
-            if (items.get(i).getId().equals(id)) {
-                index = i;
-                break;
-            }
-        }
-        if (index == -1) return;
-
-        index = index + 1;
-
-        notifyItemRemoved(index);
+    public int getItemViewType(int section, int sectionPosition, int absolutePosition) {
+        BoardItem item = getItem(section, sectionPosition);
+        if (item == null) return 0;
+        else return item.getType();
     }
 
     /**************************************************************
@@ -401,8 +514,9 @@ public class BoardRecyclerViewAdapter
         }
     }
 
-    private void setFileViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {
-        FileItem file = (FileItem) items.get(position - 1);
+    private void setFileViewHolder(RecyclerView.ViewHolder recyclerViewHolder,
+                                   int section, int sectionPosition, int absolutePosition) {
+        FileItem file = (FileItem) getItem(section, sectionPosition);
         final String id = file.getId();
         final FileHolder holder = (FileHolder) recyclerViewHolder;
 
@@ -505,8 +619,9 @@ public class BoardRecyclerViewAdapter
         }
     }
 
-    private void setEventViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {
-        EventItem event = (EventItem) items.get(position - 1);
+    private void setEventViewHolder(RecyclerView.ViewHolder recyclerViewHolder,
+                                    int section, int sectionPosition, int absolutePosition) {
+        EventItem event = (EventItem) getItem(section, sectionPosition);
         final String id = event.getId();
         EventHolder holder = (EventHolder) recyclerViewHolder;
 
@@ -761,7 +876,7 @@ public class BoardRecyclerViewAdapter
             holder.eventVenue.setText(time + placeName);
             holder.googleLogo.setVisibility(View.VISIBLE);
 
-            // add to list of items that contain places info to be refreshed
+            // add to list of mappedItems that contain places info to be refreshed
             staleItems.add(holder.getAdapterPosition());
         }
         else {

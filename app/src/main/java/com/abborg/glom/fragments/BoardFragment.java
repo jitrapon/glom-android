@@ -24,6 +24,7 @@ import com.abborg.glom.activities.MainActivity;
 import com.abborg.glom.adapters.BoardRecyclerViewAdapter;
 import com.abborg.glom.data.DataUpdater;
 import com.abborg.glom.interfaces.BoardItemChangeListener;
+import com.abborg.glom.interfaces.BoardItemClickListener;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FileItem;
@@ -33,7 +34,7 @@ import java.util.List;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class BoardFragment extends Fragment implements View.OnClickListener, BoardItemChangeListener,
+public class BoardFragment extends Fragment implements BoardItemClickListener, BoardItemChangeListener,
         SwipeRefreshLayout.OnRefreshListener {
 
     private static final String TAG = "BoardFragment";
@@ -171,9 +172,7 @@ public class BoardFragment extends Fragment implements View.OnClickListener, Boa
      **********************************************************/
 
     @Override
-    public void onClick(View view) {
-        int position = recyclerView.getChildAdapterPosition(view);
-        BoardItem selected = items.get(position - 1);
+    public void onItemClicked(BoardItem selected) {
         if (selected != null) {
             if (selected instanceof EventItem) {
                 EventItem event = (EventItem) selected;
@@ -217,9 +216,7 @@ public class BoardFragment extends Fragment implements View.OnClickListener, Boa
     @Override
     public void onItemAdded(String id) {
         if (activity != null && id != null) {
-            adapter.notifyItemInserted(0);
-            layoutManager.scrollToPosition(0);
-            Log.d(TAG, "Inserted item at " + 0);
+            adapter.addItem(id);
         }
 
         if (refreshView != null) {
@@ -231,20 +228,7 @@ public class BoardFragment extends Fragment implements View.OnClickListener, Boa
     @Override
     public void onItemModified(String id) {
         if (activity != null && id != null) {
-            int index = -1;
-            items = appState.getActiveCircle().getItems();
-            for (int i = 0; i < items.size(); i++) {
-                if (items.get(i).getId().equals(id)) {
-                    index = i;
-                    break;
-                }
-            }
-            if (index == -1) return;
-
-            index = index + 1;
-            layoutManager.scrollToPosition(index);
-            adapter.notifyItemChanged(index);
-            Log.d(TAG, "Updated item at " + index);
+            adapter.updateItem(id);
         }
 
         if (refreshView != null) {
@@ -256,19 +240,7 @@ public class BoardFragment extends Fragment implements View.OnClickListener, Boa
     @Override
     public void onItemDeleted(String id) {
         if (activity != null && id != null) {
-            int index = -1;
-            items = appState.getActiveCircle().getItems();
-            for (int i = 0; i < items.size(); i++) {
-                if (items.get(i).getId().equals(id)) {
-                    index = i;
-                    break;
-                }
-            }
-            if (index == -1) return;
-
-            index = index + 1;
-            Log.d(TAG, "Removed item at " + index);
-            adapter.notifyItemRemoved(index);
+            adapter.deleteItem(id);
         }
 
         if (refreshView != null) {
