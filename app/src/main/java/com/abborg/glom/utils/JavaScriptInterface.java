@@ -21,12 +21,6 @@ public class JavaScriptInterface {
     }
 
     @JavascriptInterface
-    public void message(String msg) {
-        if (handler != null)
-            handler.sendMessage(handler.obtainMessage(Const.MSG_SHOW_TOAST, msg));
-    }
-
-    @JavascriptInterface
     public void log(String tag, String msg) {
         Log.d(tag, msg);
     }
@@ -39,13 +33,13 @@ public class JavaScriptInterface {
     @JavascriptInterface
     public void onConnected() {
         if (handler != null)
-            handler.sendMessage(handler.obtainMessage(Const.MSG_ROOM_SESSION_CONNECTED));
+            handler.sendMessage(handler.obtainMessage(Const.MSG_SOCKET_CONNECTED));
     }
 
     @JavascriptInterface
     public void onDisconnected() {
         if (handler != null)
-            handler.sendMessage(handler.obtainMessage(Const.MSG_ROOM_SESSION_DISCONNECTED));
+            handler.sendMessage(handler.obtainMessage(Const.MSG_SOCKET_DISCONNECTED));
     }
 
     /** Data will be in the format of '[action-code],[data payload],[data payload]...' **/

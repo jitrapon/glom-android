@@ -30,7 +30,7 @@ public class Const {
     public static final int CREATE_EVENT_RESULT_CODE = 700;
     public static final int UPDATE_EVENT_RESULT_CODE = 701;
     public static final int IMAGE_SELECTED_RESULT_CODE = 702;
-    public static final int CREATE_DRAWING_RESULT_CODE = 703;
+    public static final int NOTE_RESULT_CODE = 703;
 
     /**
      * API
@@ -100,6 +100,7 @@ public class Const {
     public static final String JSON_SERVER_FILE_MIMETYPE = "mimetype";
     public static final String JSON_SERVER_FILE_NOTE = "note";
     public static final String JSON_SERVER_FILE_PROVIDER = "provider";
+    public static final String JSON_SERVER_NOTE_NAME = "note_name";
 
     /**
      * HANDLER WHAT CONSTANTS
@@ -127,8 +128,8 @@ public class Const {
     public static final int MSG_FILE_DOWNLOAD_COMPLETE = 5021;
     public static final int MSG_FILE_DOWNLOAD_IN_PROGRESS = 5022;
     public static final int MSG_SHOW_TOAST = 5023;
-    public static final int MSG_ROOM_SESSION_CONNECTED = 5024;
-    public static final int MSG_ROOM_SESSION_DISCONNECTED = 5025;
+    public static final int MSG_SOCKET_CONNECTED = 5024;
+    public static final int MSG_SOCKET_DISCONNECTED = 5025;
     public static final int MSG_SOCKET_DATA_RECEIVED = 5026;
 
     /**

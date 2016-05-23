@@ -220,7 +220,7 @@ public class DiscoverRecyclerViewAdapter
         switch (viewType) {
             case VIEW_TYPE_HEADER: {
                 View view = LayoutInflater.from(parent.getContext())
-                        .inflate(R.layout.discover_section_header, parent, false);
+                        .inflate(R.layout.section_header, parent, false);
                 return new SectionHeaderViewHolder(view);
             }
             case DiscoverItem.TYPE_MOVIE: {

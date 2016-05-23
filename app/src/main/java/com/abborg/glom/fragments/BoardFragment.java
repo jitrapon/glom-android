@@ -19,6 +19,7 @@ import android.view.ViewGroup;
 import com.abborg.glom.AppState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
+import com.abborg.glom.activities.DrawActivity;
 import com.abborg.glom.activities.EventActivity;
 import com.abborg.glom.activities.MainActivity;
 import com.abborg.glom.adapters.BoardRecyclerViewAdapter;
@@ -28,6 +29,7 @@ import com.abborg.glom.interfaces.BoardItemClickListener;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FileItem;
+import com.abborg.glom.model.NoteItem;
 
 import java.util.List;
 
@@ -194,8 +196,16 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
                 else {
                     Intent intent = new Intent(Intent.ACTION_VIEW);
                     intent.setDataAndType(Uri.fromFile(item.getFile()), item.getMimetype());
-                    startActivity(Intent.createChooser(intent, getString(R.string.card_select_app_to_launch)));
+                    getActivity().startActivity(Intent.createChooser(intent, getString(R.string.card_select_app_to_launch)));
                 }
+            }
+            else if (selected instanceof NoteItem) {
+                NoteItem item = (NoteItem) selected;
+                Log.d(TAG, "NoteItem (" + item.getId() + ") selected");
+                Intent intent = new Intent(activity, DrawActivity.class);
+                intent.setAction(getString(R.string.ACTION_JOIN_NOTE));
+                intent.putExtra(getString(R.string.EXTRA_NOTE_ID), item.getId());
+                getActivity().startActivityForResult(intent, Const.NOTE_RESULT_CODE);
             }
         }
     }

@@ -129,9 +129,10 @@ public class BoardRecyclerViewAdapter1 extends SectionedRecyclerViewAdapter<Recy
                                 break;
                             }
                             else {
-                                numTotal += mappedItems.get(updatedItem.getType()).size();
+                                List<BoardItem> items = mappedItems.get(section);
+                                numTotal += items == null ? 0 : items.size();
+                                if (numTotal > 0) sectionIndex++;
                             }
-                            sectionIndex++;
                         }
                         int adapterIndex = sectionIndex + numTotal + itemIndex + 1;
                         Log.d(TAG, "Updated an item " + updatedItem.getId() + " of type "
@@ -158,9 +159,10 @@ public class BoardRecyclerViewAdapter1 extends SectionedRecyclerViewAdapter<Recy
                 break;
             }
             else {
-                numTotal += mappedItems.get(addedItem.getType()).size();
+                List<BoardItem> items = mappedItems.get(section);
+                numTotal += items == null ? 0 : items.size();
+                if (numTotal > 0) sectionIndex++;
             }
-            sectionIndex++;
         }
         int adapterIndex = sectionIndex + numTotal + itemIndex + 1;
         Log.d(TAG, "Added an item " + addedItem.getId() + " of type " + addedItem.getType() + " at " + adapterIndex);
@@ -187,15 +189,16 @@ public class BoardRecyclerViewAdapter1 extends SectionedRecyclerViewAdapter<Recy
                     break;
                 }
                 else {
-                    numTotal += mappedItems.get(removedItem.getType()).size();
+                    List<BoardItem> items = mappedItems.get(section);
+                    numTotal += items == null ? 0 : items.size();
+                    if (numTotal > 0) sectionIndex++;
                 }
-                sectionIndex++;
             }
             int adapterIndex = sectionIndex + numTotal + itemIndex + 1;
             Log.d(TAG, "Deleted an item " + removedItem.getId() + " of type " + removedItem.getType() + " at " + adapterIndex);
 
             listToRemove.remove(index);
-            return adapterIndex;
+            return mappedItems.size() == 0 ? -1 : adapterIndex;
         }
         return -1;
     }
@@ -342,32 +345,49 @@ public class BoardRecyclerViewAdapter1 extends SectionedRecyclerViewAdapter<Recy
     }
 
     public void addItem(String id) {
-        for (int i = 0; i < items.size(); i++) {
-            if (items.get(i).getId().equals(id)) {
-                int index = addToMap(i);
-                notifyDataSetChanged();
-                break;
+        try {
+            for (int i = 0; i < items.size(); i++) {
+                if (items.get(i).getId().equals(id)) {
+                    int index = addToMap(i);
+                    if (index != -1) notifyItemInserted(index);
+                    else notifyDataSetChanged();
+                    break;
+                }
             }
+        }
+        catch (Exception ex) {
+            Log.e(TAG, ex.getMessage());
         }
     }
 
     public void updateItem(String id) {
-        for (int i = 0; i < items.size(); i++) {
-            if (items.get(i).getId().equals(id)) {
-                int index = updateMap(Category.TYPE, i);
-                notifyDataSetChanged();
-                break;
+        try {
+            for (int i = 0; i < items.size(); i++) {
+                if (items.get(i).getId().equals(id)) {
+                    int index = updateMap(Category.TYPE, i);
+                    if (index != -1) notifyItemInserted(index);
+                    else notifyDataSetChanged();
+                    break;
+                }
             }
+        }
+        catch (Exception ex) {
+            Log.e(TAG, ex.getMessage());
         }
     }
 
     public void deleteItem(String id) {
-        for (int i = 0; i < items.size(); i++) {
-            if (items.get(i).getId().equals(id)) {
-                removeFromMap(i);
-                notifyDataSetChanged();
-                break;
+        try {
+            for (int i = 0; i < items.size(); i++) {
+                if (items.get(i).getId().equals(id)) {
+                    int index = removeFromMap(i);
+                    notifyDataSetChanged();
+                    break;
+                }
             }
+        }
+        catch (Exception ex) {
+            Log.e(TAG, ex.getMessage());
         }
     }
 
@@ -391,7 +411,7 @@ public class BoardRecyclerViewAdapter1 extends SectionedRecyclerViewAdapter<Recy
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         if (viewType == VIEW_TYPE_HEADER) {
             View view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.discover_section_header, parent, false);
+                    .inflate(R.layout.section_header, parent, false);
             return new SectionHeaderViewHolder(view);
         }
         else if (viewType == BoardItem.TYPE_EVENT) {

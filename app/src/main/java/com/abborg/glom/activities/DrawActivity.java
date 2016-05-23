@@ -17,10 +17,14 @@ import com.abborg.glom.AppState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.data.DataUpdater;
+import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
+import com.abborg.glom.model.NoteItem;
 import com.abborg.glom.model.User;
 import com.abborg.glom.utils.JavaScriptInterface;
 import com.abborg.glom.views.DrawCanvasView;
+
+import org.joda.time.DateTime;
 
 /**
  * Created by jitrapon on 17/5/16.
@@ -29,11 +33,12 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
 
     private static final String TAG = "DrawActivity";
 
-    /** Circle state information **/
+    /** Item state information **/
     AppState appState;
     Circle circle;
     User user;
     DataUpdater dataUpdater;
+    NoteItem note;
 
     DrawCanvasView canvas;
     WebView webView;
@@ -46,25 +51,38 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
 
     /* App-specific action opcode for protocol in networking */
     private static final String DELIMITER = ",";
-    private static final int ACTION_LEAVE = 0;
-    private static final int ACTION_JOIN = 1;
-    private static final int ACTION_SHOW_MESSAGE = 2;
-    private static final int ACTION_DRAW = 3;
-    private static final int ACTION_NEW_POINT = 4;
-    private static final int ACTION_ERASE = 5;
+    private static final int ACTION_CREATE = 0;
+    private static final int ACTION_LEAVE = 1;
+    private static final int ACTION_JOIN = 2;
+    private static final int ACTION_SHOW_MESSAGE = 3;
+    private static final int ACTION_DRAW = 4;
+    private static final int ACTION_NEW_POINT = 5;
+    private static final int ACTION_ERASE = 6;
+
+    private boolean shouldCreateRoom;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         appState = AppState.getInstance();
-        if (appState == null || appState.getDataUpdater() == null) {
+        if (appState == null || appState.getDataUpdater() == null || getIntent() == null) {
             finish();
         }
         circle = appState.getActiveCircle();
         user = appState.getActiveUser();
         dataUpdater = appState.getDataUpdater();
         handler = new Handler(this);
+        shouldCreateRoom = getIntent().getAction().equals(getResources().getString(R.string.ACTION_CREATE_NOTE));
+        if (!shouldCreateRoom) {
+            String id = getIntent().getStringExtra(getString(R.string.EXTRA_NOTE_ID));
+            for (BoardItem item : circle.getItems()) {
+                if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_NOTE) {
+                    note = (NoteItem) item;
+                    break;
+                }
+            }
+        }
 
         setContentView(R.layout.activity_draw);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -128,7 +146,8 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
      */
     @Override
     public void onDraw(boolean moved, float x, float y) {
-        call("send", moved ? ACTION_NEW_POINT : ACTION_DRAW, appState.getActiveCircle().getId(), user.getId(), x, y);
+        if (note != null)
+            call("send", moved ? ACTION_NEW_POINT : ACTION_DRAW, user.getId(), note.getId(), x, y);
     }
 
     /**
@@ -136,8 +155,10 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
      */
     @Override
     public void onExit() {
-        call("send", ACTION_LEAVE, appState.getActiveCircle().getId(), user.getId());
-        call("stop");
+        if (note != null) {
+            call("send", ACTION_LEAVE, user.getId(), note.getId());
+            call("stop");
+        }
     }
 
     /********************************************
@@ -147,22 +168,24 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
     @Override
     public boolean handleMessage(Message msg) {
         switch (msg.what) {
-            case Const.MSG_SHOW_TOAST:
-                if (msg.obj != null) {
-                    String message = (String) msg.obj;
-                    Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
+
+            /* Called when a socket connection has been established successfully */
+            /* Action create room payload: <create action code>,<user id>,<item id>,<circle id> */
+            /* Action join payload: <join action code>,<user id>,<item id> */
+            case Const.MSG_SOCKET_CONNECTED:
+//                Toast.makeText(getApplicationContext(),
+//                        getResources().getString(R.string.notification_app_connected), Toast.LENGTH_LONG).show();
+                if (shouldCreateRoom) {
+                    note = NoteItem.createNote(circle, DateTime.now(), DateTime.now());
+                    call("send", ACTION_CREATE, user.getId(), note.getId(), circle.getId());
+                }
+                else {
+                    call("send", ACTION_JOIN, user.getId(), note.getId());
                 }
                 break;
 
-            /* Called when a socket connection has been established successfully */
-            case Const.MSG_ROOM_SESSION_CONNECTED:
-                Toast.makeText(getApplicationContext(),
-                        getResources().getString(R.string.notification_app_connected), Toast.LENGTH_LONG).show();
-                call("send", ACTION_JOIN, appState.getActiveCircle().getId(), user.getId());
-                break;
-
              /* Called when a socket connection has been closed successfully */
-            case Const.MSG_ROOM_SESSION_DISCONNECTED:
+            case Const.MSG_SOCKET_DISCONNECTED:
                 Toast.makeText(getApplicationContext(),
                         getResources().getString(R.string.notification_app_disconnected), Toast.LENGTH_LONG).show();
                 break;
@@ -180,7 +203,7 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
                                 Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
                                 break;
                             case ACTION_JOIN: {
-                                String userId = rawData[2];
+                                String userId = rawData[1];
                                 Snackbar.make(
                                         rootView,
                                         String.format(getResources().getString(R.string.notification_user_joined), userId),
@@ -189,7 +212,7 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
                                 break;
                             }
                             case ACTION_LEAVE: {
-                                String userId = rawData[2];
+                                String userId = rawData[1];
                                 Snackbar.make(
                                         rootView,
                                         String.format(getResources().getString(R.string.notification_user_left), userId),

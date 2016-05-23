@@ -53,6 +53,9 @@
     <string name="EXTRA_MESSAGE_CIRCLE_ID">com.abborg.glom.extra.MESSAGE_CIRCLEID</string>
     <string name="EXTRA_MESSAGE_TYPE">com.abborg.glom.extra.MESSAGE_TYPE</string>
     <string name="ACTION_SERVER_ACK_MESSAGE">com.abborg.glom.action.ACK_MESSAGE</string>
+    <string name="ACTION_CREATE_NOTE">com.abborg.glom.action.CREATE_NOTE</string>
+    <string name="ACTION_JOIN_NOTE">com.abborg.glom.action.JOIN_NOTE</string>
+    <string name="EXTRA_NOTE_ID">com.abborg.glom.extra.NOTE_ID</string>
 
     <!-- Profile activity strings -->
     <string name="profile_activity_label">My Profile</string>

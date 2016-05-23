@@ -27,6 +27,7 @@ import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FeedAction;
 import com.abborg.glom.model.FileItem;
+import com.abborg.glom.model.NoteItem;
 import com.abborg.glom.utils.CircleTransform;
 import com.bumptech.glide.Glide;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -55,10 +56,6 @@ public class BoardRecyclerViewAdapter
         extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private static String TAG = "BoardRecyclerViewAdapter";
-
-    private static final int TYPE_HEADER = 1;
-    private static final int TYPE_EVENT = 2;
-    private static final int TYPE_FILE = 3;
 
     private List<BoardItem> items;
 
@@ -156,6 +153,34 @@ public class BoardRecyclerViewAdapter
         }
     }
 
+    public static class NoteHolder extends RecyclerView.ViewHolder {
+        ImageView posterAvatar;
+        TextView posterName;
+        TextView postTime;
+        ImageView syncStatus;
+
+        ImageView thumbnail;
+
+        public NoteHolder(View itemView) {
+            super(itemView);
+
+            posterAvatar = (ImageView) itemView.findViewById(R.id.card_user_avatar);
+            posterName = (TextView) itemView.findViewById(R.id.card_user_name);
+            postTime = (TextView) itemView.findViewById(R.id.card_user_post_time);
+            syncStatus = (ImageView) itemView.findViewById(R.id.card_sync_status);
+
+            thumbnail = (ImageView) itemView.findViewById(R.id.note_thumbnail);
+        }
+
+        public void bind(final NoteItem file, final BoardItemClickListener listener) {
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    listener.onItemClicked(file);
+                }
+            });
+        }
+    }
+
     public BoardRecyclerViewAdapter(Context context, List<BoardItem> items, BoardItemClickListener clickListener, Handler handler) {
         this.context = context;
         this.items = items;
@@ -188,30 +213,29 @@ public class BoardRecyclerViewAdapter
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        if (viewType == TYPE_EVENT) {
+        if (viewType == BoardItem.TYPE_EVENT) {
             View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_event, parent, false);
             return new EventHolder(view);
         }
-        else if (viewType == TYPE_HEADER) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.recycler_header, parent, false);
-            return new RecyclerHeaderViewHolder(view);
-        }
-        else if (viewType == TYPE_FILE) {
+        else if (viewType == BoardItem.TYPE_FILE) {
             View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_file, parent, false);
             return new FileHolder(view);
         }
-        else
-            return null;
+        else if (viewType == BoardItem.TYPE_NOTE) {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_note, parent, false);
+            return new NoteHolder(view);
+        }
+        else return null;
     }
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder recyclerViewHolder, int position) {
-        if (!isPositionHeader(position)) {
-            if (recyclerViewHolder instanceof EventHolder)
-                setEventViewHolder(position, recyclerViewHolder);
-            else if (recyclerViewHolder instanceof FileHolder)
-                setFileViewHolder(position, recyclerViewHolder);
-        }
+        if (recyclerViewHolder instanceof EventHolder)
+            setEventViewHolder(position, recyclerViewHolder);
+        else if (recyclerViewHolder instanceof FileHolder)
+            setFileViewHolder(position, recyclerViewHolder);
+        else if (recyclerViewHolder instanceof NoteHolder)
+            setNoteViewHolder(position, recyclerViewHolder);
     }
 
     @Override
@@ -220,59 +244,53 @@ public class BoardRecyclerViewAdapter
      * combined to be the hashcode
      */
     public long getItemId(int position) {
-        if (isPositionHeader(position)) return super.getItemId(position);
-        else {
-            if (items != null && !items.isEmpty()) {
-                BoardItem item = items.get(position - 1);
-                long id = RecyclerView.NO_ID;
-                if (item.getType() == BoardItem.TYPE_EVENT) {
-                    EventItem event = (EventItem) item;
-                    String name = TextUtils.isEmpty(event.getName()) ? "" : event.getName();
-                    long startTime = event.getStartTime() == null ? 0L : event.getStartTime().getMillis();
-                    long endTime = event.getEndTime() == null ? 0l : event.getEndTime().getMillis();
-                    String place = TextUtils.isEmpty(event.getPlace()) ? "" : event.getPlace();
-                    double lat = event.getLocation() == null ? 0 : event.getLocation().getLatitude();
-                    double lng = event.getLocation() == null ? 0 : event.getLocation().getLongitude();
-                    String note = TextUtils.isEmpty(event.getNote()) ? "" : event.getNote();
-                    id = (event.getId() + event.getType() + event.getUpdatedTime() + name + startTime + endTime +
-                            place + lat + lng + note + event.getSyncStatus()).hashCode();
-                }
-                else if (item.getType() == BoardItem.TYPE_FILE) {
-                    FileItem file = (FileItem) item;
-                    String name = TextUtils.isEmpty(file.getName()) ? "" : file.getName();
-                    String note = TextUtils.isEmpty(file.getNote()) ? "" : file.getNote();
-                    String mimetype = TextUtils.isEmpty(file.getMimetype()) ? "" : file.getMimetype();
-                    long size = file.getSize();
-                    String path = file.getFile()==null? "" : file.getFile().getPath();
-                    long created = file.getCreatedTime() == null ? 0L : file.getCreatedTime().getMillis();
-                    long updated = file.getUpdatedTime() == null ? 0L : file.getUpdatedTime().getMillis();
-                    id = (name + note + mimetype + size + path + created + updated + + file.getSyncStatus()).hashCode();
-                }
-
-                Log.d(TAG, "Board item hashcode for position " + (position - 1) + " is " + id);
-
-                return id;
+        if (items != null && !items.isEmpty()) {
+            BoardItem item = items.get(position);
+            long id = RecyclerView.NO_ID;
+            if (item.getType() == BoardItem.TYPE_EVENT) {
+                EventItem event = (EventItem) item;
+                String name = TextUtils.isEmpty(event.getName()) ? "" : event.getName();
+                long startTime = event.getStartTime() == null ? 0L : event.getStartTime().getMillis();
+                long endTime = event.getEndTime() == null ? 0l : event.getEndTime().getMillis();
+                String place = TextUtils.isEmpty(event.getPlace()) ? "" : event.getPlace();
+                double lat = event.getLocation() == null ? 0 : event.getLocation().getLatitude();
+                double lng = event.getLocation() == null ? 0 : event.getLocation().getLongitude();
+                String note = TextUtils.isEmpty(event.getNote()) ? "" : event.getNote();
+                id = (event.getId() + event.getType() + event.getUpdatedTime() + name + startTime + endTime +
+                        place + lat + lng + note + event.getSyncStatus()).hashCode();
             }
-
-            return super.getItemId(position);
+            else if (item.getType() == BoardItem.TYPE_FILE) {
+                FileItem file = (FileItem) item;
+                String name = TextUtils.isEmpty(file.getName()) ? "" : file.getName();
+                String note = TextUtils.isEmpty(file.getNote()) ? "" : file.getNote();
+                String mimetype = TextUtils.isEmpty(file.getMimetype()) ? "" : file.getMimetype();
+                long size = file.getSize();
+                String path = file.getFile()==null? "" : file.getFile().getPath();
+                long created = file.getCreatedTime() == null ? 0L : file.getCreatedTime().getMillis();
+                long updated = file.getUpdatedTime() == null ? 0L : file.getUpdatedTime().getMillis();
+                id = (name + note + mimetype + size + path + created + updated + + file.getSyncStatus()).hashCode();
+            }
+            else if (item.getType() == BoardItem.TYPE_NOTE) {
+                NoteItem note = (NoteItem) item;
+                String name = TextUtils.isEmpty(note.getName()) ? "" : note.getName();
+                long created = note.getCreatedTime() == null ? 0L : note.getCreatedTime().getMillis();
+                long updated = note.getUpdatedTime() == null ? 0L : note.getUpdatedTime().getMillis();
+                id = (name + created + updated + note.getSyncStatus()).hashCode();
+            }
+            return id;
         }
+
+        return super.getItemId(position);
     }
 
     @Override
     public int getItemViewType(int position) {
-        if (isPositionHeader(position)) return TYPE_HEADER;
-        else if (items.get(position-1).getType() == BoardItem.TYPE_EVENT) return TYPE_EVENT;
-        else if (items.get(position-1).getType() == BoardItem.TYPE_FILE) return TYPE_FILE;
-        else return -1;
-    }
-
-    private boolean isPositionHeader(int position) {
-        return position == 0;
+        return items.get(position).getType();
     }
 
     @Override
     public int getItemCount() {
-        return items.size() + 1;
+        return items.size();
     }
 
     public void addItem(String id) {
@@ -289,8 +307,6 @@ public class BoardRecyclerViewAdapter
         }
         if (index == -1) return;
 
-        index = index + 1;
-
         notifyItemChanged(index);
     }
 
@@ -303,8 +319,6 @@ public class BoardRecyclerViewAdapter
             }
         }
         if (index == -1) return;
-
-        index = index + 1;
 
         notifyItemRemoved(index);
     }
@@ -402,7 +416,7 @@ public class BoardRecyclerViewAdapter
     }
 
     private void setFileViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {
-        FileItem file = (FileItem) items.get(position - 1);
+        FileItem file = (FileItem) items.get(position);
         final String id = file.getId();
         final FileHolder holder = (FileHolder) recyclerViewHolder;
 
@@ -506,7 +520,7 @@ public class BoardRecyclerViewAdapter
     }
 
     private void setEventViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {
-        EventItem event = (EventItem) items.get(position - 1);
+        EventItem event = (EventItem) items.get(position);
         final String id = event.getId();
         EventHolder holder = (EventHolder) recyclerViewHolder;
 
@@ -776,6 +790,36 @@ public class BoardRecyclerViewAdapter
             holder.googleLogo.setVisibility(View.INVISIBLE);
         }
         holder.eventNote.setText(event.getNote());
+    }
+
+    private void setNoteViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {
+        NoteItem note = (NoteItem) items.get(position);
+        final String id = note.getId();
+        final NoteHolder holder = (NoteHolder) recyclerViewHolder;
+
+        holder.bind(note, listener);
+
+//        // attach context menu button
+//        attachMenuOptions(holder.menuButton, id);
+
+        // attach the last feed info about this post
+        attachPostInfo(note.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);
+
+        // set sync status and progress bar
+        if (note.getSyncStatus() == BoardItem.SYNC_COMPLETE) {
+            holder.syncStatus.setVisibility(View.INVISIBLE);
+        }
+        else {
+            holder.syncStatus.setVisibility(View.VISIBLE);
+
+            if (note.getSyncStatus() == BoardItem.SYNC_ERROR)
+                holder.syncStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync_failed));
+            else if (note.getSyncStatus() == BoardItem.SYNC_IN_PROGRESS) {
+                holder.syncStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync));
+            }
+        }
+
+        // update note info and thumbnail
     }
 
     /**************************************************************

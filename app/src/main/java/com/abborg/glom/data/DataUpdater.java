@@ -35,6 +35,7 @@ import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FeedAction;
 import com.abborg.glom.model.FileItem;
 import com.abborg.glom.model.Movie;
+import com.abborg.glom.model.NoteItem;
 import com.abborg.glom.model.User;
 import com.abborg.glom.model.WatchableFeed;
 import com.abborg.glom.model.WatchableImage;
@@ -842,7 +843,6 @@ public class DataUpdater {
                                                             note = note.equals("null") ? null : note;
 
                                                             EventItem event = null;
-
                                                             if (items != null) {
                                                                 for (BoardItem item : items) {
                                                                     if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_EVENT) {
@@ -875,7 +875,6 @@ public class DataUpdater {
                                                             note = note.equals("null") ? null : note;
 
                                                             FileItem file = null;
-
                                                             if (items != null) {
                                                                 for (BoardItem item : items) {
                                                                     if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_FILE) {
@@ -893,6 +892,31 @@ public class DataUpdater {
                                                                 }
                                                             }
 
+                                                            break;
+                                                        }
+
+                                                        case BoardItem.TYPE_NOTE: {
+                                                            String name = info.getString(Const.JSON_SERVER_NOTE_NAME);
+
+                                                            name = name.equals("null") || TextUtils.isEmpty(name) ? null : name;
+
+                                                            NoteItem note = null;
+                                                            if (items != null) {
+                                                                for (BoardItem item : items) {
+                                                                    if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_NOTE) {
+                                                                        note = (NoteItem) item;
+                                                                    }
+                                                                }
+                                                                if (note == null) {
+                                                                    DateTime createdTime = createdMillis == null ? null : new DateTime(createdMillis);
+                                                                    createNote(circle, createdTime, id, name);
+                                                                }
+                                                                else if (note.getSyncStatus() != BoardItem.NO_SYNC) {
+                                                                    DateTime updatedTime = updatedMillis == null ? null : new DateTime(updatedMillis);
+                                                                    //TODO
+                                                                    note.setDirty(false);
+                                                                }
+                                                            }
                                                             break;
                                                         }
                                                         default:
@@ -1718,6 +1742,23 @@ public class DataUpdater {
             ex.printStackTrace();
             setSyncStatus(file, Const.MSG_FILE_POST_FAILED, BoardItem.SYNC_ERROR);
         }
+    }
+
+    /*************************************************
+     * NOTE OPERATIONS
+     *************************************************/
+    private NoteItem createNote(Circle circle, DateTime createdTime,
+                                String id, String name) {
+        createdTime = createdTime==null ? DateTime.now() : createdTime;
+        final NoteItem note = TextUtils.isEmpty(id) ? NoteItem.createNote(circle, createdTime, createdTime)
+                : NoteItem.createNote(id, circle, createdTime, createdTime);
+        note.setName(name);
+        note.setSyncStatus(BoardItem.SYNC_COMPLETE);
+        circle.addItem(note);
+
+//        createNoteDB(circle, createdTime, note, BoardItem.SYNC_COMPLETE);
+
+        return note;
     }
 
     /*************************************************

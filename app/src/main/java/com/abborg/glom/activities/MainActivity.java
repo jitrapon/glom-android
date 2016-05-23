@@ -726,7 +726,8 @@ public class MainActivity extends AppCompatActivity
                     @Override
                     public void onClick(View v) {
                         Intent intent = new Intent(activity, DrawActivity.class);
-                        startActivityForResult(intent, Const.CREATE_DRAWING_RESULT_CODE);
+                        intent.setAction(getResources().getString(R.string.ACTION_CREATE_NOTE));
+                        startActivityForResult(intent, Const.NOTE_RESULT_CODE);
                         hideMenuOverlay(false);
                     }
                 });
