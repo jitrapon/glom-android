@@ -139,12 +139,13 @@
 
     <!-- Create items action -->
     <string name="action_create_event_datetime_format">dd/MM/yyyy HH:mm:ss</string>
-    <string name="create_event_title">New Event</string>
+    <string name="title_activity_event">Event</string>
+    <string name="title_activity_task">Task</string>
     <string name="menu_item_done">Done</string>
     <string name="hint_event_name">Name*</string>
-    <string name="hint_event_start_date">Start</string>
-    <string name="hint_event_start_time"></string>
-    <string name="hint_event_end_datetime">End</string>
+    <string name="hint_event_start_date">From</string>
+    <string name="hint_event_time">Time</string>
+    <string name="hint_event_end_date">To</string>
     <string name="hint_event_location">Location</string>
     <string name="display_date_format">dd MMM, yyyy</string>
     <string name="display_time_format">hh:mm a</string>
@@ -155,6 +156,8 @@
     <string name="error_event_name_empty">Enter event name</string>
     <string name="duration_incoming_prefix">In</string>
     <string name="duration_started_prefix">Started</string>
+    <string name="error_google_play_services_error">Error accessing Google Play Services, make sure you have the latest update</string>
+    <string name="hint_note">Note</string>
 
     <!-- Global menu items -->
     <string name="menu_item_delete">Delete</string>
@@ -191,4 +194,5 @@
     <string name="notification_app_disconnected">You have left the drawing session</string>
     <string name="notification_user_joined">%s has joined the session</string>
     <string name="notification_user_left">%s has left the session</string>
+    <string name="menu_item_erase">Erase</string>
 </resources>

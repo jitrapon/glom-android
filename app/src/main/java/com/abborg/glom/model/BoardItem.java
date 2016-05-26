@@ -22,6 +22,10 @@ public class BoardItem {
 
     protected int sync;
 
+    /* if this item is an attachment, it will not show up in the list of board items */
+    /* Attachments are items that are linked (attached) to a board item */
+    protected boolean isAttachment;
+
     /** Board item types - this must match with what is stored server-side **/
     public static final int TYPE_EVENT = 1;
     public static final int TYPE_FILE = 2;
@@ -64,4 +68,8 @@ public class BoardItem {
     public int getSyncStatus() { return sync; }
 
     public void setSyncStatus(int status) { sync = status; }
+
+    public boolean isAttachment() { return isAttachment; }
+
+    public void setIsAttachment(boolean enable) { isAttachment = enable; }
 }

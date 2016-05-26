@@ -789,7 +789,14 @@ public class BoardRecyclerViewAdapter
 
             holder.googleLogo.setVisibility(View.INVISIBLE);
         }
+
         holder.eventNote.setText(event.getNote());
+
+        if (TextUtils.isEmpty(holder.eventVenue.getText())) holder.eventVenue.setVisibility(View.GONE);
+        else holder.eventVenue.setVisibility(View.VISIBLE);
+
+        if (TextUtils.isEmpty(event.getNote())) holder.eventNote.setVisibility(View.GONE);
+        else holder.eventNote.setVisibility(View.VISIBLE);
     }
 
     private void setNoteViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {

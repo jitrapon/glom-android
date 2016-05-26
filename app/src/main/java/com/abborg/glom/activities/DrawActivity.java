@@ -7,7 +7,10 @@ import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -56,8 +59,8 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
     private static final int ACTION_JOIN = 2;
     private static final int ACTION_SHOW_MESSAGE = 3;
     private static final int ACTION_DRAW = 4;
-    private static final int ACTION_NEW_POINT = 5;
-    private static final int ACTION_ERASE = 6;
+    private static final int ACTION_DRAW_START = 5;
+    private static final int ACTION_DRAW_END = 6;
 
     private boolean shouldCreateRoom;
 
@@ -84,12 +87,20 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
             }
         }
 
+        setupView();
+    }
+
+    private void setupView() {
         setContentView(R.layout.activity_draw);
+
+        canvas = (DrawCanvasView) findViewById(R.id.canvas_view);
+        rootView = (CoordinatorLayout) findViewById(R.id.coordinator_layout);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle(getString(R.string.title_activity_note_unsaved));
+            if (note == null || TextUtils.isEmpty(note.getName()))
+                getSupportActionBar().setTitle(getString(R.string.title_activity_note_unsaved));
+            else getSupportActionBar().setTitle(note.getName());
         }
 
         try {
@@ -117,9 +128,7 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
             Log.e(TAG, e.getMessage());
         }
 
-        canvas = (DrawCanvasView) findViewById(R.id.canvas_view);
         if (canvas != null) canvas.setEventListener(this);
-        rootView = (CoordinatorLayout) findViewById(R.id.coordinator_layout);
     }
 
     private void call(String functionName, Object... params) {
@@ -137,22 +146,50 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
         webView.loadUrl("javascript:" + functionName + "(\"" + action + "\")");
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_note, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.action_erase) {
+
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
     /********************************************
      * CANVAS VIEW CALLBACKS
      *******************************************/
 
-    /**
-     * Sending info to server about drawing location
-     */
+    /* <start action-code>,<user-id>,<item-id>,<x>,<y> */
     @Override
-    public void onDraw(boolean moved, float x, float y) {
-        if (note != null)
-            call("send", moved ? ACTION_NEW_POINT : ACTION_DRAW, user.getId(), note.getId(), x, y);
+    public void onDrawStart(float x, float y) {
+        if (note != null) call("send", ACTION_DRAW_START, user.getId(), note.getId(), x, y);
+    }
+
+    /* <draw action-code>,<user-id>,<item-id>,<x>,<y> */
+    @Override
+    public void onDraw(float x, float y) {
+        if (note != null) call("send", ACTION_DRAW, user.getId(), note.getId(), x, y);
+    }
+
+    /* <end action-code>,<user-id>,<item-id> */
+    @Override
+    public void onDrawEnd() {
+        if (note != null) call("send", ACTION_DRAW_END, user.getId(), note.getId());
     }
 
     /**
      * Close connection to server
      */
+    /* <leave action code>,<user id>,<item id> */
     @Override
     public void onExit() {
         if (note != null) {
@@ -170,15 +207,15 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
         switch (msg.what) {
 
             /* Called when a socket connection has been established successfully */
-            /* Action create room payload: <create action code>,<user id>,<item id>,<circle id> */
-            /* Action join payload: <join action code>,<user id>,<item id> */
             case Const.MSG_SOCKET_CONNECTED:
-//                Toast.makeText(getApplicationContext(),
-//                        getResources().getString(R.string.notification_app_connected), Toast.LENGTH_LONG).show();
+
+                /* Action create room payload: <create action code>,<user id>,<item id>,<circle id> */
                 if (shouldCreateRoom) {
                     note = NoteItem.createNote(circle, DateTime.now(), DateTime.now());
                     call("send", ACTION_CREATE, user.getId(), note.getId(), circle.getId());
                 }
+
+                /* <join action code>,<user id>,<item id> */
                 else {
                     call("send", ACTION_JOIN, user.getId(), note.getId());
                 }
@@ -198,10 +235,14 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
                     if (rawData.length > 0) {
                         int actionCode = Integer.parseInt(rawData[0]);
                         switch (actionCode) {
+
+                            /* <message action code>,<message payload> */
                             case ACTION_SHOW_MESSAGE:
                                 String message = rawData.length > 1 ? rawData[1] : null;
                                 Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
                                 break;
+
+                            /* <join action code>,<user id>,<item id> */
                             case ACTION_JOIN: {
                                 String userId = rawData[1];
                                 Snackbar.make(
@@ -211,6 +252,8 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
                                         .show();
                                 break;
                             }
+
+                            /* <leave action code>,<user id>,<item id> */
                             case ACTION_LEAVE: {
                                 String userId = rawData[1];
                                 Snackbar.make(
@@ -218,18 +261,33 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
                                         String.format(getResources().getString(R.string.notification_user_left), userId),
                                         Snackbar.LENGTH_LONG)
                                         .show();
+
+                                canvas.removePath(userId);
                                 break;
                             }
-                            case ACTION_NEW_POINT: {
+
+                            /* <new point action-code>,<user-id>,<item-id>,<x>,<y> */
+                            case ACTION_DRAW_START: {
+                                String userId = rawData[1];
                                 float x = Float.parseFloat(rawData[3]);
                                 float y = Float.parseFloat(rawData[4]);
-                                canvas.draw(true, x, y);
+                                canvas.startDraw(userId, x, y);
                                 break;
                             }
+
+                            /* <new point action-code>,<user-id>,<item-id>,<x>,<y> */
                             case ACTION_DRAW: {
+                                String userId = rawData[1];
                                 float x = Float.parseFloat(rawData[3]);
                                 float y = Float.parseFloat(rawData[4]);
-                                canvas.draw(false, x, y);
+                                canvas.draw(userId, x, y);
+                                break;
+                            }
+
+                            /* <end point action-code>,<user-id>,<item-id> */
+                            case ACTION_DRAW_END: {
+                                String userId = rawData[1];
+                                canvas.endDraw(userId);
                                 break;
                             }
                         }

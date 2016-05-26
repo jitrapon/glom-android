@@ -1,5 +1,6 @@
 package com.abborg.glom.activities;
 
+import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.TimePickerDialog;
@@ -7,35 +8,43 @@ import android.content.Intent;
 import android.database.SQLException;
 import android.location.Location;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.design.widget.TextInputEditText;
 import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.AutoCompleteTextView;
+import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.TimePicker;
+import android.widget.Toast;
 
 import com.abborg.glom.AppState;
+import com.abborg.glom.Const;
 import com.abborg.glom.R;
-import com.abborg.glom.adapters.PlaceArrayAdapter;
 import com.abborg.glom.data.DataUpdater;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.User;
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
+import com.google.android.gms.common.GooglePlayServicesRepairableException;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.location.places.AutocompleteFilter;
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.places.Place;
 import com.google.android.gms.location.places.PlaceBuffer;
 import com.google.android.gms.location.places.Places;
+import com.google.android.gms.location.places.ui.PlaceAutocomplete;
+import com.google.android.gms.location.places.ui.PlacePicker;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.maps.android.SphericalUtil;
@@ -53,46 +62,24 @@ public class EventActivity extends AppCompatActivity {
     private AppState appState;
 
     public static final String TAG = "EventActivity";
-
     public static final String START_DATE_TAG = "CREATE_EVENT_START_DATE";
-
     public static final String END_DATE_TAG = "CREATE_EVENT_END_DATE";
-
     public static final String START_TIME_TAG = "CREATE_EVENT_START_TIME";
-
     public static final String END_TIME_TAG = "CREATE_EVENT_END_TIME";
 
     private DataUpdater dataUpdater;
-
     private TextInputLayout nameTextLayout;
-
     private EditText nameText;
-
     private EditText startDateText;
-
     private EditText startTimeText;
-
     private EditText endDateText;
-
     private EditText endTimeText;
-
     private DateTime startDateTime;
-
     private DateTime endDateTime;
-
     private String place;
-
     private Location location;
-
-    private AutoCompleteTextView locationText;
-
-    private PlaceArrayAdapter placeArrayAdapter;
-
-    /* biasing the results of autocomplete places to a specific area specified by latitude and longitude bounds */
-    private LatLngBounds autocompleteBounds;
-
-    /* containing a set of place types, which can be used to restrict the results to one or more types of place. */
-    private AutocompleteFilter autocompleteFilter;
+    private TextInputEditText locationText;
+    private TextInputEditText noteText;
 
     /* The received intent, this should never be null because this activity is only launched from an intent */
     private Intent intent;
@@ -101,80 +88,222 @@ public class EventActivity extends AppCompatActivity {
     private static final double PLACE_SEARCH_RADIUS = 50 * 1000;
 
     private Mode mode;
-
     private EventItem editEvent;
 
     private enum Mode {
-        CREATE_EVENT,   // this mode tells the activity on creation that all fields are to remain blank
-        UPDATE_EVENT,   // this mode tells the activity on creation that all fields are retrieved from a created event and can be modified
-        VIEW_EVENT      // this mode tells the activity on creation that all fields are retrieved from a created event, but cannot be modified
+        CREATE,
+        UPDATE,
+        VIEW
     }
-
-    private AdapterView.OnItemClickListener autocompleteClickListener = new AdapterView.OnItemClickListener() {
-        @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            final PlaceArrayAdapter.PlaceAutocomplete item = placeArrayAdapter.getItem(position);
-            final String placeId = String.valueOf(item.placeId);
-            Log.d(TAG, "Selected " + item.description);
-            PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi
-                    .getPlaceById(appState.getGoogleApiClient(), placeId);
-            placeResult.setResultCallback(updatePlaceDetailsCallback);
-            Log.d(TAG, "Fetching details for ID: " + item.placeId);
-        }
-    };
-
-    private ResultCallback<PlaceBuffer> updatePlaceDetailsCallback
-            = new ResultCallback<PlaceBuffer>() {
-        @Override
-        public void onResult(PlaceBuffer places) {
-            if (!places.getStatus().isSuccess()) {
-                Log.e(TAG, "Place query did not complete. Error: " +
-                        places.getStatus().toString());
-                places.release();
-                return;
-            }
-            // Selecting the first object buffer.
-            Place googlePlace = places.get(0);
-            if (googlePlace != null) {
-                place = googlePlace.getId();
-                location = new Location("");
-                double lat = googlePlace.getLatLng().latitude;
-                double lng = googlePlace.getLatLng().longitude;
-                location.setLatitude(lat);
-                location.setLongitude(lng);
-                Log.d(TAG, "Saving place (" + place + ") with LatLng: " + lat + ", " + lng);
-            }
-
-            places.release();
-        }
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // set up all variables
         intent = getIntent();
         if (intent == null) {
             finishWithResult(null); // end abruptly if we don't know what MODE we're in
         }
-
         appState = AppState.getInstance();
         dataUpdater = appState.getDataUpdater();
         startDateTime = null;
         endDateTime = null;
 
+        // initialize the views
         setContentView(R.layout.activity_event);
         Toolbar toolbar = (Toolbar) findViewById(R.id.create_event_toolbar);
         setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_action_close);
+        }
 
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_action_close);
-
-        nameText = (EditText) findViewById(R.id.input_event_name);
+        final Button clearNameBtn = (Button) findViewById(R.id.clear_name_button);
+        final Button clearStartDateBtn = (Button) findViewById(R.id.clear_start_date_button);
+        final Button clearEndDateBtn = (Button) findViewById(R.id.clear_end_date_button);
+        final Button clearLocationBtn = (Button) findViewById(R.id.clear_location_button);
+        final Button pickPlaceBtn = (Button) findViewById(R.id.pick_place_button);
+        nameText = (TextInputEditText) findViewById(R.id.input_event_name);
         nameTextLayout = (TextInputLayout) findViewById(R.id.input_layout_event_name);
+        startDateText = (TextInputEditText) findViewById(R.id.input_event_start_date);
+        startTimeText = (TextInputEditText) findViewById(R.id.input_event_start_time);
+        endDateText = (TextInputEditText) findViewById(R.id.input_event_end_date);
+        endTimeText = (TextInputEditText) findViewById(R.id.input_event_end_time);
+        locationText = (TextInputEditText) findViewById(R.id.input_event_location);
+        noteText = (TextInputEditText) findViewById(R.id.input_event_note);
+
+        if (clearNameBtn != null) {
+            clearNameBtn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (nameText != null) {
+                        nameText.setText("");
+                    }
+                }
+            });
+        }
+        if (nameText != null) {
+            nameText.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    if (clearNameBtn != null) {
+                        if (s.length() > 0) {
+                            clearNameBtn.setVisibility(View.VISIBLE);
+                        }
+                        else clearNameBtn.setVisibility(View.INVISIBLE);
+                    }
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {}
+            });
+        }
+
+        if (clearStartDateBtn != null) {
+            clearStartDateBtn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (startDateText != null && startTimeText != null) {
+                        startDateText.setText("");
+                        startTimeText.setText("");
+                    }
+                    startDateTime = null;
+                }
+            });
+        }
+        if (startDateText != null && startTimeText != null) {
+            startDateText.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    if (clearStartDateBtn != null) {
+                        if (s.length() > 0) {
+                            clearStartDateBtn.setVisibility(View.VISIBLE);
+                        }
+                        else clearStartDateBtn.setVisibility(View.INVISIBLE);
+                    }
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {}
+            });
+
+            startTimeText.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    if (clearStartDateBtn != null) {
+                        if (s.length() > 0) {
+                            clearStartDateBtn.setVisibility(View.VISIBLE);
+                        }
+                        else clearStartDateBtn.setVisibility(View.INVISIBLE);
+                    }
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {}
+            });
+        }
+
+        if (clearEndDateBtn != null) {
+            clearEndDateBtn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (endDateText != null && endTimeText != null) {
+                        endDateText.setText("");
+                        endTimeText.setText("");
+                    }
+                    endDateTime = null;
+                }
+            });
+        }
+        if (endDateText != null && endTimeText != null) {
+            endDateText.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    if (clearEndDateBtn != null) {
+                        if (s.length() > 0) {
+                            clearEndDateBtn.setVisibility(View.VISIBLE);
+                        }
+                        else clearEndDateBtn.setVisibility(View.INVISIBLE);
+                    }
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {}
+            });
+
+            endTimeText.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    if (clearEndDateBtn != null) {
+                        if (s.length() > 0) {
+                            clearEndDateBtn.setVisibility(View.VISIBLE);
+                        }
+                        else clearEndDateBtn.setVisibility(View.INVISIBLE);
+                    }
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {}
+            });
+        }
+
+        if (clearLocationBtn != null) {
+            clearLocationBtn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (locationText != null) {
+                        locationText.setText("");
+                    }
+                    place = null;
+                    location = null;
+                }
+            });
+        }
+        if (locationText != null) {
+            locationText.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    if (clearLocationBtn != null) {
+                        if (s.length() > 0) {
+                            clearLocationBtn.setVisibility(View.VISIBLE);
+                        }
+                        else clearLocationBtn.setVisibility(View.INVISIBLE);
+                    }
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {}
+            });
+        }
+
+        if (pickPlaceBtn != null)
+            pickPlaceBtn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    showPlacePicker(v);
+                }
+            });
 
         // show datetime picker
-        startDateText = (EditText) findViewById(R.id.input_event_start_date);
         startDateText.setTag(START_DATE_TAG);
         startDateText.setFocusable(false);
         startDateText.setClickable(true);
@@ -186,7 +315,6 @@ public class EventActivity extends AppCompatActivity {
             }
         });
 
-        startTimeText = (EditText) findViewById(R.id.input_event_start_time);
         startTimeText.setTag(START_TIME_TAG);
         startTimeText.setFocusable(false);
         startTimeText.setClickable(true);
@@ -198,7 +326,6 @@ public class EventActivity extends AppCompatActivity {
             }
         });
 
-        endDateText = (EditText) findViewById(R.id.input_event_end_date);
         endDateText.setTag(END_DATE_TAG);
         endDateText.setFocusable(false);
         endDateText.setClickable(true);
@@ -210,7 +337,6 @@ public class EventActivity extends AppCompatActivity {
             }
         });
 
-        endTimeText = (EditText) findViewById(R.id.input_event_end_time);
         endTimeText.setTag(END_TIME_TAG);
         endTimeText.setFocusable(false);
         endTimeText.setClickable(true);
@@ -223,46 +349,33 @@ public class EventActivity extends AppCompatActivity {
         });
 
         // set up Google Api auto-suggest places
-        locationText = (AutoCompleteTextView) findViewById(R.id.input_event_location);
-        locationText.setThreshold(3);   // user has to type at least 3 characters for place suggestions to display
-        List<User> users = appState.getActiveCircle().getUsers();
-        Location userLocation = null;
-        for (User user : users) {
-            if (user.getId().equals(appState.getActiveUser().getId())) {
-                userLocation = user.getLocation();
+//        locationText.setThreshold(3);                       // user has to type at least 3 characters for place suggestions to display
+//        locationText.setOnItemClickListener(autocompleteClickListener);
+//        placeArrayAdapter = new PlaceArrayAdapter(this, R.layout.simple_list_item, autocompleteBounds, autocompleteFilter);
+//        locationText.setAdapter(placeArrayAdapter);
+        locationText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showPlaceAutoComplete(v);
             }
-        }
-        if (userLocation != null) {
-            LatLng latlng = new LatLng(userLocation.getLatitude(), userLocation.getLongitude());
-            autocompleteBounds = new LatLngBounds.Builder().
-                    include(SphericalUtil.computeOffset(latlng, PLACE_SEARCH_RADIUS, 0)).
-                    include(SphericalUtil.computeOffset(latlng, PLACE_SEARCH_RADIUS, 90)).
-                    include(SphericalUtil.computeOffset(latlng, PLACE_SEARCH_RADIUS, 180)).
-                    include(SphericalUtil.computeOffset(latlng, PLACE_SEARCH_RADIUS, 270)).build();
-        }
-        autocompleteFilter = null;
-        locationText.setOnItemClickListener(autocompleteClickListener);
-        placeArrayAdapter = new PlaceArrayAdapter(this, R.layout.simple_list_item, autocompleteBounds, autocompleteFilter);
-        locationText.setAdapter(placeArrayAdapter);
+        });
 
         // based on the mode we receive in the intent, we further retrieve data and fill out the fields
         if (intent.getAction().equals(getResources().getString(R.string.ACTION_CREATE_EVENT)))
-            mode = Mode.CREATE_EVENT;
+            mode = Mode.CREATE;
         else if (intent.getAction().equals(getResources().getString(R.string.ACTION_UPDATE_EVENT)))
-            mode = Mode.UPDATE_EVENT;
+            mode = Mode.UPDATE;
         else
-            mode = Mode.VIEW_EVENT;
+            mode = Mode.VIEW;
         init(mode);
     }
 
     private void init(Mode mode) {
         switch (mode) {
-            case CREATE_EVENT:
-                if (getSupportActionBar() != null) getSupportActionBar().setTitle(getResources().getString(R.string.create_event_title));
+            case CREATE:
+                if (getSupportActionBar() != null) getSupportActionBar().setTitle(getResources().getString(R.string.title_activity_event));
                 break;
-            case UPDATE_EVENT:
-                //TODO contact server to get more information
-                // only display information stored in DB, which is name, time, and place
+            case UPDATE:
                 List<BoardItem> items = appState.getActiveCircle().getItems();
                 String id = intent.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_ID));
                 if (id != null && !items.isEmpty()) {
@@ -273,7 +386,8 @@ public class EventActivity extends AppCompatActivity {
                         }
                     }
                     if (editEvent != null) {
-                        if (getSupportActionBar() != null) getSupportActionBar().setTitle(editEvent.getName());
+                        if (getSupportActionBar() != null)
+                            getSupportActionBar().setTitle(getResources().getString(R.string.title_activity_event));
                         DateTimeFormatter printDateFormat = DateTimeFormat.forPattern(getResources().getString(R.string.display_date_format));
                         DateTimeFormatter printTimeFormat = DateTimeFormat.forPattern(getResources().getString(R.string.display_time_format));
                         DateTimeFormatter dayFormat = DateTimeFormat.forPattern("EEEE");
@@ -329,7 +443,8 @@ public class EventActivity extends AppCompatActivity {
                         if (place != null || location != null) {
                             if (place != null) {
                                 if (location != null) {
-                                    locationText.setText(location.getLatitude() + ", " + location.getLongitude());
+                                    String displayText = location.getLatitude() + ", " + location.getLongitude();
+                                    locationText.setText(displayText);
                                 }
                                 else {
                                     locationText.setText(getResources().getString(R.string.notify_retrieving_place_info));
@@ -339,14 +454,14 @@ public class EventActivity extends AppCompatActivity {
                                         .getPlaceById(appState.getGoogleApiClient(), place);
                                 placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {
                                     @Override
-                                    public void onResult(PlaceBuffer places) {
+                                    public void onResult(@NonNull PlaceBuffer places) {
                                         if (!places.getStatus().isSuccess()) {
                                             Log.e(TAG, "Place query did not complete. Error: " +
                                                     places.getStatus().toString());
                                             places.release();
                                             return;
                                         }
-                                        // Selecting the first object buffer.
+
                                         Place googlePlace = places.get(0);
                                         if (googlePlace != null) {
                                             locationText.setText(googlePlace.getName());
@@ -357,15 +472,95 @@ public class EventActivity extends AppCompatActivity {
                                 });
                             }
                             else {
-                                locationText.setText(location.getLatitude() + ", " + location.getLongitude());
+                                String displayText = location.getLatitude() + ", " + location.getLongitude();
+                                locationText.setText(displayText);
                             }
+                        }
+
+                        // set note
+                        if (!TextUtils.isEmpty(editEvent.getNote())) {
+                            noteText.setText(editEvent.getNote());
                         }
                     }
                 }
                 break;
-            case VIEW_EVENT:
+            case VIEW:
                 break;
             default: break;
+        }
+    }
+
+    private void showPlaceAutoComplete(View view) {
+        try {
+            User user = appState.getActiveUser();
+            Location userLocation = user.getLocation();
+            LatLngBounds autocompleteBounds = null;
+            if (userLocation != null) {
+                LatLng latlng = new LatLng(userLocation.getLatitude(), userLocation.getLongitude());
+                autocompleteBounds = new LatLngBounds.Builder().
+                        include(SphericalUtil.computeOffset(latlng, PLACE_SEARCH_RADIUS, 0)).
+                        include(SphericalUtil.computeOffset(latlng, PLACE_SEARCH_RADIUS, 90)).
+                        include(SphericalUtil.computeOffset(latlng, PLACE_SEARCH_RADIUS, 180)).
+                        include(SphericalUtil.computeOffset(latlng, PLACE_SEARCH_RADIUS, 270)).build();
+            }
+
+            Intent intent =
+                    new PlaceAutocomplete.IntentBuilder(PlaceAutocomplete.MODE_OVERLAY)
+                            .setFilter(null)
+                            .setBoundsBias(autocompleteBounds)
+                            .build(this);
+            startActivityForResult(intent, Const.PLACE_AUTOCOMPLETE_REQUEST_CODE);
+        }
+        catch (GooglePlayServicesRepairableException | GooglePlayServicesNotAvailableException e) {
+            Log.e(TAG, e.getMessage());
+            Toast.makeText(this, getString(R.string.error_google_play_services_error), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void showPlacePicker(View view) {
+        try {
+            PlacePicker.IntentBuilder intentBuilder =
+                    new PlacePicker.IntentBuilder();
+            Intent intent = intentBuilder.build(this);
+            startActivityForResult(intent, Const.PLACE_PICKER_REQUEST_CODE);
+
+        } catch (GooglePlayServicesRepairableException | GooglePlayServicesNotAvailableException e) {
+            Log.e(TAG, e.getMessage());
+            Toast.makeText(this, getString(R.string.error_google_play_services_error), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == Const.PLACE_AUTOCOMPLETE_REQUEST_CODE) {
+            if (resultCode == RESULT_OK) {
+                Place result = PlaceAutocomplete.getPlace(this, data);
+                Log.d(TAG, "Place: " + result.getName());
+                locationText.setText(result.getName());
+                place = result.getId();
+                location = new Location("");
+                location.setLatitude(result.getLatLng().latitude);
+                location.setLongitude(result.getLatLng().longitude);
+            }
+            else if (resultCode == PlaceAutocomplete.RESULT_ERROR) {
+                Status status = PlaceAutocomplete.getStatus(this, data);
+                Log.e(TAG, status.getStatusMessage());
+            }
+        }
+        else if (requestCode == Const.PLACE_PICKER_REQUEST_CODE) {
+            if (resultCode == Activity.RESULT_OK) {
+                final Place result = PlacePicker.getPlace(this, data);
+                Log.d(TAG, "Place: " + result.getName());
+                locationText.setText(result.getName());
+                place = result.getId();
+                location = new Location("");
+                location.setLatitude(result.getLatLng().latitude);
+                location.setLongitude(result.getLatLng().longitude);
+            }
+            else if (resultCode == PlaceAutocomplete.RESULT_ERROR) {
+                Status status = PlaceAutocomplete.getStatus(this, data);
+                Log.e(TAG, status.getStatusMessage());
+            }
         }
     }
 
@@ -453,7 +648,7 @@ public class EventActivity extends AppCompatActivity {
             // verify that the event name is provided
             // verify that datetime is input correctly
             if (validateName() && validateDateTime()) {
-                String note = null;
+                String note = noteText.getText() == null ? null : noteText.getText().toString();
                 Intent intent = new Intent();
                 long start = startDateTime == null ? 0L : startDateTime.getMillis();
                 long end = endDateTime == null ? 0L : endDateTime.getMillis();
@@ -462,7 +657,7 @@ public class EventActivity extends AppCompatActivity {
                 //TODO if the user has not picked a location from a LocationPicker or selected one from auto-suggest
                 //TODO assume that the location is custom, alert the user to create a new place,
                 //TODO picked a location instead, or continue without map knowing the place location.
-                if (mode.equals(Mode.UPDATE_EVENT)) {
+                if (mode.equals(Mode.UPDATE)) {
                     if (editEvent != null) {
                         if (TextUtils.isEmpty(locationText.getText())) {
                             place = null;
@@ -509,7 +704,7 @@ public class EventActivity extends AppCompatActivity {
             return false;
         }
         else {
-            nameTextLayout.setErrorEnabled(false);
+            nameTextLayout.setError(null);
         }
 
         return true;
@@ -523,16 +718,15 @@ public class EventActivity extends AppCompatActivity {
     public static class TimePickerFragment extends DialogFragment
             implements TimePickerDialog.OnTimeSetListener {
 
-        private static final String TAG = "TIMEPICKER";
-
         private EditText editText;
 
-        public static final TimePickerFragment newInstance(View view) {
+        public static TimePickerFragment newInstance(View view) {
             TimePickerFragment fragment = new TimePickerFragment();
             fragment.editText = (EditText) view;
             return fragment;
         }
 
+        @NonNull
         @Override
         public Dialog onCreateDialog(Bundle savedInstanceState) {
             // Use the current time as the default values for the picker
@@ -544,6 +738,7 @@ public class EventActivity extends AppCompatActivity {
             return new TimePickerDialog(getActivity(), this, hour, minute, DateFormat.is24HourFormat(getActivity()));
         }
 
+        @Override
         public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
             DateTimeFormatter formatter = DateTimeFormat.forPattern("HH:mm");
             DateTimeFormatter printFormat = DateTimeFormat.forPattern(getResources().getString(R.string.display_time_format));
@@ -563,16 +758,15 @@ public class EventActivity extends AppCompatActivity {
     public static class DatePickerFragment extends DialogFragment
             implements DatePickerDialog.OnDateSetListener {
 
-        private static final String TAG = "DATEPICKER";
-
         private EditText editText;
 
-        public static final DatePickerFragment newInstance(View view) {
+        public static DatePickerFragment newInstance(View view) {
             DatePickerFragment fragment = new DatePickerFragment();
             fragment.editText = (EditText) view;
             return fragment;
         }
 
+        @NonNull
         @Override
         public Dialog onCreateDialog(Bundle savedInstanceState) {
             // Use the current date as the default date in the picker
@@ -582,10 +776,7 @@ public class EventActivity extends AppCompatActivity {
             int day = dateTime.getDayOfMonth();
 
             // Create a new instance of DatePickerDialog and return it
-            DatePickerDialog datePickerDialog =  new DatePickerDialog(getActivity(), this, year, month, day);
-            DatePicker datePicker = datePickerDialog.getDatePicker();
-            datePicker.setMinDate(dateTime.getMillis());
-            return datePickerDialog;
+            return new DatePickerDialog(getActivity(), this, year, month, day);
         }
 
         public void onDateSet(DatePicker view, int year, int month, int day) {

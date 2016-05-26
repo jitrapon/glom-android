@@ -126,7 +126,7 @@
                     android:textSize="@dimen/card_supporting_text_size"
                     android:textColor="@android:color/secondary_text_light"
                     android:text="@string/card_event_note_placeholder"
-                    android:maxLines="2"
+                    android:maxLines="4"
                     android:ellipsize="end" />
 
             </RelativeLayout>

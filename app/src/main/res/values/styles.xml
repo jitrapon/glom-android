@@ -28,4 +28,8 @@
 
     <style name="AppMaterialTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
+    <style name="Theme.NoBackground" parent="AppMaterialTheme">
+        <item name="android:windowBackground">@null</item>
+    </style>
+
 </resources>

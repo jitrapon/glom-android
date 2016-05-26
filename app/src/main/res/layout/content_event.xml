@@ -13,23 +13,41 @@
     tools:context=".activities.EventActivity"
     android:orientation="vertical">
 
-    <android.support.design.widget.TextInputLayout
-        android:id="@+id/input_layout_event_name"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <EditText
-            android:id="@+id/input_event_name"
+        <android.support.design.widget.TextInputLayout
+            android:id="@+id/input_layout_event_name"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:singleLine="true"
-            android:hint="@string/hint_event_name" />
-    </android.support.design.widget.TextInputLayout>
+            android:layout_height="wrap_content">
+
+            <android.support.design.widget.TextInputEditText
+                android:id="@+id/input_event_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:textSize="34sp"
+                android:hint="@string/hint_event_name" />
+        </android.support.design.widget.TextInputLayout>
+
+        <Button
+            android:id="@+id/clear_name_button"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_marginRight="4dp"
+            android:layout_marginEnd="4dp"
+            android:layout_marginTop="32dp"
+            android:layout_gravity="end"
+            android:visibility="invisible"
+            android:background="@android:drawable/ic_menu_close_clear_cancel" />
+    </FrameLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp">
 
         <android.support.design.widget.TextInputLayout
             android:id="@+id/input_layout_event_start_date"
@@ -37,7 +55,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="0.5">
 
-            <EditText
+            <android.support.design.widget.TextInputEditText
                 android:id="@+id/input_event_start_date"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -45,26 +63,43 @@
                 android:hint="@string/hint_event_start_date" />
         </android.support.design.widget.TextInputLayout>
 
-        <android.support.design.widget.TextInputLayout
-            android:id="@+id/input_layout_event_start_time"
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="0.5">
 
-            <EditText
-                android:id="@+id/input_event_start_time"
+            <android.support.design.widget.TextInputLayout
+                android:id="@+id/input_layout_event_start_time"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="time"
-                android:hint="@string/hint_event_start_time" />
-        </android.support.design.widget.TextInputLayout>
+                android:layout_height="wrap_content">
+
+                <android.support.design.widget.TextInputEditText
+                    android:id="@+id/input_event_start_time"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="time"
+                    android:hint="@string/hint_event_time" />
+            </android.support.design.widget.TextInputLayout>
+
+            <Button
+                android:id="@+id/clear_start_date_button"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_marginRight="4dp"
+                android:layout_marginEnd="4dp"
+                android:layout_marginTop="15dp"
+                android:layout_gravity="end"
+                android:visibility="invisible"
+                android:background="@android:drawable/ic_menu_close_clear_cancel" />
+        </FrameLayout>
 
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp">
 
         <android.support.design.widget.TextInputLayout
             android:id="@+id/input_layout_event_end_date"
@@ -72,50 +107,115 @@
             android:layout_height="wrap_content"
             android:layout_weight="0.5">
 
-            <EditText
+            <android.support.design.widget.TextInputEditText
                 android:id="@+id/input_event_end_date"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="date"
-                android:hint="@string/hint_event_end_datetime" />
+                android:hint="@string/hint_event_end_date" />
         </android.support.design.widget.TextInputLayout>
 
-        <android.support.design.widget.TextInputLayout
-            android:id="@+id/input_layout_event_end_time"
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="0.5">
-
-            <EditText
-                android:id="@+id/input_event_end_time"
+            <android.support.design.widget.TextInputLayout
+                android:id="@+id/input_layout_event_end_time"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="time" />
-        </android.support.design.widget.TextInputLayout>
+                android:layout_height="wrap_content">
+
+                <android.support.design.widget.TextInputEditText
+                    android:id="@+id/input_event_end_time"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="time"
+                    android:hint="@string/hint_event_time"/>
+            </android.support.design.widget.TextInputLayout>
+
+            <Button
+                android:id="@+id/clear_end_date_button"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_marginRight="4dp"
+                android:layout_marginEnd="4dp"
+                android:layout_marginTop="15dp"
+                android:layout_gravity="end"
+                android:visibility="invisible"
+                android:background="@android:drawable/ic_menu_close_clear_cancel" />
+        </FrameLayout>
 
     </LinearLayout>
 
-    <android.support.design.widget.TextInputLayout
-        android:id="@+id/input_layout_event_location"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp">
 
-        <AutoCompleteTextView
-            android:id="@+id/input_event_location"
-            android:layout_width="match_parent"
+        <FrameLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:singleLine="true"
-            android:hint="@string/hint_event_location" />
-    </android.support.design.widget.TextInputLayout>
+            android:layout_weight="0.85">
+
+            <android.support.design.widget.TextInputLayout
+                android:id="@+id/input_layout_event_location"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <android.support.design.widget.TextInputEditText
+                    android:id="@+id/input_event_location"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:hint="@string/hint_event_location" />
+            </android.support.design.widget.TextInputLayout>
+
+            <Button
+                android:id="@+id/clear_location_button"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_marginRight="4dp"
+                android:layout_marginEnd="4dp"
+                android:layout_marginTop="15dp"
+                android:layout_gravity="end"
+                android:visibility="invisible"
+                android:background="@android:drawable/ic_menu_close_clear_cancel" />
+        </FrameLayout>
+
+        <Button
+            android:id="@+id/pick_place_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.15"
+            android:background="@drawable/ic_action_place_light"/>
+    </LinearLayout>
 
     <ImageView
         android:id="@+id/poweredBy"
+        android:focusable="false"
+        android:layout_marginRight="58dp"
+        android:layout_marginEnd="58dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/att"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentRight="true"
         android:src="@drawable/powered_by_google_light"
-        android:layout_gravity="right" />
+        android:layout_gravity="end" />
+
+    <android.support.design.widget.TextInputLayout
+        android:id="@+id/input_layout_event_note"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <android.support.design.widget.TextInputEditText
+            android:id="@+id/input_event_note"
+            android:inputType="textMultiLine"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="top|start"
+            android:lines="8"
+            android:minLines="1"
+            android:maxLines="10"
+            android:scrollbars="vertical"
+            android:hint="@string/hint_note" />
+    </android.support.design.widget.TextInputLayout>
 
 </LinearLayout>

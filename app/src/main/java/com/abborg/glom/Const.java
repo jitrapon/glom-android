@@ -13,8 +13,8 @@ public class Const {
     /**
      * TEST INFO
      * **/
-    public static final String TEST_USER_ID = "yoshi3003";
-//    public static final String TEST_USER_ID = "fatcat18";
+//    public static final String TEST_USER_ID = "yoshi3003";
+    public static final String TEST_USER_ID = "fatcat18";
     public static final String TEST_CIRCLE_ID = "dev-test-circle-1";
     public static final String TEST_API_AUTHORIZATION_HEADER = "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -31,6 +31,8 @@ public class Const {
     public static final int UPDATE_EVENT_RESULT_CODE = 701;
     public static final int IMAGE_SELECTED_RESULT_CODE = 702;
     public static final int NOTE_RESULT_CODE = 703;
+    public static final int PLACE_AUTOCOMPLETE_REQUEST_CODE = 704;
+    public static final int PLACE_PICKER_REQUEST_CODE = 705;
 
     /**
      * API

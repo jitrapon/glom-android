@@ -95,6 +95,7 @@
         <activity
             android:name=".activities.EventActivity"
             android:label="@string/title_activity_create_event"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustPan"
             android:parentActivityName=".activities.MainActivity"
             android:theme="@style/AppMaterialTheme">
             <meta-data
