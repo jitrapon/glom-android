@@ -195,4 +195,6 @@
     <string name="notification_user_joined">%s has joined the session</string>
     <string name="notification_user_left">%s has left the session</string>
     <string name="menu_item_erase">Erase</string>
+    <string name="menu_item_grease_pencil">Grease Pencil</string>
+    <string name="menu_item_pick_color">Color</string>
 </resources>

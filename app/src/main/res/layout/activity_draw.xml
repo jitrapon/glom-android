@@ -27,7 +27,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <com.abborg.glom.views.DrawCanvasView
+        <com.abborg.glom.views.CanvasView
             android:id="@+id/canvas_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />

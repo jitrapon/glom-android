@@ -1,5 +1,8 @@
 package com.abborg.glom.activities;
 
+import android.annotation.SuppressLint;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -25,14 +28,20 @@ import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.NoteItem;
 import com.abborg.glom.model.User;
 import com.abborg.glom.utils.JavaScriptInterface;
-import com.abborg.glom.views.DrawCanvasView;
+import com.abborg.glom.views.CanvasView;
+import com.abborg.glom.views.ColorPickerDialog;
 
 import org.joda.time.DateTime;
 
 /**
+ * This activity handles live note and drawing board item. It contains a custom view
+ * CanvasView
+ *
  * Created by jitrapon on 17/5/16.
  */
-public class DrawActivity extends AppCompatActivity implements DrawCanvasView.DrawCanvasChangeListener, Handler.Callback {
+@SuppressLint("SetJavaScriptEnabled")
+public class DrawActivity extends AppCompatActivity implements
+        CanvasView.CanvasEventListener, Handler.Callback, ColorPickerDialog.OnColorSelectedListener {
 
     private static final String TAG = "DrawActivity";
 
@@ -43,10 +52,20 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
     DataUpdater dataUpdater;
     NoteItem note;
 
-    DrawCanvasView canvas;
+    CanvasView canvas;
     WebView webView;
     Handler handler;
     CoordinatorLayout rootView;
+
+    private float eraserSize = 70f;
+    private float drawSize = 7f;
+    private int drawColor = Color.BLUE;
+
+    private boolean isConnected = false;
+
+    MenuItem eraserMenuItem;
+    MenuItem pencilMenuItem;
+    MenuItem colorPickerItem;
 
     /* JS Script path */
     private static final String JS_PATH = Const.ASSETS_FOLDER + "draw.html";
@@ -58,9 +77,10 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
     private static final int ACTION_LEAVE = 1;
     private static final int ACTION_JOIN = 2;
     private static final int ACTION_SHOW_MESSAGE = 3;
-    private static final int ACTION_DRAW = 4;
+    private static final int ACTION_MOVE = 4;
     private static final int ACTION_DRAW_START = 5;
-    private static final int ACTION_DRAW_END = 6;
+    private static final int ACTION_UP = 6;
+    private static final int ACTION_ERASE_START = 7;
 
     private boolean shouldCreateRoom;
 
@@ -93,7 +113,7 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
     private void setupView() {
         setContentView(R.layout.activity_draw);
 
-        canvas = (DrawCanvasView) findViewById(R.id.canvas_view);
+        canvas = (CanvasView) findViewById(R.id.canvas_view);
         rootView = (CoordinatorLayout) findViewById(R.id.coordinator_layout);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -128,7 +148,12 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
             Log.e(TAG, e.getMessage());
         }
 
-        if (canvas != null) canvas.setEventListener(this);
+        if (canvas != null) {
+            canvas.setEventListener(this);
+            canvas.setDrawColor(drawColor);
+            canvas.setDrawSize(drawSize);
+            canvas.setEraserSize(eraserSize);
+        }
     }
 
     private void call(String functionName, Object... params) {
@@ -149,6 +174,21 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_note, menu);
+        eraserMenuItem = menu.findItem(R.id.action_erase);
+        pencilMenuItem = menu.findItem(R.id.action_grease_pencil);
+        colorPickerItem = menu.findItem(R.id.action_pick_color);
+        colorPickerItem.getIcon().setColorFilter(drawColor, PorterDuff.Mode.MULTIPLY);
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+
+        eraserMenuItem.setIcon(canvas.isEraserActive() ? R.drawable.ic_action_erase_active : R.drawable.ic_action_erase);
+        pencilMenuItem.setIcon(canvas.isDrawActive() ? R.drawable.ic_grease_pencil_active : R.drawable.ic_action_grease_pencil);
+        colorPickerItem.getIcon().setColorFilter(drawColor, PorterDuff.Mode.MULTIPLY);
+
         return true;
     }
 
@@ -157,33 +197,65 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
         int id = item.getItemId();
 
         if (id == R.id.action_erase) {
-
+            canvas.setEraserActive(null, eraserSize);
+            invalidateOptionsMenu();
+            return true;
+        }
+        else if (id == R.id.action_grease_pencil) {
+            canvas.setDrawActive(null, drawColor, drawSize);
+            invalidateOptionsMenu();
+            return true;
+        }
+        else if (id == R.id.action_pick_color) {
+            showColorPickerDialog(drawColor);
             return true;
         }
 
         return super.onOptionsItemSelected(item);
     }
 
+    public void showColorPickerDialog(int initialColor) {
+        ColorPickerDialog colorPickerDialog = new ColorPickerDialog(this, initialColor, this);
+        colorPickerDialog.show();
+    }
+
+    /********************************************
+     * DRAW TOOLS CHANGE LISTENERS
+     *******************************************/
+
+    @Override
+    public void onColorSelected(int color) {
+        drawColor = color;
+        canvas.setDrawColor(color);
+        invalidateOptionsMenu();
+    }
+
     /********************************************
      * CANVAS VIEW CALLBACKS
      *******************************************/
 
-    /* <start action-code>,<user-id>,<item-id>,<x>,<y> */
+    /* <start action-code>,<user-id>,<item-id>,<color>,<size>,<x>,<y> */
     @Override
-    public void onDrawStart(float x, float y) {
-        if (note != null) call("send", ACTION_DRAW_START, user.getId(), note.getId(), x, y);
+    public void onDrawStart(int color, float size, float x, float y) {
+        if (note != null && isConnected) call("send", ACTION_DRAW_START, user.getId(), note.getId(), color, size, x, y);
+    }
+
+    /* <erase action-code>,<user-id>,<item-id>,<size>,<x>,<y> */
+    @Override
+    public void onEraseStart(float size, float x, float y) {
+        if (note != null && isConnected) call("send", ACTION_ERASE_START, user.getId(), note.getId(), size, x, y);
     }
 
     /* <draw action-code>,<user-id>,<item-id>,<x>,<y> */
     @Override
-    public void onDraw(float x, float y) {
-        if (note != null) call("send", ACTION_DRAW, user.getId(), note.getId(), x, y);
+    public void onMove(float x, float y) {
+        if (note != null && isConnected) call("send", ACTION_MOVE, user.getId(), note.getId(), x, y);
     }
 
     /* <end action-code>,<user-id>,<item-id> */
     @Override
-    public void onDrawEnd() {
-        if (note != null) call("send", ACTION_DRAW_END, user.getId(), note.getId());
+    public void onUp() {
+        if (note != null && isConnected) call("send", ACTION_UP, user.getId(), note.getId());
     }
 
     /**
@@ -192,7 +264,7 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
     /* <leave action code>,<user id>,<item id> */
     @Override
     public void onExit() {
-        if (note != null) {
+        if (note != null && isConnected) {
             call("send", ACTION_LEAVE, user.getId(), note.getId());
             call("stop");
         }
@@ -208,6 +280,7 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
 
             /* Called when a socket connection has been established successfully */
             case Const.MSG_SOCKET_CONNECTED:
+                isConnected = true;
 
                 /* Action create room payload: <create action code>,<user id>,<item id>,<circle id> */
                 if (shouldCreateRoom) {
@@ -223,6 +296,7 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
 
              /* Called when a socket connection has been closed successfully */
             case Const.MSG_SOCKET_DISCONNECTED:
+                isConnected = false;
                 Toast.makeText(getApplicationContext(),
                         getResources().getString(R.string.notification_app_disconnected), Toast.LENGTH_LONG).show();
                 break;
@@ -266,28 +340,42 @@ public class DrawActivity extends AppCompatActivity implements DrawCanvasView.Dr
                                 break;
                             }
 
-                            /* <new point action-code>,<user-id>,<item-id>,<x>,<y> */
+                            /* <draw action-code>,<user-id>,<item-id>,<color>,<size>,<x>,<y> */
                             case ACTION_DRAW_START: {
                                 String userId = rawData[1];
-                                float x = Float.parseFloat(rawData[3]);
-                                float y = Float.parseFloat(rawData[4]);
-                                canvas.startDraw(userId, x, y);
+                                int color = Integer.parseInt(rawData[3]);
+                                float size = Float.parseFloat(rawData[4]);
+                                float x = Float.parseFloat(rawData[5]);
+                                float y = Float.parseFloat(rawData[6]);
+                                canvas.setDrawActive(userId, color, size);
+                                canvas.start(userId, x, y);
                                 break;
                             }
 
-                            /* <new point action-code>,<user-id>,<item-id>,<x>,<y> */
-                            case ACTION_DRAW: {
+                            /* <erase action-code>,<user-id>,<item-id>,<size>,<x>,<y> */
+                            case ACTION_ERASE_START: {
                                 String userId = rawData[1];
-                                float x = Float.parseFloat(rawData[3]);
-                                float y = Float.parseFloat(rawData[4]);
-                                canvas.draw(userId, x, y);
+                                float size = Float.parseFloat(rawData[3]);
+                                float x = Float.parseFloat(rawData[4]);
+                                float y = Float.parseFloat(rawData[5]);
+                                canvas.setEraserActive(userId, size);
+                                canvas.start(userId, x, y);
                                 break;
                             }
 
-                            /* <end point action-code>,<user-id>,<item-id> */
-                            case ACTION_DRAW_END: {
+                            /* <move action-code>,<user-id>,<item-id>,<x>,<y> */
+                            case ACTION_MOVE: {
                                 String userId = rawData[1];
-                                canvas.endDraw(userId);
+                                float x = Float.parseFloat(rawData[3]);
+                                float y = Float.parseFloat(rawData[4]);
+                                canvas.move(userId, x, y);
+                                break;
+                            }
+
+                            /* <up action-code>,<user-id>,<item-id> */
+                            case ACTION_UP: {
+                                String userId = rawData[1];
+                                canvas.up(userId);
                                 break;
                             }
                         }

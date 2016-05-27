@@ -3,10 +3,22 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context=".activities.MainActivity">
 
+    <item android:id="@+id/action_pick_color"
+        android:title="@string/menu_item_pick_color"
+        android:orderInCategory="100"
+        android:icon="@drawable/ic_action_color_picker"
+        app:showAsAction="always" />
+
+    <item android:id="@+id/action_grease_pencil"
+        android:title="@string/menu_item_grease_pencil"
+        android:orderInCategory="200"
+        android:icon="@drawable/ic_action_grease_pencil"
+        app:showAsAction="always" />
+
     <item
         android:id="@+id/action_erase"
         android:title="@string/menu_item_erase"
-        android:orderInCategory="100"
+        android:orderInCategory="300"
         android:icon="@drawable/ic_action_erase"
         app:showAsAction="ifRoom" />
 </menu>
