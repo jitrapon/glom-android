@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:id="@+id/draw_size_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/draw_size_icon"
+            android:layout_weight="0.2"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_grease_pencil_active" />
+
+        <android.support.v7.widget.AppCompatSeekBar
+            android:layout_weight="0.8"
+            android:layout_gravity="center"
+            android:id="@+id/draw_size_seekbar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_below="@id/draw_size_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/eraser_size_icon"
+            android:layout_weight="0.2"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_action_erase_active" />
+
+        <android.support.v7.widget.AppCompatSeekBar
+            android:layout_weight="0.8"
+            android:layout_gravity="center"
+            android:id="@+id/eraser_size_seekbar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+
+</RelativeLayout>

@@ -1,22 +1,33 @@
 package com.abborg.glom.activities;
 
 import android.annotation.SuppressLint;
+import android.app.Dialog;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.text.TextUtils;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.SeekBar;
 import android.widget.Toast;
 
 import com.abborg.glom.AppState;
@@ -32,6 +43,8 @@ import com.abborg.glom.views.CanvasView;
 import com.abborg.glom.views.ColorPickerDialog;
 
 import org.joda.time.DateTime;
+
+import java.io.InputStream;
 
 /**
  * This activity handles live note and drawing board item. It contains a custom view
@@ -56,6 +69,9 @@ public class DrawActivity extends AppCompatActivity implements
     WebView webView;
     Handler handler;
     CoordinatorLayout rootView;
+    View sizeAdjustView;
+    SeekBar drawSizeBar;
+    SeekBar eraserSizeBar;
 
     private float eraserSize = 70f;
     private float drawSize = 7f;
@@ -117,10 +133,10 @@ public class DrawActivity extends AppCompatActivity implements
         rootView = (CoordinatorLayout) findViewById(R.id.coordinator_layout);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        if (getSupportActionBar() != null) {
-            if (note == null || TextUtils.isEmpty(note.getName()))
-                getSupportActionBar().setTitle(getString(R.string.title_activity_note_unsaved));
-            else getSupportActionBar().setTitle(note.getName());
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayShowHomeEnabled(false);
+            actionBar.setDisplayShowTitleEnabled(false);
         }
 
         try {
@@ -171,6 +187,10 @@ public class DrawActivity extends AppCompatActivity implements
         webView.loadUrl("javascript:" + functionName + "(\"" + action + "\")");
     }
 
+    /********************************************
+     * MENU BUTTON CALLBACKS
+     *******************************************/
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_note, menu);
@@ -210,18 +230,81 @@ public class DrawActivity extends AppCompatActivity implements
             showColorPickerDialog(drawColor);
             return true;
         }
+        else if (id == R.id.action_change_size) {
+            showSizeChangeDialog();
+            return true;
+        }
+        else if (id == R.id.action_set_background) {
+            openFileBrowser("image/*");
+            return true;
+        }
 
         return super.onOptionsItemSelected(item);
     }
 
-    public void showColorPickerDialog(int initialColor) {
+    private void openFileBrowser(String fileType) {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT)
+                .setType(fileType);
+        startActivityForResult(Intent.createChooser(intent,
+                getString(R.string.intent_select_images)), Const.IMAGE_SELECTED_RESULT_CODE);
+    }
+
+    private void showColorPickerDialog(int initialColor) {
         ColorPickerDialog colorPickerDialog = new ColorPickerDialog(this, initialColor, this);
         colorPickerDialog.show();
     }
 
-    /********************************************
-     * DRAW TOOLS CHANGE LISTENERS
-     *******************************************/
+    private void showSizeChangeDialog() {
+        sizeAdjustView = LayoutInflater.from(this).inflate(R.layout.dialog_change_draw_size, rootView, false);
+        drawSizeBar = (SeekBar) sizeAdjustView.findViewById(R.id.draw_size_seekbar);
+        eraserSizeBar = (SeekBar) sizeAdjustView.findViewById(R.id.eraser_size_seekbar);
+        drawSizeBar.setMax(200);
+        eraserSizeBar.setMax(200);
+        drawSizeBar.setProgress((int)drawSize);
+        eraserSizeBar.setProgress((int)eraserSize);
+        drawSizeBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                drawSize = (float) progress;
+                canvas.setDrawSize(drawSize);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+        eraserSizeBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                eraserSize = (float) progress;
+                canvas.setEraserSize(eraserSize);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        Dialog dialog = new Dialog(this);
+        Window window = dialog.getWindow();
+        WindowManager.LayoutParams param = window.getAttributes();
+        param.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+        param.y = 200;
+        window.setAttributes(param);
+        dialog.setContentView(sizeAdjustView);
+        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+            @Override
+            public void onShow(DialogInterface dialog) {
+                drawSizeBar.setProgress((int)drawSize);
+                eraserSizeBar.setProgress((int)eraserSize);
+            }
+        });
+        dialog.show();
+    }
 
     @Override
     public void onColorSelected(int color) {
@@ -233,6 +316,27 @@ public class DrawActivity extends AppCompatActivity implements
     /********************************************
      * CANVAS VIEW CALLBACKS
      *******************************************/
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == Const.IMAGE_SELECTED_RESULT_CODE) {
+            if (resultCode == RESULT_OK && data != null) {
+                try {
+                    Uri uri = data.getData();
+                    if (uri != null) {
+                        Log.d(TAG, "Found URI of selected image " + uri.toString());
+                        InputStream inputStream = getContentResolver().openInputStream(uri);
+                        Drawable background = Drawable.createFromStream(inputStream, uri.toString());
+                        canvas.setBackground(background);
+                    }
+                    else Log.d(TAG, "URI is null)");
+                }
+                catch (Exception ex) {
+                    Log.e(TAG, ex.getMessage());
+                }
+            }
+        }
+    }
 
     /* <start action-code>,<user-id>,<item-id>,<color>,<size>,<x>,<y> */
     @Override

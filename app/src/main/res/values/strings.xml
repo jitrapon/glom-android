@@ -197,4 +197,7 @@
     <string name="menu_item_erase">Erase</string>
     <string name="menu_item_grease_pencil">Grease Pencil</string>
     <string name="menu_item_pick_color">Color</string>
+    <string name="menu_item_change_draw_size">Draw Size</string>
+    <string name="menu_item_change_eraser_size">Eraser Size</string>
+    <string name="menu_item_set_background">Set Background</string>
 </resources>

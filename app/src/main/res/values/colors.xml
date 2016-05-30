@@ -6,7 +6,7 @@
     <color name="textColorSecondary">#5c5c5c</color>
     <color name="windowBackground">#FFFFFF</color>
     <color name="navigationBarColor">#000000</color>
-    <color name="colorAccent">#c8e8ff</color>
+    <color name="colorAccent">#01579b</color>
     <color name="menuOverlay">#88676767</color>
     <color name="lineDivider">#D8D8D8</color>
     <color name="cardPrimaryText">#000000</color>
