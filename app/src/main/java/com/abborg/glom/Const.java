@@ -30,7 +30,7 @@ public class Const {
     public static final int CREATE_EVENT_RESULT_CODE = 700;
     public static final int UPDATE_EVENT_RESULT_CODE = 701;
     public static final int IMAGE_SELECTED_RESULT_CODE = 702;
-    public static final int NOTE_RESULT_CODE = 703;
+    public static final int DRAW_RESULT_CODE = 703;
     public static final int PLACE_AUTOCOMPLETE_REQUEST_CODE = 704;
     public static final int PLACE_PICKER_REQUEST_CODE = 705;
 
@@ -102,7 +102,7 @@ public class Const {
     public static final String JSON_SERVER_FILE_MIMETYPE = "mimetype";
     public static final String JSON_SERVER_FILE_NOTE = "note";
     public static final String JSON_SERVER_FILE_PROVIDER = "provider";
-    public static final String JSON_SERVER_NOTE_NAME = "note_name";
+    public static final String JSON_SERVER_DRAWING_NAME = "note_name";
 
     /**
      * HANDLER WHAT CONSTANTS
@@ -133,6 +133,11 @@ public class Const {
     public static final int MSG_SOCKET_CONNECTED = 5024;
     public static final int MSG_SOCKET_DISCONNECTED = 5025;
     public static final int MSG_SOCKET_DATA_RECEIVED = 5026;
+    public static final int MSG_DRAWING_POSTED = 5027;
+    public static final int MSG_DRAWING_UPDATED = 5028;
+    public static final int MSG_DRAWING_POST_FAILED = 5029;
+    public static final int MSG_DRAWING_POST_IN_PROGRESS = 5030;
+    public static final int MSG_DRAWING_POST_SUCCESS = 5031;
 
     /**
      * Mimetypes
@@ -150,5 +155,4 @@ public class Const {
      */
     public static final String ASSETS_FOLDER = "file:///android_asset/";
     public static final String SERVER_APP_URL = SERVER_URL + "/app";
-    public static final String SOCKET_IO_EVENT_CONNECTED = "connected";
 }

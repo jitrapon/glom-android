@@ -24,12 +24,13 @@ import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.interfaces.BoardItemClickListener;
 import com.abborg.glom.model.BoardItem;
+import com.abborg.glom.model.DrawItem;
 import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FeedAction;
 import com.abborg.glom.model.FileItem;
-import com.abborg.glom.model.NoteItem;
 import com.abborg.glom.utils.CircleTransform;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.signature.StringSignature;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
@@ -44,6 +45,7 @@ import org.joda.time.Period;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -153,7 +155,7 @@ public class BoardRecyclerViewAdapter
         }
     }
 
-    public static class NoteHolder extends RecyclerView.ViewHolder {
+    public static class DrawingHolder extends RecyclerView.ViewHolder {
         ImageView posterAvatar;
         TextView posterName;
         TextView postTime;
@@ -161,7 +163,7 @@ public class BoardRecyclerViewAdapter
 
         ImageView thumbnail;
 
-        public NoteHolder(View itemView) {
+        public DrawingHolder(View itemView) {
             super(itemView);
 
             posterAvatar = (ImageView) itemView.findViewById(R.id.card_user_avatar);
@@ -172,7 +174,7 @@ public class BoardRecyclerViewAdapter
             thumbnail = (ImageView) itemView.findViewById(R.id.note_thumbnail);
         }
 
-        public void bind(final NoteItem file, final BoardItemClickListener listener) {
+        public void bind(final DrawItem file, final BoardItemClickListener listener) {
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
                     listener.onItemClicked(file);
@@ -221,9 +223,9 @@ public class BoardRecyclerViewAdapter
             View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_file, parent, false);
             return new FileHolder(view);
         }
-        else if (viewType == BoardItem.TYPE_NOTE) {
+        else if (viewType == BoardItem.TYPE_DRAWING) {
             View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_note, parent, false);
-            return new NoteHolder(view);
+            return new DrawingHolder(view);
         }
         else return null;
     }
@@ -234,8 +236,8 @@ public class BoardRecyclerViewAdapter
             setEventViewHolder(position, recyclerViewHolder);
         else if (recyclerViewHolder instanceof FileHolder)
             setFileViewHolder(position, recyclerViewHolder);
-        else if (recyclerViewHolder instanceof NoteHolder)
-            setNoteViewHolder(position, recyclerViewHolder);
+        else if (recyclerViewHolder instanceof DrawingHolder)
+            setDrawingViewHolder(position, recyclerViewHolder);
     }
 
     @Override
@@ -265,13 +267,13 @@ public class BoardRecyclerViewAdapter
                 String note = TextUtils.isEmpty(file.getNote()) ? "" : file.getNote();
                 String mimetype = TextUtils.isEmpty(file.getMimetype()) ? "" : file.getMimetype();
                 long size = file.getSize();
-                String path = file.getFile()==null? "" : file.getFile().getPath();
+                String path = file.getLocalCache()==null? "" : file.getLocalCache().getPath();
                 long created = file.getCreatedTime() == null ? 0L : file.getCreatedTime().getMillis();
                 long updated = file.getUpdatedTime() == null ? 0L : file.getUpdatedTime().getMillis();
                 id = (name + note + mimetype + size + path + created + updated + + file.getSyncStatus()).hashCode();
             }
-            else if (item.getType() == BoardItem.TYPE_NOTE) {
-                NoteItem note = (NoteItem) item;
+            else if (item.getType() == BoardItem.TYPE_DRAWING) {
+                DrawItem note = (DrawItem) item;
                 String name = TextUtils.isEmpty(note.getName()) ? "" : note.getName();
                 long created = note.getCreatedTime() == null ? 0L : note.getCreatedTime().getMillis();
                 long updated = note.getUpdatedTime() == null ? 0L : note.getUpdatedTime().getMillis();
@@ -429,7 +431,7 @@ public class BoardRecyclerViewAdapter
         attachPostInfo(file.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);
 
         // set action buttons
-        if (file.getFile() == null || !file.getFile().exists()) {
+        if (file.getLocalCache() == null || !file.getLocalCache().exists()) {
             holder.actionButton1.setText(context.getResources().getString(R.string.card_action_download));
             holder.actionButton2.setText(context.getResources().getString(R.string.card_action_share));
             holder.actionButton1.setOnClickListener(new View.OnClickListener() {
@@ -483,37 +485,32 @@ public class BoardRecyclerViewAdapter
 
         // set up image icons
         int icon;
-        if (file.isImage()) {
+        if (file.isImage() && file.getLocalCache() != null && file.getLocalCache().exists()) {
             icon = R.drawable.ic_placeholder_image;
             if (file.isGif()) {
                 Glide.with(context)
-                        .load(file.getFile()).asGif().centerCrop()
+                        .load(file.getLocalCache()).asGif().centerCrop()
+                        .signature(new StringSignature(String.valueOf(file.getLocalCache().lastModified())))
                         .placeholder(icon)
                         .error(icon)
                         .crossFade(1000)
                         .into(holder.fileThumbnail);
             }
             else {
-                if (file.getFile() != null && file.getFile().exists()) {
-                    Glide.with(context)
-                            .load(file.getFile()).centerCrop()
-                            .placeholder(icon)
-                            .error(icon)
-                            .crossFade(1000)
-                            .into(holder.fileThumbnail);
-                }
-                else {
-                    Glide.with(context)
-                            .load(icon).centerCrop()
-                            .crossFade(1000)
-                            .into(holder.fileThumbnail);
-                }
+                Glide.with(context)
+                        .load(file.getLocalCache()).centerCrop()
+                        .signature(new StringSignature(String.valueOf(file.getLocalCache().lastModified())))
+                        .placeholder(icon)
+                        .error(icon)
+                        .crossFade(1000)
+                        .into(holder.fileThumbnail);
             }
         }
         else {
             icon = R.drawable.ic_placeholder_file;
             Glide.with(context)
                     .load(icon).centerCrop()
+                    .signature(new StringSignature(String.valueOf(file.getLocalCache().lastModified())))
                     .crossFade(1000)
                     .into(holder.fileThumbnail);
         }
@@ -799,34 +796,44 @@ public class BoardRecyclerViewAdapter
         else holder.eventNote.setVisibility(View.VISIBLE);
     }
 
-    private void setNoteViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {
-        NoteItem note = (NoteItem) items.get(position);
-        final String id = note.getId();
-        final NoteHolder holder = (NoteHolder) recyclerViewHolder;
+    private void setDrawingViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {
+        DrawItem drawing = (DrawItem) items.get(position);
+        final String id = drawing.getId();
+        final DrawingHolder holder = (DrawingHolder) recyclerViewHolder;
 
-        holder.bind(note, listener);
+        holder.bind(drawing, listener);
 
 //        // attach context menu button
 //        attachMenuOptions(holder.menuButton, id);
 
         // attach the last feed info about this post
-        attachPostInfo(note.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);
+        attachPostInfo(drawing.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);
 
         // set sync status and progress bar
-        if (note.getSyncStatus() == BoardItem.SYNC_COMPLETE) {
+        if (drawing.getSyncStatus() == BoardItem.SYNC_COMPLETE) {
             holder.syncStatus.setVisibility(View.INVISIBLE);
         }
         else {
             holder.syncStatus.setVisibility(View.VISIBLE);
 
-            if (note.getSyncStatus() == BoardItem.SYNC_ERROR)
+            if (drawing.getSyncStatus() == BoardItem.SYNC_ERROR)
                 holder.syncStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync_failed));
-            else if (note.getSyncStatus() == BoardItem.SYNC_IN_PROGRESS) {
+            else if (drawing.getSyncStatus() == BoardItem.SYNC_IN_PROGRESS) {
                 holder.syncStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync));
             }
         }
 
-        // update note info and thumbnail
+        // update drawing thumbnail
+        File file = drawing.getLocalCache();
+        if (file != null && file.exists()) {
+            Glide.with(context)
+                    .load(file).centerCrop()
+                    .crossFade(1000)
+                    .signature(new StringSignature(String.valueOf(file.lastModified())))
+                    .placeholder(R.drawable.ic_placeholder_drawing)
+                    .error(R.drawable.ic_placeholder_drawing)
+                    .into(holder.thumbnail);
+        }
     }
 
     /**************************************************************

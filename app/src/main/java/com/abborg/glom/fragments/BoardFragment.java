@@ -27,10 +27,11 @@ import com.abborg.glom.data.DataUpdater;
 import com.abborg.glom.interfaces.BoardItemChangeListener;
 import com.abborg.glom.interfaces.BoardItemClickListener;
 import com.abborg.glom.model.BoardItem;
+import com.abborg.glom.model.DrawItem;
 import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FileItem;
-import com.abborg.glom.model.NoteItem;
 
+import java.io.File;
 import java.util.List;
 
 /**
@@ -190,22 +191,26 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
                 Log.d(TAG, "FileItem (" + item.getName() + ") selected");
 
                 // if file does not exist, download, otherwise view it
-                if (item.getFile() == null || !item.getFile().exists()) {
+                if (item.getLocalCache() == null || !item.getLocalCache().exists()) {
                     if (handler != null) handler.sendMessage(handler.obtainMessage(Const.MSG_DOWNLOAD_ITEM, item));
                 }
                 else {
                     Intent intent = new Intent(Intent.ACTION_VIEW);
-                    intent.setDataAndType(Uri.fromFile(item.getFile()), item.getMimetype());
+                    intent.setDataAndType(Uri.fromFile(item.getLocalCache()), item.getMimetype());
                     getActivity().startActivity(Intent.createChooser(intent, getString(R.string.card_select_app_to_launch)));
                 }
             }
-            else if (selected instanceof NoteItem) {
-                NoteItem item = (NoteItem) selected;
-                Log.d(TAG, "NoteItem (" + item.getId() + ") selected");
+            else if (selected instanceof DrawItem) {
+                DrawItem item = (DrawItem) selected;
+                Log.d(TAG, "DrawItem (" + item.getId() + ") selected");
+                //TODO if file does not exist, download, otherwise view it
+                String path = (item.getLocalCache() == null) ? null :
+                        new File(item.getLocalCache().getPath()).exists() ? item.getLocalCache().getPath() : null;
                 Intent intent = new Intent(activity, DrawActivity.class);
-                intent.setAction(getString(R.string.ACTION_JOIN_NOTE));
-                intent.putExtra(getString(R.string.EXTRA_NOTE_ID), item.getId());
-                getActivity().startActivityForResult(intent, Const.NOTE_RESULT_CODE);
+                intent.setAction(getString(R.string.ACTION_JOIN_DRAWING));
+                intent.putExtra(getString(R.string.EXTRA_DRAWING_ID), item.getId());
+                intent.putExtra(getString(R.string.EXTRA_DRAWING_PATH), path);
+                getActivity().startActivityForResult(intent, Const.DRAW_RESULT_CODE);
             }
         }
     }

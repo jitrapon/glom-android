@@ -29,7 +29,7 @@ public class BoardItem {
     /** Board item types - this must match with what is stored server-side **/
     public static final int TYPE_EVENT = 1;
     public static final int TYPE_FILE = 2;
-    public static final int TYPE_NOTE = 3;
+    public static final int TYPE_DRAWING = 3;
 
     /** Board item sync status **/
     public static final int NO_SYNC = 0;            // indicates that this item is marked for no syncing with the server

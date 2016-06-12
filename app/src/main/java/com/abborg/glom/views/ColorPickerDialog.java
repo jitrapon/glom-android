@@ -11,8 +11,8 @@ public class ColorPickerDialog extends AlertDialog {
     private ColorPicker colorPickerView;
     private final OnColorSelectedListener onColorSelectedListener;
 
-    public ColorPickerDialog(Context context, int initialColor, OnColorSelectedListener onColorSelectedListener) {
-        super(context);
+    public ColorPickerDialog(Context context, int theme, int initialColor, OnColorSelectedListener onColorSelectedListener) {
+        super(context, theme);
 
         this.onColorSelectedListener = onColorSelectedListener;
 

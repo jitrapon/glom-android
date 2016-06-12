@@ -16,6 +16,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -36,18 +37,19 @@ import com.abborg.glom.R;
 import com.abborg.glom.data.DataUpdater;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
-import com.abborg.glom.model.NoteItem;
+import com.abborg.glom.model.DrawItem;
 import com.abborg.glom.model.User;
 import com.abborg.glom.utils.JavaScriptInterface;
 import com.abborg.glom.views.CanvasView;
 import com.abborg.glom.views.ColorPickerDialog;
 
 import org.joda.time.DateTime;
+import org.joda.time.Instant;
 
 import java.io.InputStream;
 
 /**
- * This activity handles live note and drawing board item. It contains a custom view
+ * This activity handles live drawItem and drawing board item. It contains a custom view
  * CanvasView
  *
  * Created by jitrapon on 17/5/16.
@@ -63,7 +65,7 @@ public class DrawActivity extends AppCompatActivity implements
     Circle circle;
     User user;
     DataUpdater dataUpdater;
-    NoteItem note;
+    DrawItem drawItem;
 
     CanvasView canvas;
     WebView webView;
@@ -72,6 +74,7 @@ public class DrawActivity extends AppCompatActivity implements
     View sizeAdjustView;
     SeekBar drawSizeBar;
     SeekBar eraserSizeBar;
+    String savedFilePath;
 
     private float eraserSize = 70f;
     private float drawSize = 7f;
@@ -112,18 +115,51 @@ public class DrawActivity extends AppCompatActivity implements
         user = appState.getActiveUser();
         dataUpdater = appState.getDataUpdater();
         handler = new Handler(this);
-        shouldCreateRoom = getIntent().getAction().equals(getResources().getString(R.string.ACTION_CREATE_NOTE));
+        shouldCreateRoom = getIntent().getAction().equals(getResources().getString(R.string.ACTION_CREATE_DRAWING));
+        savedFilePath = getIntent().getStringExtra(getResources().getString(R.string.EXTRA_DRAWING_PATH));
         if (!shouldCreateRoom) {
-            String id = getIntent().getStringExtra(getString(R.string.EXTRA_NOTE_ID));
+            String id = getIntent().getStringExtra(getString(R.string.EXTRA_DRAWING_ID));
             for (BoardItem item : circle.getItems()) {
-                if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_NOTE) {
-                    note = (NoteItem) item;
+                if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_DRAWING) {
+                    drawItem = (DrawItem) item;
                     break;
                 }
             }
         }
+        else {
+            drawItem = DrawItem.createDrawing(circle, DateTime.now(), DateTime.now());
+        }
 
         setupView();
+    }
+
+    private void finishWithResult(Intent intent) {
+        if (intent != null) {
+            setResult(RESULT_OK, intent);
+        }
+        else {
+            setResult(RESULT_CANCELED);
+        }
+
+        finish();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (drawItem == null) super.onBackPressed();
+        else {
+            String name = TextUtils.isEmpty(drawItem.getName()) ? drawItem.getId() : drawItem.getName();
+            String savedFile = AppState.getInstance().getExternalFilesDir().getPath() + "/" + name + ".png";
+            canvas.save(savedFile);
+
+            Intent intent = new Intent();
+            intent.putExtra(getString(R.string.EXTRA_DRAWING_ID), drawItem.getId());
+            intent.putExtra(getString(R.string.EXTRA_DRAWING_NAME), drawItem.getName());
+            intent.putExtra(getString(R.string.EXTRA_DRAWING_FILE), savedFile);
+            intent.putExtra(getString(R.string.EXTRA_DRAWING_TIME), Instant.now().getMillis());
+            intent.putExtra(getString(R.string.EXTRA_DRAWING_MODE), shouldCreateRoom);
+            finishWithResult(intent);
+        }
     }
 
     private void setupView() {
@@ -169,6 +205,10 @@ public class DrawActivity extends AppCompatActivity implements
             canvas.setDrawColor(drawColor);
             canvas.setDrawSize(drawSize);
             canvas.setEraserSize(eraserSize);
+
+            if (!shouldCreateRoom) {
+                canvas.setSavedPath(savedFilePath);
+            }
         }
     }
 
@@ -238,6 +278,11 @@ public class DrawActivity extends AppCompatActivity implements
             openFileBrowser("image/*");
             return true;
         }
+        else if (id == R.id.action_clear) {
+            canvas.clear();
+            canvas.setBackground(null);
+            return true;
+        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -250,7 +295,7 @@ public class DrawActivity extends AppCompatActivity implements
     }
 
     private void showColorPickerDialog(int initialColor) {
-        ColorPickerDialog colorPickerDialog = new ColorPickerDialog(this, initialColor, this);
+        ColorPickerDialog colorPickerDialog = new ColorPickerDialog(this, R.style.AlertDialogTheme, initialColor, this);
         colorPickerDialog.show();
     }
 
@@ -341,25 +386,25 @@ public class DrawActivity extends AppCompatActivity implements
     /* <start action-code>,<user-id>,<item-id>,<color>,<size>,<x>,<y> */
     @Override
     public void onDrawStart(int color, float size, float x, float y) {
-        if (note != null && isConnected) call("send", ACTION_DRAW_START, user.getId(), note.getId(), color, size, x, y);
+        if (drawItem != null && isConnected) call("send", ACTION_DRAW_START, user.getId(), drawItem.getId(), color, size, x, y);
     }
 
     /* <erase action-code>,<user-id>,<item-id>,<size>,<x>,<y> */
     @Override
     public void onEraseStart(float size, float x, float y) {
-        if (note != null && isConnected) call("send", ACTION_ERASE_START, user.getId(), note.getId(), size, x, y);
+        if (drawItem != null && isConnected) call("send", ACTION_ERASE_START, user.getId(), drawItem.getId(), size, x, y);
     }
 
     /* <draw action-code>,<user-id>,<item-id>,<x>,<y> */
     @Override
     public void onMove(float x, float y) {
-        if (note != null && isConnected) call("send", ACTION_MOVE, user.getId(), note.getId(), x, y);
+        if (drawItem != null && isConnected) call("send", ACTION_MOVE, user.getId(), drawItem.getId(), x, y);
     }
 
     /* <end action-code>,<user-id>,<item-id> */
     @Override
     public void onUp() {
-        if (note != null && isConnected) call("send", ACTION_UP, user.getId(), note.getId());
+        if (drawItem != null && isConnected) call("send", ACTION_UP, user.getId(), drawItem.getId());
     }
 
     /**
@@ -368,8 +413,8 @@ public class DrawActivity extends AppCompatActivity implements
     /* <leave action code>,<user id>,<item id> */
     @Override
     public void onExit() {
-        if (note != null && isConnected) {
-            call("send", ACTION_LEAVE, user.getId(), note.getId());
+        if (drawItem != null && isConnected) {
+            call("send", ACTION_LEAVE, user.getId(), drawItem.getId());
             call("stop");
         }
     }
@@ -388,13 +433,12 @@ public class DrawActivity extends AppCompatActivity implements
 
                 /* Action create room payload: <create action code>,<user id>,<item id>,<circle id> */
                 if (shouldCreateRoom) {
-                    note = NoteItem.createNote(circle, DateTime.now(), DateTime.now());
-                    call("send", ACTION_CREATE, user.getId(), note.getId(), circle.getId());
+                    call("send", ACTION_CREATE, user.getId(), drawItem.getId(), circle.getId());
                 }
 
                 /* <join action code>,<user id>,<item id> */
                 else {
-                    call("send", ACTION_JOIN, user.getId(), note.getId());
+                    call("send", ACTION_JOIN, user.getId(), drawItem.getId());
                 }
                 break;
 

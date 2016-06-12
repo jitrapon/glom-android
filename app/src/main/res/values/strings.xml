@@ -53,9 +53,14 @@
     <string name="EXTRA_MESSAGE_CIRCLE_ID">com.abborg.glom.extra.MESSAGE_CIRCLEID</string>
     <string name="EXTRA_MESSAGE_TYPE">com.abborg.glom.extra.MESSAGE_TYPE</string>
     <string name="ACTION_SERVER_ACK_MESSAGE">com.abborg.glom.action.ACK_MESSAGE</string>
-    <string name="ACTION_CREATE_NOTE">com.abborg.glom.action.CREATE_NOTE</string>
-    <string name="ACTION_JOIN_NOTE">com.abborg.glom.action.JOIN_NOTE</string>
-    <string name="EXTRA_NOTE_ID">com.abborg.glom.extra.NOTE_ID</string>
+    <string name="ACTION_CREATE_DRAWING">com.abborg.glom.action.CREATE_DRAWING</string>
+    <string name="ACTION_JOIN_DRAWING">com.abborg.glom.action.JOIN_DRAWING</string>
+    <string name="EXTRA_DRAWING_ID">com.abborg.glom.extra.DRAWING_ID</string>
+    <string name="EXTRA_DRAWING_NAME">com.abborg.glom.extra.DRAWING_NAME</string>
+    <string name="EXTRA_DRAWING_FILE">com.abborg.glom.extra.DRAWING_FILE</string>
+    <string name="EXTRA_DRAWING_TIME">com.abborg.glom.extra.DRAWING_TIME</string>
+    <string name="EXTRA_DRAWING_MODE">com.abborg.glom.extra.DRAWING_MODE</string>
+    <string name="EXTRA_DRAWING_PATH">com.abborg.glom.extra.DRAWING_PATH</string>
 
     <!-- Profile activity strings -->
     <string name="profile_activity_label">My Profile</string>
@@ -123,6 +128,8 @@
     <string name="notification_delete_item_failed">Failed to sync the delete, please try again</string>
     <string name="notification_download_item_success">Downloaded %s successfully</string>
     <string name="notification_download_item_failed">Failed to downloaded %s</string>
+    <string name="notification_retrieve_file_failed">Unable to retrieve this file, please try another file</string>
+    <string name="notification_load_drawing_failed">Failed to load drawing</string>
 
     <!-- Broadcast location options -->
     <string name="bottom_sheet_broadcast_location_toggle">Broadcast my location</string>
@@ -188,8 +195,8 @@
     <string name="warning_no_image_selected">No image selected</string>
     <string name="file_name_placeholder">Undefined</string>
 
-    <!-- Note -->
-    <string name="title_activity_note_unsaved">Untitled</string>
+    <!-- Drawing -->
+    <string name="title_activity_draw_unsaved">Untitled</string>
     <string name="notification_app_connected">You have joined the drawing session</string>
     <string name="notification_app_disconnected">You have left the drawing session</string>
     <string name="notification_user_joined">%s has joined the session</string>
@@ -200,4 +207,5 @@
     <string name="menu_item_change_draw_size">Draw Size</string>
     <string name="menu_item_change_eraser_size">Eraser Size</string>
     <string name="menu_item_set_background">Set Background</string>
+    <string name="menu_item_clear_drawing">Clear</string>
 </resources>

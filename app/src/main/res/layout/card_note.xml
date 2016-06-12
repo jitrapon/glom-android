@@ -72,7 +72,7 @@
                 android:layout_height="240dp"
                 android:layout_width="match_parent"
                 android:scaleType="centerCrop"
-                android:src="@drawable/ic_placeholder_note">
+                android:src="@drawable/ic_placeholder_drawing">
 
             </ImageView>
 

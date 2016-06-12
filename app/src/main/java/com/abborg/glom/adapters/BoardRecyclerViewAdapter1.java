@@ -549,7 +549,7 @@ public class BoardRecyclerViewAdapter1 extends SectionedRecyclerViewAdapter<Recy
         attachPostInfo(file.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);
 
         // set action buttons
-        if (file.getFile() == null || !file.getFile().exists()) {
+        if (file.getLocalCache() == null || !file.getLocalCache().exists()) {
             holder.actionButton1.setText(context.getResources().getString(R.string.card_action_download));
             holder.actionButton2.setText(context.getResources().getString(R.string.card_action_share));
             holder.actionButton1.setOnClickListener(new View.OnClickListener() {
@@ -607,16 +607,16 @@ public class BoardRecyclerViewAdapter1 extends SectionedRecyclerViewAdapter<Recy
             icon = R.drawable.ic_placeholder_image;
             if (file.isGif()) {
                 Glide.with(context)
-                        .load(file.getFile()).asGif().centerCrop()
+                        .load(file.getLocalCache()).asGif().centerCrop()
                         .placeholder(icon)
                         .error(icon)
                         .crossFade(1000)
                         .into(holder.fileThumbnail);
             }
             else {
-                if (file.getFile() != null && file.getFile().exists()) {
+                if (file.getLocalCache() != null && file.getLocalCache().exists()) {
                     Glide.with(context)
-                            .load(file.getFile()).centerCrop()
+                            .load(file.getLocalCache()).centerCrop()
                             .placeholder(icon)
                             .error(icon)
                             .crossFade(1000)

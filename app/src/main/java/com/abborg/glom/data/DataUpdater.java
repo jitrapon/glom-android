@@ -1,6 +1,5 @@
 package com.abborg.glom.data;
 
-import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -19,11 +18,11 @@ import android.preference.PreferenceManager;
 import android.provider.OpenableColumns;
 import android.text.TextUtils;
 import android.util.Log;
-import android.webkit.MimeTypeMap;
 
 import com.abborg.glom.AppState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
+import com.abborg.glom.interfaces.FileDownloadListener;
 import com.abborg.glom.interfaces.ResponseListener;
 import com.abborg.glom.model.BaseChatMessage;
 import com.abborg.glom.model.BoardItem;
@@ -31,18 +30,18 @@ import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CircleInfo;
 import com.abborg.glom.model.CloudProvider;
 import com.abborg.glom.model.DiscoverItem;
+import com.abborg.glom.model.DrawItem;
 import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FeedAction;
 import com.abborg.glom.model.FileItem;
 import com.abborg.glom.model.Movie;
-import com.abborg.glom.model.NoteItem;
 import com.abborg.glom.model.User;
 import com.abborg.glom.model.WatchableFeed;
 import com.abborg.glom.model.WatchableImage;
 import com.abborg.glom.model.WatchableRating;
 import com.abborg.glom.model.WatchableVideo;
 import com.abborg.glom.utils.FileTransfer;
-import com.abborg.glom.utils.PathUtils;
+import com.abborg.glom.utils.FileUtils;
 import com.abborg.glom.utils.RequestHandler;
 import com.android.volley.VolleyError;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
@@ -52,7 +51,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -895,26 +899,26 @@ public class DataUpdater {
                                                             break;
                                                         }
 
-                                                        case BoardItem.TYPE_NOTE: {
-                                                            String name = info.getString(Const.JSON_SERVER_NOTE_NAME);
+                                                        case BoardItem.TYPE_DRAWING: {
+                                                            String name = info.getString(Const.JSON_SERVER_DRAWING_NAME);
 
                                                             name = name.equals("null") || TextUtils.isEmpty(name) ? null : name;
 
-                                                            NoteItem note = null;
+                                                            DrawItem drawItem = null;
                                                             if (items != null) {
                                                                 for (BoardItem item : items) {
-                                                                    if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_NOTE) {
-                                                                        note = (NoteItem) item;
+                                                                    if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_DRAWING) {
+                                                                        drawItem = (DrawItem) item;
                                                                     }
                                                                 }
-                                                                if (note == null) {
+                                                                if (drawItem == null) {
                                                                     DateTime createdTime = createdMillis == null ? null : new DateTime(createdMillis);
-                                                                    createNote(circle, createdTime, id, name);
+                                                                    createDrawing(circle, createdTime, id, name);
                                                                 }
-                                                                else if (note.getSyncStatus() != BoardItem.NO_SYNC) {
+                                                                else if (drawItem.getSyncStatus() != BoardItem.NO_SYNC) {
                                                                     DateTime updatedTime = updatedMillis == null ? null : new DateTime(updatedMillis);
                                                                     //TODO
-                                                                    note.setDirty(false);
+                                                                    drawItem.setDirty(false);
                                                                 }
                                                             }
                                                             break;
@@ -998,6 +1002,23 @@ public class DataUpdater {
         while (!cursor.isAfterLast()) {
             FileItem file = serializeFile(cursor, circle);
             items.add(file);
+            cursor.moveToNext();
+        }
+        cursor.close();
+
+        query =
+                "SELECT * FROM " + DBHelper.TABLE_CIRCLE_ITEMS + " " +
+                        "JOIN " + DBHelper.TABLE_DRAWINGS + " ON " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_ITEMID + "=" + DBHelper.TABLE_DRAWINGS + "." + DBHelper.DRAWING_COLUMN_ID + " " +
+                        "AND " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_CIRCLEID + "='" + circle.getId() + "' " +
+                        "AND " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_TYPE + "=" + BoardItem.TYPE_DRAWING + " " +
+                        "ORDER BY " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME + " ASC";
+        cursor = database.rawQuery(query, null);
+        result = DatabaseUtils.dumpCursorToString(cursor);
+        Log.d(TAG, "Found drawings: " + result);
+        cursor.moveToFirst();
+        while (!cursor.isAfterLast()) {
+            DrawItem item = serializeDrawing(cursor, circle);
+            items.add(item);
             cursor.moveToNext();
         }
         cursor.close();
@@ -1466,22 +1487,13 @@ public class DataUpdater {
                     for (Uri uri : uriList) {
                         Cursor cursor = null;
                         try {
-                            String mimetype = getFileMimeType(uri);
-                            FileItem item = FileItem.createFile(circle);
-                            item.setMimetype(mimetype);
-                            cursor = context.getContentResolver().query(uri, null, null, null, null);
-                            if (cursor != null) {
-                                int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
-                                int sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE);
-                                cursor.moveToFirst();
-                                item.setName(cursor.getString(nameIndex));
-                                item.setSize(cursor.getLong(sizeIndex));
-                                String path = PathUtils.getPath(context, uri);
-                                item.setPath(path);
-                                Log.d(TAG, "Mimetype found is " + mimetype);
-                                Log.d(TAG, "Name found is " + item.getName());
-                                Log.d(TAG, "Size found is " + item.getSize());
-                                Log.d(TAG, "Path is " + path);
+                            final FileItem item = FileItem.createFile(circle);
+                            File file = FileUtils.getFile(context, uri);
+                            if (file != null) {
+                                item.setName(file.getName());
+                                item.setSize(file.length());
+                                item.setPath(file.getPath());
+                                item.setMimetype(FileUtils.getMimeType(file));
 
                                 //update db
                                 createFileDB(circle, item.getCreatedTime(), item,
@@ -1498,6 +1510,57 @@ public class DataUpdater {
                                     requestUploadFileRemote(circle, item, CloudProvider.AMAZON_S3);
                                 }
                             }
+                            else {
+                                retrieveFile(uri, new FileDownloadListener() {
+                                    @Override
+                                    public void onDownloadStarted(String path) {}
+
+                                    @Override
+                                    public void onDownloadInProgress(String path, int progress) {}
+
+                                    @Override
+                                    public void onDownloadCompleted(String path) {
+                                        File tempFile = new File(path);
+                                        if (tempFile.exists()) {
+                                            item.setName(tempFile.getName());
+                                            item.setSize(tempFile.length());
+                                            item.setPath(tempFile.getPath());
+                                            item.setMimetype(FileUtils.getMimeType(tempFile));
+
+                                            //update db
+                                            createFileDB(circle, item.getCreatedTime(), item,
+                                                    sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
+
+                                            // this 1000 ms delayed is set due to recyclerview animation bug where it needs some time
+                                            // for animation to work
+                                            if (handler != null && sync)
+                                                handler.sendMessageDelayed(handler.obtainMessage(Const.MSG_FILE_POSTED, item), 1000);
+
+                                            // whether or not to sync with the server
+                                            if (sync) {
+                                                Log.d(TAG, "Proceed to uploading file to remote server for item " + item.getName());
+                                                requestUploadFileRemote(circle, item, CloudProvider.AMAZON_S3);
+                                            }
+                                        }
+                                        else {
+                                            if (handler != null) {
+                                                handler.sendMessage(handler.obtainMessage(
+                                                        Const.MSG_SHOW_TOAST,
+                                                        context.getResources().getString(R.string.notification_retrieve_file_failed)));
+                                            }
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onDownloadFailed(String error) {
+                                        if (handler != null) {
+                                            handler.sendMessage(handler.obtainMessage(
+                                                    Const.MSG_SHOW_TOAST,
+                                                    context.getResources().getString(R.string.notification_retrieve_file_failed)));
+                                        }
+                                    }
+                                });
+                            }
                         }
                         catch (Exception ex) {
                             ex.printStackTrace();
@@ -1510,6 +1573,52 @@ public class DataUpdater {
                 }
             }
         });
+    }
+
+    public void retrieveFile(final Uri uri, final FileDownloadListener listener) throws FileNotFoundException {
+        String mimeType = context.getContentResolver().getType(uri);
+        Cursor cursor = context.getContentResolver().query(uri, null, null, null, null);
+        if (cursor != null) {
+            int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+            int sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE);
+            cursor.moveToFirst();
+            final String name = cursor.getString(nameIndex);
+            final Long size = cursor.getLong(sizeIndex);
+            cursor.close();
+            run(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        InputStream in = context.getContentResolver().openInputStream(uri);
+                        final File tempFile = new File(appState.getExternalFilesDir().getPath() + "/" + name);
+                        listener.onDownloadStarted(tempFile.getPath());
+                        OutputStream out = new FileOutputStream(tempFile);
+                        byte[] buf = new byte[1024];
+                        int len, count = 0;
+                        if (in != null) {
+                            while((len = in.read(buf)) > 0) {
+                                out.write(buf, 0, len);
+                                count += len;
+                                listener.onDownloadInProgress(tempFile.getPath(),
+                                        size == 0 ? 0 : (int) ((count / size) * 100));
+                            }
+                        }
+                        out.close();
+                        if (in != null) {
+                            in.close();
+                        }
+                        listener.onDownloadCompleted(tempFile.getPath());
+                    }
+                    catch (Exception e) {
+                        Log.e(TAG, e.getMessage());
+                        listener.onDownloadFailed(e.getMessage());
+                    }
+                }
+            });
+        }
+        else {
+            listener.onDownloadFailed("File cannot be retrieved, please choose another file");
+        }
     }
 
     private FileItem createFile(Circle circle, DateTime createdTime,
@@ -1586,7 +1695,7 @@ public class DataUpdater {
 
             values.put(DBHelper.FILE_COLUMN_NAME, file.getName());
             values.put(DBHelper.FILE_COLUMN_SIZE, file.getSize());
-            values.put(DBHelper.FILE_COLUMN_PATH, file.getFile()==null ? null : file.getFile().getPath());
+            values.put(DBHelper.FILE_COLUMN_PATH, file.getLocalCache()==null ? null : file.getLocalCache().getPath());
             values.put(DBHelper.FILE_COLUMN_MIMETYPE, file.getMimetype());
             values.put(DBHelper.FILE_COLUMN_NOTE, file.getNote());
             rows = database.update(DBHelper.TABLE_FILES, values,
@@ -1602,21 +1711,6 @@ public class DataUpdater {
         finally {
             database.endTransaction();
         }
-    }
-
-    private String getFileMimeType(Uri uri) {
-        String mimeType;
-        if (uri.getScheme().equals(ContentResolver.SCHEME_CONTENT)) {
-            ContentResolver cr = context.getContentResolver();
-            mimeType = cr.getType(uri);
-        }
-        else {
-            String fileExtension = MimeTypeMap.getFileExtensionFromUrl(uri
-                    .toString());
-            mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(
-                    fileExtension.toLowerCase());
-        }
-        return mimeType;
     }
 
     private void createFileDB(Circle circle, DateTime createdTime, FileItem item, int syncStatus) {
@@ -1638,7 +1732,7 @@ public class DataUpdater {
             values.put(DBHelper.FILE_COLUMN_ID, item.getId());
             values.put(DBHelper.FILE_COLUMN_NAME, item.getName());
             values.put(DBHelper.FILE_COLUMN_SIZE, item.getSize());
-            values.put(DBHelper.FILE_COLUMN_PATH, item.getFile()==null ? null : item.getFile().getPath());
+            values.put(DBHelper.FILE_COLUMN_PATH, item.getLocalCache()==null ? null : item.getLocalCache().getPath());
             values.put(DBHelper.FILE_COLUMN_MIMETYPE, item.getMimetype());
             values.put(DBHelper.FILE_COLUMN_NOTE, item.getNote());
             insertId = database.insert(DBHelper.TABLE_FILES, null, values);
@@ -1745,20 +1839,201 @@ public class DataUpdater {
     }
 
     /*************************************************
-     * NOTE OPERATIONS
+     * DRAWING OPERATIONS
      *************************************************/
-    private NoteItem createNote(Circle circle, DateTime createdTime,
-                                String id, String name) {
+    private DrawItem createDrawing(Circle circle, DateTime createdTime,
+                                   String id, String name) {
         createdTime = createdTime==null ? DateTime.now() : createdTime;
-        final NoteItem note = TextUtils.isEmpty(id) ? NoteItem.createNote(circle, createdTime, createdTime)
-                : NoteItem.createNote(id, circle, createdTime, createdTime);
-        note.setName(name);
-        note.setSyncStatus(BoardItem.SYNC_COMPLETE);
-        circle.addItem(note);
+        final DrawItem drawItem = TextUtils.isEmpty(id) ? DrawItem.createDrawing(circle, createdTime, createdTime)
+                : DrawItem.createDrawing(id, circle, createdTime, createdTime);
+        drawItem.setName(name);
+        drawItem.setSyncStatus(BoardItem.SYNC_COMPLETE);
+        circle.addItem(drawItem);
 
-//        createNoteDB(circle, createdTime, note, BoardItem.SYNC_COMPLETE);
+        createDrawingDB(circle, createdTime, drawItem, BoardItem.SYNC_COMPLETE);
 
-        return note;
+        return drawItem;
+    }
+
+    public void postDrawingAsync(final String id, final String name, final String path,
+                                 final Circle circle, final DateTime time, final boolean sync) {
+        run(new Runnable() {
+            @Override
+            public void run() {
+                if (!TextUtils.isEmpty(id)) {
+                    try {
+                        DrawItem item = DrawItem.createDrawing(id, circle, time, time);
+                        item.setPath(path);
+                        item.setName(name);
+
+                        //update db
+                        createDrawingDB(circle, item.getCreatedTime(), item,
+                                sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
+
+                        // this 1000 ms delayed is set due to recyclerview animation bug where it needs some time
+                        // for animation to work
+                        if (handler != null && sync)
+                            handler.sendMessageDelayed(handler.obtainMessage(Const.MSG_DRAWING_POSTED, item), 1000);
+
+                        // whether or not to sync with the server
+                        if (sync) {
+                            Log.d(TAG, "Proceed to uploading drawing to remote server for item " + item.getName());
+                            requestUploadDrawingRemote(circle, item, CloudProvider.AMAZON_S3);
+                        }
+                    }
+                    catch (Exception ex) {
+                        ex.printStackTrace();
+                        Log.e(TAG, ex.getMessage());
+                    }
+                }
+            }
+        });
+    }
+
+    public void requestUploadDrawingRemote(final Circle circle, final DrawItem item, final CloudProvider provider) {
+        final DataUpdater dataUpdater = this;
+        run(new Runnable() {
+            @Override
+            public void run() {
+                if (fileTransfer == null) fileTransfer = new FileTransfer(dataUpdater, context, handler);
+                fileTransfer.upload(provider, circle, item);
+            }
+        });
+    }
+
+    public void updateDrawingAsync(final String id, final String name, final String path,
+                                   final Circle circle, final DateTime time, final boolean sync) {
+        List<BoardItem> items = circle.getItems();
+        DrawItem e = null;
+        for (BoardItem item : items) {
+            if (item.getId().equals(id) && item instanceof DrawItem) {
+                e = (DrawItem) item;
+                break;
+            }
+        }
+
+        if (e != null) {
+            final DrawItem drawing = e;
+            drawing.setPath(path);
+            drawing.setUpdatedTime(time);
+            drawing.setName(name);
+
+            run(new Runnable() {
+                @Override
+                public void run() {
+                    updateDrawingDB(time, drawing, sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
+
+                    if (handler != null)
+                        handler.sendMessage(handler.obtainMessage(Const.MSG_DRAWING_UPDATED, drawing));
+
+                    // whether or not to sync this update with the server
+                    if (sync) requestUploadDrawingRemote(circle, drawing, CloudProvider.AMAZON_S3);
+                }
+            });
+        }
+    }
+
+    public void requestUpdateDrawing(Circle circle, DateTime updatedTime, final DrawItem item) {
+        if (item != null) {
+            try {
+                JSONObject body = new JSONObject();
+                body.put(Const.JSON_SERVER_DRAWING_NAME, TextUtils.isEmpty(item.getName()) ? JSONObject.NULL : item.getName());
+
+                RequestHandler.getInstance(context).post("Update DrawItem", String.format(Const.API_BOARD_ITEM, circle.getId(), item.getId()), body,
+                        new ResponseListener() {
+                            @Override
+                            public void onSuccess(JSONObject response) {
+                                setSyncStatus(item, Const.MSG_DRAWING_POST_SUCCESS, BoardItem.SYNC_COMPLETE);
+                            }
+
+                            @Override
+                            public void onError(VolleyError error) {
+                                setSyncStatus(item, Const.MSG_DRAWING_POST_FAILED, BoardItem.SYNC_ERROR);
+                            }
+                        });
+            }
+            catch (Exception ex) {
+                ex.printStackTrace();
+                setSyncStatus(item, Const.MSG_DRAWING_POST_FAILED, BoardItem.SYNC_ERROR);
+            }
+        }
+    }
+
+    private void createDrawingDB(Circle circle, DateTime createdTime, DrawItem item, int syncStatus) {
+        if (!database.isOpen()) open();
+        database.beginTransaction();
+
+        try {
+            ContentValues values = new ContentValues();
+            values.put(DBHelper.CIRCLEITEM_COLUMN_CIRCLEID, circle.getId());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_ITEMID, item.getId());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_TYPE, item.getType());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_SYNC, syncStatus);
+            values.put(DBHelper.CIRCLEITEM_COLUMN_CREATED_TIME, createdTime.getMillis());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME, createdTime.getMillis());
+            long insertId = database.insert(DBHelper.TABLE_CIRCLE_ITEMS, null, values);
+            Log.d(TAG, "[" + insertId + "] Inserted new item to circle (" + circle.getId() + ") with id = " + item.getId());
+
+            values.clear();
+            values.put(DBHelper.DRAWING_COLUMN_ID, item.getId());
+            values.put(DBHelper.DRAWING_COLUMN_NAME, item.getName());
+            values.put(DBHelper.DRAWING_COLUMN_PATH, item.getLocalCache()==null ? null : item.getLocalCache().getPath());
+            insertId = database.insert(DBHelper.TABLE_DRAWINGS, null, values);
+            Log.d(TAG, "[" + insertId + "] Inserted new drawing successfully");
+
+            database.setTransactionSuccessful();
+        }
+        catch (SQLException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
+        finally {
+            database.endTransaction();
+        }
+    }
+
+    private void updateDrawingDB(DateTime updatedTime, DrawItem item, int syncStatus) {
+        if (!database.isOpen()) open();
+        database.beginTransaction();
+
+        try {
+            ContentValues values = new ContentValues();
+            values.put(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME, updatedTime.getMillis());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_SYNC, syncStatus);
+            int rows = database.update(DBHelper.TABLE_CIRCLE_ITEMS, values, DBHelper.CIRCLEITEM_COLUMN_ITEMID + "='" +
+                    item.getId() + "'", null);
+            Log.d(TAG, "Updated item with id " + item.getId() + " with status " + syncStatus + ", " + rows + " row(s) affected");
+            values.clear();
+
+            values.put(DBHelper.DRAWING_COLUMN_NAME, item.getName());
+            values.put(DBHelper.DRAWING_COLUMN_PATH, item.getLocalCache()==null ? null : item.getLocalCache().getPath());
+            rows = database.update(DBHelper.TABLE_DRAWINGS, values,
+                    DBHelper.DRAWING_COLUMN_ID + "='" + item.getId() + "'", null);
+            Log.d(TAG, "Updated drawing id: " + item.getId() + ", name: " +
+                    item.getName() + ", " + rows + " row(s) affected");
+
+            database.setTransactionSuccessful();
+        }
+        catch (SQLException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
+        finally {
+            database.endTransaction();
+        }
+    }
+
+    private DrawItem serializeDrawing(Cursor cursor, Circle circle) {
+        int syncStatus = cursor.getInt(cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_SYNC));
+        DateTime created = new DateTime(cursor.getLong(cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_CREATED_TIME)));
+        DateTime updated = new DateTime(cursor.getLong(cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME)));
+        String id = cursor.getString(cursor.getColumnIndex(DBHelper.DRAWING_COLUMN_ID));
+        String name = cursor.getString(cursor.getColumnIndex(DBHelper.DRAWING_COLUMN_NAME));
+        String path = cursor.getString(cursor.getColumnIndex(DBHelper.DRAWING_COLUMN_PATH));
+
+        DrawItem item = DrawItem.createDrawing(id, circle, created, updated);
+        item.setName(name);
+        if (!TextUtils.isEmpty(path)) item.setPath(path);
+        item.setSyncStatus(syncStatus);
+        return item;
     }
 
     /*************************************************

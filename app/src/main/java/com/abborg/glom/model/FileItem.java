@@ -69,7 +69,7 @@ public class FileItem extends BoardItem {
         file = new File(path);
     }
 
-    public File getFile() {
+    public File getLocalCache() {
         return file;
     }
 

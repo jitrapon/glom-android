@@ -477,7 +477,7 @@ public class EventActivity extends AppCompatActivity {
                             }
                         }
 
-                        // set note
+                        // set drawItem
                         if (!TextUtils.isEmpty(editEvent.getNote())) {
                             noteText.setText(editEvent.getNote());
                         }
@@ -735,7 +735,8 @@ public class EventActivity extends AppCompatActivity {
             int minute = dateTime.getMinuteOfHour();
 
             // Create a new instance of TimePickerDialog and return it
-            return new TimePickerDialog(getActivity(), this, hour, minute, DateFormat.is24HourFormat(getActivity()));
+            return new TimePickerDialog(getActivity(), R.style.AlertDialogTheme,
+                    this, hour, minute, DateFormat.is24HourFormat(getActivity()));
         }
 
         @Override
@@ -776,7 +777,7 @@ public class EventActivity extends AppCompatActivity {
             int day = dateTime.getDayOfMonth();
 
             // Create a new instance of DatePickerDialog and return it
-            return new DatePickerDialog(getActivity(), this, year, month, day);
+            return new DatePickerDialog(getActivity(), R.style.AlertDialogTheme, this, year, month, day);
         }
 
         public void onDateSet(DatePicker view, int year, int month, int day) {

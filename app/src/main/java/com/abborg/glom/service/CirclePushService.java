@@ -205,7 +205,7 @@ public class CirclePushService extends Service implements LocationListener,
 
     private void showNotification() {
         Intent intent = new Intent(this, MainActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, Const.NOTIFY_BROADCAST_LOCATION, intent,
                 PendingIntent.FLAG_ONE_SHOT);
 

@@ -26,6 +26,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SwitchCompat;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -59,6 +60,7 @@ import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CircleInfo;
 import com.abborg.glom.model.CloudProvider;
 import com.abborg.glom.model.DiscoverItem;
+import com.abborg.glom.model.DrawItem;
 import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FileItem;
 import com.abborg.glom.model.User;
@@ -720,14 +722,14 @@ public class MainActivity extends AppCompatActivity
                     }
                 });
                 break;
-            case User.NOTE_RECEIVE: icon.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_note));
+            case User.NOTE_RECEIVE: icon.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_grease_pencil));
                 actionButton = builder.setContentView(icon, params).build();
                 actionButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         Intent intent = new Intent(activity, DrawActivity.class);
-                        intent.setAction(getResources().getString(R.string.ACTION_CREATE_NOTE));
-                        startActivityForResult(intent, Const.NOTE_RESULT_CODE);
+                        intent.setAction(getResources().getString(R.string.ACTION_CREATE_DRAWING));
+                        startActivityForResult(intent, Const.DRAW_RESULT_CODE);
                         hideMenuOverlay(false);
                     }
                 });
@@ -914,6 +916,17 @@ public class MainActivity extends AppCompatActivity
                 dataUpdater.requestGetUsersInCircle(appState.getActiveCircle());
 
                 break;
+
+            /* Show toast message */
+            case Const.MSG_SHOW_TOAST: {
+                String message = msg.obj == null ? null : (String) msg.obj;
+
+                if (!TextUtils.isEmpty(message)) {
+                    Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
+                }
+
+                break;
+            }
 
             /* Request: get list of users in circle */
             case Const.MSG_GET_USERS:
@@ -1250,6 +1263,95 @@ public class MainActivity extends AppCompatActivity
 
                 break;
             }
+
+            /* When a drawing is created/updated */
+            case Const.MSG_DRAWING_POSTED: {
+                final DrawItem item = msg.obj == null ? null : (DrawItem) msg.obj;
+
+                if (item != null) {
+                    Toast.makeText(getApplicationContext(), getResources().getString(R.string.notification_created_item_success),
+                            Toast.LENGTH_LONG).show();
+
+                    appState.getActiveCircle().addItem(item);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemAdded(item.getId());
+                        }
+                    }
+                }
+
+                break;
+            }
+
+            /* User has updated the drawing */
+            case Const.MSG_DRAWING_UPDATED: {
+                final DrawItem item = msg.obj == null ? null : (DrawItem) msg.obj;
+
+                if (item != null) {
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
+
+                break;
+            }
+
+            /* Drawing is syncing */
+            case Const.MSG_DRAWING_POST_IN_PROGRESS: {
+                DrawItem item = msg.obj == null ? null : (DrawItem) msg.obj;
+                int status = msg.arg1;
+
+                if (item != null) {
+                    item.setSyncStatus(status);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
+
+                break;
+            }
+
+            /* Drawing has been posted and synced to the server successfully */
+            case Const.MSG_DRAWING_POST_SUCCESS: {
+                DrawItem item = msg.obj == null ? null : (DrawItem) msg.obj;
+                int status = msg.arg1;
+
+                if (item != null) {
+                    item.setSyncStatus(status);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
+
+                Toast.makeText(getApplicationContext(), getResources().getString(R.string.notification_updated_item_success),
+                        Toast.LENGTH_LONG).show();
+                break;
+            }
+
+            /* Drawing failed to sync to the server */
+            case Const.MSG_DRAWING_POST_FAILED: {
+                final DrawItem item = msg.obj == null ? null : (DrawItem) msg.obj;
+                int status = msg.arg1;
+
+                if (item != null) {
+                    item.setSyncStatus(status);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
+
+                Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_updated_item_failed),
+                        Snackbar.LENGTH_LONG).show();
+                break;
+            }
         }
 
         return false;
@@ -1350,6 +1452,26 @@ public class MainActivity extends AppCompatActivity
             case Const.IMAGE_SELECTED_RESULT_CODE: {
                 if (resultCode == RESULT_OK && data != null) {
                     onFilesSelected(data);
+                }
+                break;
+            }
+
+            /* User has done with the drawing */
+            case Const.DRAW_RESULT_CODE: {
+                if (resultCode == RESULT_OK && data != null) {
+                    String id = data.getStringExtra(getString(R.string.EXTRA_DRAWING_ID));
+                    String name = data.getStringExtra(getString(R.string.EXTRA_DRAWING_NAME));
+                    String path = data.getStringExtra(getString(R.string.EXTRA_DRAWING_FILE));
+                    long time = data.getLongExtra(getString(R.string.EXTRA_DRAWING_TIME), 0L);
+                    DateTime updateTime = time == 0L ? DateTime.now() : new DateTime(time);
+                    boolean shouldCreateDrawing = data.getBooleanExtra(getString(R.string.EXTRA_DRAWING_MODE), false);
+
+                    if (shouldCreateDrawing) {
+                        dataUpdater.postDrawingAsync(id, name, path, appState.getActiveCircle(), updateTime, true);
+                    }
+                    else {
+                        dataUpdater.updateDrawingAsync(id, name, path, appState.getActiveCircle(), updateTime, true);
+                    }
                 }
                 break;
             }

@@ -1,15 +1,16 @@
 package com.abborg.glom.utils;
 
 import android.content.Context;
-import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
 
+import com.abborg.glom.AppState;
 import com.abborg.glom.Const;
 import com.abborg.glom.data.DataUpdater;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CloudProvider;
+import com.abborg.glom.model.DrawItem;
 import com.abborg.glom.model.FileItem;
 import com.amazonaws.auth.CognitoCachingCredentialsProvider;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferListener;
@@ -17,6 +18,8 @@ import com.amazonaws.mobileconnectors.s3.transferutility.TransferState;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferUtility;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3Client;
+
+import org.joda.time.DateTime;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -46,7 +49,7 @@ public class FileTransfer {
 
     private List<String> downloadList;
 
-    private String downloadPath;
+    private File downloadDir;
 
     /********** AMAZON S3 ************/
     private TransferUtility s3Transfer;
@@ -57,7 +60,71 @@ public class FileTransfer {
         handler = hand;
         dataUpdater = updater;
         downloadList = Collections.synchronizedList(new ArrayList<String>());
-        downloadPath = Environment.getExternalStorageDirectory() + "/" + Environment.DIRECTORY_DOWNLOADS + "/";
+        downloadDir = AppState.getInstance().getExternalFilesDir();
+    }
+
+    public void upload(final CloudProvider provider, final Circle circle, final DrawItem item) {
+        try {
+            switch (provider) {
+                case AMAZON_S3: {
+                    if (s3Transfer == null) createAmazonS3Client();
+
+                    Log.d(TAG, "Begin uploading " + item.getLocalCache().getName() + " to Amazon S3...");
+                    s3Transfer.upload(
+                            Const.AWS_S3_BUCKET,
+                            circle.getId() + "/" + item.getLocalCache().getName(),
+                            item.getLocalCache()
+                    ).setTransferListener(new TransferListener() {
+                        @Override
+                        public void onStateChanged(int id, TransferState state) {
+                            Log.d(TAG, "Amazon S3 upload id " + id + " state changed to " + state.name());
+
+                            if (handler != null) {
+                                switch (state) {
+                                    case CANCELED:
+                                    case FAILED:
+                                        dataUpdater.setSyncStatus(item, Const.MSG_DRAWING_POST_FAILED, BoardItem.SYNC_ERROR);
+                                        break;
+                                    case COMPLETED:
+                                        dataUpdater.requestUpdateDrawing(circle, DateTime.now(), item);
+                                        break;
+                                }
+                            }
+                        }
+
+                        @Override
+                        public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
+                            int progress = (int) (bytesCurrent/bytesTotal * 100);
+                            Log.d(TAG, "Amazon S3 upload id " + id + ", uploading at progress " + progress);
+                            if (handler != null)
+                                handler.sendMessage(handler.obtainMessage(
+                                        Const.MSG_DRAWING_POST_IN_PROGRESS, BoardItem.SYNC_IN_PROGRESS, progress, item));
+                        }
+
+                        @Override
+                        public void onError(int id, Exception ex) {
+                            Log.e(TAG, "Amazon S3 upload id " + id + " has encountered an error due to " + ex.getMessage());
+                            dataUpdater.setSyncStatus(item, Const.MSG_DRAWING_POST_FAILED, BoardItem.SYNC_ERROR);
+                        }
+                    });
+                    break;
+                }
+                case DROPBOX: {
+
+                    break;
+                }
+                case GOOGLE_DRIVE: {
+
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+        catch (Exception ex) {
+            Log.e(TAG, ex.getMessage());
+            dataUpdater.setSyncStatus(item, Const.MSG_DRAWING_POST_FAILED, BoardItem.SYNC_ERROR);
+        }
     }
 
     public void upload(final CloudProvider provider, final Circle circle, final FileItem item) {
@@ -70,7 +137,7 @@ public class FileTransfer {
                     s3Transfer.upload(
                             Const.AWS_S3_BUCKET,
                             circle.getId() + "/" + item.getName(),
-                            item.getFile()
+                            item.getLocalCache()
                     ).setTransferListener(new TransferListener() {
                         @Override
                         public void onStateChanged(int id, TransferState state) {
@@ -124,6 +191,10 @@ public class FileTransfer {
         }
     }
 
+    public void download() {
+
+    }
+
     public void download(final CloudProvider provider, final Circle circle, final FileItem item) {
         try {
             if (downloadList.contains(item.getId())) {
@@ -134,7 +205,7 @@ public class FileTransfer {
             switch (provider) {
                 case AMAZON_S3: {
                     if (s3Transfer == null) createAmazonS3Client();
-                    final File tempFile = new File(downloadPath + item.getName());
+                    final File tempFile = new File(downloadDir.getPath() + "/" + item.getName());
 
                     Log.d(TAG, "Begin downloading " + item.getName() + " from Amazon S3...to " + tempFile.getPath());
                     downloadList.add(item.getId());

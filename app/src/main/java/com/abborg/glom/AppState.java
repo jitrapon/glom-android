@@ -2,6 +2,7 @@ package com.abborg.glom;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
 import android.widget.Toast;
@@ -20,6 +21,7 @@ import net.danlew.android.joda.JodaTimeAndroid;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+import java.io.File;
 import java.util.List;
 
 /**
@@ -63,6 +65,15 @@ public class AppState
     /* API KEY to access Google APIs */
     private String GOOGLE_API_KEY;
 
+    /* Cached and downloaded file paths */
+    private File cacheDir;
+
+    /* Internal storage memory */
+    private File internalFilesDir;
+
+    /* External storage memory */
+    private File externalFilesDir;
+
     public static AppState init(Context ctx, Handler handler) {
         instance = new AppState(ctx, handler);
         return instance;
@@ -95,6 +106,11 @@ public class AppState
 
         // initialize the google API key
         GOOGLE_API_KEY = context.getResources().getString(R.string.google_maps_key);
+
+        // initialize the paths to store cached and internal files
+        cacheDir = context.getCacheDir();
+        internalFilesDir = context.getFilesDir();
+        externalFilesDir = new File(Environment.getExternalStorageDirectory() + "/" + Environment.DIRECTORY_DOWNLOADS + "/");
 
         // initialize model and data provider
         DataUpdater.init(this, context, handler);
@@ -182,4 +198,10 @@ public class AppState
     public GoogleApiClient getGoogleApiClient() { return apiClient; }
 
     public String getGoogleApiKey() { return GOOGLE_API_KEY; }
+
+    public File getCacheDir() { return cacheDir; }
+
+    public File getInternalFilesDir() { return internalFilesDir; }
+
+    public File getExternalFilesDir() { return externalFilesDir; }
 }

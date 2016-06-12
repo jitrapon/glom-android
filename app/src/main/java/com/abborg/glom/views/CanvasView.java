@@ -2,6 +2,7 @@ package com.abborg.glom.views;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.CornerPathEffect;
@@ -9,11 +10,18 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
+import android.media.ThumbnailUtils;
 import android.text.TextUtils;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Toast;
 
+import com.abborg.glom.R;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,10 +33,12 @@ import java.util.Map;
 public class CanvasView extends View {
 
     private static final String USER_PATH = "User";
+    private static final String TAG = "CanvasView";
 
     /** Stores a list of user painted paths **/
     private Map<String, DrawPath> paths;
     private Bitmap bitmap;
+    private Bitmap loadedBitmap;
     private Canvas bitmapCanvas;
 
     private int backgroundColor = Color.WHITE;
@@ -37,6 +47,8 @@ public class CanvasView extends View {
     private int drawColor = Color.BLUE;
 
     private CanvasEventListener listener;
+
+    private String savedPath;
 
     public interface CanvasEventListener {
 
@@ -124,6 +136,8 @@ public class CanvasView extends View {
     }
 
     private void init() {
+        setDrawingCacheEnabled(true);
+
         backgroundColor = Color.WHITE;
         setBackgroundColor(backgroundColor);
 
@@ -153,9 +167,28 @@ public class CanvasView extends View {
     @Override
     protected void onSizeChanged(int w, int h, int oldW, int oldH) {
         super.onSizeChanged(w, h, oldW, oldH);
+        Log.d(TAG, "Creating new bitmap on canvas of size " + w + " x " + h + ", " + oldW + " x " + oldH);
+
+        if (!TextUtils.isEmpty(savedPath)) {
+            try {
+                Log.d(TAG, "Attempting to load drawing from path " + savedPath);
+                BitmapFactory.Options options = new BitmapFactory.Options();
+                options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+                options.inMutable = true;
+                loadedBitmap = BitmapFactory.decodeFile(savedPath, options);
+                Log.d(TAG, "Set drawing canvas to loaded drawing");
+            }
+            catch (Exception ex) {
+                Log.e(TAG, ex.getMessage());
+                Toast.makeText(getContext(), getResources().getString(R.string.notification_load_drawing_failed), Toast.LENGTH_LONG).show();
+            }
+        }
 
         bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         bitmapCanvas = new Canvas(bitmap);
+        if (loadedBitmap != null) {
+            bitmapCanvas.drawBitmap(loadedBitmap, 0, 0, null);
+        }
     }
 
     @Override
@@ -221,6 +254,12 @@ public class CanvasView extends View {
             float dy = Math.abs(y - drawPath.y);
             if (dx >= DrawPath.TOUCH_TOLERANCE || dy >= DrawPath.TOUCH_TOLERANCE) {
                 drawPath.path.quadTo(drawPath.x, drawPath.y, (x + drawPath.x)/2, (y + drawPath.y)/2);
+                if (drawPath.isEraseActive()) {
+                    bitmapCanvas.drawPath(drawPath.path, drawPath.paint);
+                    drawPath.path.reset();
+                    drawPath.path.moveTo(drawPath.x, drawPath.y);
+                }
+
                 drawPath.x = x;
                 drawPath.y = y;
             }
@@ -230,8 +269,10 @@ public class CanvasView extends View {
     private void touchUp(String userId) {
         DrawPath drawPath = paths.get(userId);
         if (drawPath != null) {
-            drawPath.path.lineTo(drawPath.x, drawPath.y);
-            bitmapCanvas.drawPath(drawPath.path, drawPath.paint);
+            if (!drawPath.isEraseActive()) {
+                drawPath.path.lineTo(drawPath.x, drawPath.y);
+                bitmapCanvas.drawPath(drawPath.path, drawPath.paint);
+            }
             drawPath.path.reset();
         }
     }
@@ -321,5 +362,58 @@ public class CanvasView extends View {
         if (drawPath != null && isEraserActive()) {
             drawPath.paint.setStrokeWidth(size);
         }
+    }
+
+    public void clear() {
+        setDrawingCacheEnabled(false);
+        savedPath = null;
+        loadedBitmap = null;
+        onSizeChanged(getWidth(), getHeight(), getWidth(), getHeight());
+        invalidate();
+        setDrawingCacheEnabled(true);
+    }
+
+    /**
+     * This method runs asynchronously in a separate thread
+     */
+    public void save(String path) {
+        Log.d(TAG, "Saving bitmap to " + path);
+        Bitmap currentBitmap = ThumbnailUtils.extractThumbnail(getDrawingCache(), getWidth(), getHeight());
+
+        FileOutputStream out = null;
+        try {
+            out = new FileOutputStream(path);
+            currentBitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+            Log.d(TAG, "Bitmap saved successfully");
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            Log.e(TAG, ex.getMessage());
+        }
+        finally {
+            try {
+                if (out != null) {
+                    out.close();
+                }
+            }
+            catch (IOException ex) {
+                ex.printStackTrace();
+                Log.e(TAG, ex.getMessage());
+            }
+        }
+        // you can now save the bitmap to a file, or display it in an ImageView:
+//        ImageView testArea = ...
+//        testArea.setImageBitmap(currentBitmap);
+//
+//        // these days you often need a "byte array". for example,
+//        // to save to parse.com or other cloud services
+//        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//        currentBitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
+//        byte[] yourByteArray;
+//        yourByteArray = baos.toByteArray();
+    }
+
+    public void setSavedPath(String path) {
+        savedPath = path;
     }
 }

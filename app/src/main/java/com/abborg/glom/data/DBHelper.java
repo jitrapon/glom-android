@@ -65,6 +65,12 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String FILE_COLUMN_MIMETYPE = "mimetype";
     public static final String FILE_COLUMN_NOTE = "note";
 
+    // item_drawing table
+    public static final String TABLE_DRAWINGS = "drawings";
+    public static final String DRAWING_COLUMN_ID = "id";
+    public static final String DRAWING_COLUMN_NAME = "name";
+    public static final String DRAWING_COLUMN_PATH = "path";
+
     private static final String DATABASE_CASCADE = "ON DELETE CASCADE ON UPDATE CASCADE";
 
     /* Create circle table statement */
@@ -129,6 +135,14 @@ public class DBHelper extends SQLiteOpenHelper {
             "FOREIGN KEY (" + FILE_COLUMN_ID + ") REFERENCES " + TABLE_CIRCLE_ITEMS + "(" + CIRCLEITEM_COLUMN_ITEMID + ") " + DATABASE_CASCADE +
             ");";
 
+    /* Create item_drawings table statement */
+    private static final String DATABASE_CREATE_DRAWINGS_TABLE = "CREATE TABLE " + TABLE_DRAWINGS + " (" +
+            DRAWING_COLUMN_ID + " TEXT, " +
+            DRAWING_COLUMN_NAME + " TEXT, " +
+            DRAWING_COLUMN_PATH + " TEXT, " +
+            "FOREIGN KEY (" + DRAWING_COLUMN_ID + ") REFERENCES " + TABLE_CIRCLE_ITEMS + "(" + CIRCLEITEM_COLUMN_ITEMID + ") " + DATABASE_CASCADE +
+            ");";
+
     public DBHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
@@ -145,6 +159,7 @@ public class DBHelper extends SQLiteOpenHelper {
             database.execSQL(DATABASE_CREATE_CIRCLE_ITEMS_TABLE);
             database.execSQL(DATABASE_CREATE_EVENTS_TABLE);
             database.execSQL(DATABASE_CREATE_FILES_TABLE);
+            database.execSQL(DATABASE_CREATE_DRAWINGS_TABLE);
 
             database.setTransactionSuccessful();
         }
