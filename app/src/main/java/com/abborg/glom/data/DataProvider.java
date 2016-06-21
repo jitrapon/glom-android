@@ -1931,6 +1931,7 @@ public class DataProvider {
             run(new Runnable() {
                 @Override
                 public void run() {
+                    // update db
                     updateDrawingDB(time, drawing, sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
 
                     if (handler != null)

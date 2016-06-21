@@ -39,6 +39,7 @@ import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.DrawItem;
 import com.abborg.glom.model.User;
+import com.abborg.glom.utils.FileUtils;
 import com.abborg.glom.utils.JavaScriptInterface;
 import com.abborg.glom.views.CanvasView;
 import com.abborg.glom.views.ColorPickerDialog;
@@ -149,16 +150,34 @@ public class DrawActivity extends AppCompatActivity implements
         if (drawItem == null) super.onBackPressed();
         else {
             String name = TextUtils.isEmpty(drawItem.getName()) ? drawItem.getId() : drawItem.getName();
-            String savedFile = ApplicationState.getInstance().getExternalFilesDir().getPath() + "/" + name + ".png";
-            canvas.save(savedFile);
+            final String savedFile = ApplicationState.getInstance().getExternalFilesDir().getPath() + "/" + name + ".png";
 
-            Intent intent = new Intent();
-            intent.putExtra(getString(R.string.EXTRA_DRAWING_ID), drawItem.getId());
-            intent.putExtra(getString(R.string.EXTRA_DRAWING_NAME), drawItem.getName());
-            intent.putExtra(getString(R.string.EXTRA_DRAWING_FILE), savedFile);
-            intent.putExtra(getString(R.string.EXTRA_DRAWING_TIME), Instant.now().getMillis());
-            intent.putExtra(getString(R.string.EXTRA_DRAWING_MODE), shouldCreateRoom);
-            finishWithResult(intent);
+            final Snackbar snackbar = Snackbar.make(
+                    rootView, getString(R.string.notification_saving_bitmap), Snackbar.LENGTH_INDEFINITE);
+            snackbar.show();
+
+            // save the bitmap on a worker thread, then finishes the activity
+            dataProvider.run(new Runnable() {
+                @Override
+                public void run() {
+                    FileUtils.saveBitmapAsFile(canvas.getBitmap(), savedFile);
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            snackbar.dismiss();
+
+                            Intent intent = new Intent();
+                            intent.putExtra(getString(R.string.EXTRA_DRAWING_ID), drawItem.getId());
+                            intent.putExtra(getString(R.string.EXTRA_DRAWING_NAME), drawItem.getName());
+                            intent.putExtra(getString(R.string.EXTRA_DRAWING_FILE), savedFile);
+                            intent.putExtra(getString(R.string.EXTRA_DRAWING_TIME), Instant.now().getMillis());
+                            intent.putExtra(getString(R.string.EXTRA_DRAWING_MODE), shouldCreateRoom);
+                            finishWithResult(intent);
+                        }
+                    });
+                }
+            });
         }
     }
 

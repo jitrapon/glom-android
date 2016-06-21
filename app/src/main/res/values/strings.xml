@@ -208,4 +208,5 @@
     <string name="menu_item_change_eraser_size">Eraser Size</string>
     <string name="menu_item_set_background">Set Background</string>
     <string name="menu_item_clear_drawing">Clear</string>
+    <string name="notification_saving_bitmap">Saving this drawing locally…</string>
 </resources>

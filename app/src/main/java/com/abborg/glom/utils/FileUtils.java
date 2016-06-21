@@ -16,6 +16,8 @@ import android.webkit.MimeTypeMap;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.Comparator;
 
@@ -248,7 +250,7 @@ public class FileUtils {
      * @return
      * @author paulburke
      */
-    public static String getReadableFileSize(int size) {
+    public static String getReadableFileSize(long size) {
         final int BYTES_IN_KILOBYTES = 1024;
         final DecimalFormat dec = new DecimalFormat("###.#");
         final String KILOBYTES = " KB";
@@ -468,4 +470,45 @@ public class FileUtils {
             return file.isDirectory() && !fileName.startsWith(HIDDEN_PREFIX);
         }
     };
+
+    public static File saveBitmapAsFile(Bitmap bitmap, String path) {
+        Log.d(TAG, "Saving bitmap of size " + bitmap.getWidth() + " by " + bitmap.getHeight() + " to " + path);
+
+        FileOutputStream out = null;
+        File output = null;
+        try {
+            out = new FileOutputStream(path);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+            output = new File(path);
+            Log.d(TAG, "Bitmap saved successfully to " + path + " of size " + getReadableFileSize(output.length()));
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            Log.e(TAG, ex.getMessage());
+        }
+        finally {
+            try {
+                if (out != null) {
+                    out.close();
+                }
+            }
+            catch (IOException ex) {
+                ex.printStackTrace();
+                Log.e(TAG, ex.getMessage());
+            }
+        }
+
+        // you can now save the bitmap to a file, or display it in an ImageView:
+//        ImageView testArea = ...
+//        testArea.setImageBitmap(currentBitmap);
+//
+//        // these days you often need a "byte array". for example,
+//        // to save to parse.com or other cloud services
+//        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//        currentBitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
+//        byte[] yourByteArray;
+//        yourByteArray = baos.toByteArray();
+
+        return output;
+    }
 }

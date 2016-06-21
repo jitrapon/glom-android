@@ -20,8 +20,6 @@ import android.widget.Toast;
 
 import com.abborg.glom.R;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -373,44 +371,8 @@ public class CanvasView extends View {
         setDrawingCacheEnabled(true);
     }
 
-    /**
-     * This method runs asynchronously in a separate thread
-     */
-    public void save(String path) {
-        Log.d(TAG, "Saving bitmap to " + path);
-        Bitmap currentBitmap = ThumbnailUtils.extractThumbnail(getDrawingCache(), getWidth(), getHeight());
-
-        FileOutputStream out = null;
-        try {
-            out = new FileOutputStream(path);
-            currentBitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
-            Log.d(TAG, "Bitmap saved successfully");
-        }
-        catch (Exception ex) {
-            ex.printStackTrace();
-            Log.e(TAG, ex.getMessage());
-        }
-        finally {
-            try {
-                if (out != null) {
-                    out.close();
-                }
-            }
-            catch (IOException ex) {
-                ex.printStackTrace();
-                Log.e(TAG, ex.getMessage());
-            }
-        }
-        // you can now save the bitmap to a file, or display it in an ImageView:
-//        ImageView testArea = ...
-//        testArea.setImageBitmap(currentBitmap);
-//
-//        // these days you often need a "byte array". for example,
-//        // to save to parse.com or other cloud services
-//        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//        currentBitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
-//        byte[] yourByteArray;
-//        yourByteArray = baos.toByteArray();
+    public Bitmap getBitmap() {
+        return ThumbnailUtils.extractThumbnail(getDrawingCache(), getWidth(), getHeight());
     }
 
     public void setSavedPath(String path) {
