@@ -193,8 +193,8 @@ public class CanvasView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        canvas.drawBitmap(bitmap, 0, 0, null);
         for (DrawPath drawPath : paths.values()) {
-            canvas.drawBitmap(bitmap, 0, 0, null);
             canvas.drawPath(drawPath.path, drawPath.paint);
         }
     }

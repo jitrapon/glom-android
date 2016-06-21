@@ -24,7 +24,7 @@ android {
         debug {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            buildConfigField "String", "SERVER_URL", "\"http://192.168.1.1:8080\""
+            buildConfigField "String", "SERVER_URL", "\"http://10.11.3.204:8080\""
             buildConfigField "String", "AWS_COGNITO_IDENTITY_POOL", "\"us-east-1:e2e96c7b-f9cd-4e94-a4c6-4345fb289c83\""
             buildConfigField "String", "AWS_S3_BUCKET", "\"betec-glom\""
         }
@@ -53,36 +53,48 @@ configurations {
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile 'com.android.volley:volley:1.0.0'
-    compile 'com.android.support:appcompat-v7:23.4.0'
-    compile 'com.android.support:recyclerview-v7:23.4.0'
-    compile 'com.android.support:design:23.4.0'
-    compile 'com.google.android.gms:play-services:8.4.0'
-    compile 'com.github.bumptech.glide:glide:3.6.1'
-    compile 'com.android.support:support-v4:23.4.0'
-    compile 'com.google.code.gson:gson:2.4'
-    compile 'com.oguzdev:CircularFloatingActionMenu:1.0.2'
+
+    // android support libraries
+    compile "com.android.support:appcompat-v7:${supportLibraryVersion}"
+    compile "com.android.support:recyclerview-v7:${supportLibraryVersion}"
+    compile "com.android.support:design:${supportLibraryVersion}"
+    compile "com.android.support:support-v4:${supportLibraryVersion}"
+    compile "com.android.support:cardview-v7:${supportLibraryVersion}"
+
+    // google services
+    compile "com.google.android.gms:play-services:${playServicesVersion}"
     compile 'com.google.maps.android:android-maps-utils:0.4.1'
-    compile 'com.android.support:cardview-v7:23.4.0'
-    compile 'net.danlew:android.joda:2.8.2'
+
+    // networking libraries
+    compile "com.android.volley:volley:${volleyVersion}"
+
+    // image libraries
+    compile "com.github.bumptech.glide:glide:${glideVersion}"
+
+    // data serializing
+    compile "com.google.code.gson:gson:${gsonVersion}"
+
+    // UI elements
+    compile 'com.oguzdev:CircularFloatingActionMenu:1.0.2'
     compile 'com.nhaarman.listviewanimations:lib-core:3.1.0@aar'
     compile 'com.nhaarman.listviewanimations:lib-manipulation:3.1.0@aar'
     compile 'com.nhaarman.listviewanimations:lib-core-slh:3.1.0@aar'
     compile 'com.nineoldandroids:library:2.4.0'
     compile 'com.flipboard:bottomsheet-core:1.4.3'
     compile 'com.flipboard:bottomsheet-commons:1.4.3'
-    // optional
     compile 'me.himanshusoni.chatmessageview:chat-message-view:1.0.3'
-    compile 'org.igniterealtime.smack:smack-android-extensions:4.1.6'
-    compile 'org.igniterealtime.smack:smack-tcp:4.1.6'
-    compile 'org.igniterealtime.smack:smack-android:4.1.6'
+    //    compile 'jp.wasabeef:recyclerview-animators:2.2.0'    // commented out for now due to incompatible with new support lib
+    compile files('libs/YouTubeAndroidPlayerApi.jar')
     compile('com.github.afollestad:sectioned-recyclerview:0.2.1') {
         transitive = true
     }
-    //    compile 'jp.wasabeef:recyclerview-animators:2.2.0'    // commented out for now due to incompatible with new support lib
-    compile files('libs/YouTubeAndroidPlayerApi.jar')
-    compile 'com.amazonaws:aws-android-sdk-core:2.2.16'
-    compile 'com.amazonaws:aws-android-sdk-cognito:2.2.16'
-    compile 'com.amazonaws:aws-android-sdk-s3:2.2.16'
-    compile 'com.amazonaws:aws-android-sdk-ddb:2.2.16'
+
+    // time libraries
+    compile 'net.danlew:android.joda:2.8.2'
+
+    // aws
+    compile "com.amazonaws:aws-android-sdk-core:${awsVersion}"
+    compile "com.amazonaws:aws-android-sdk-cognito:${awsVersion}"
+    compile "com.amazonaws:aws-android-sdk-s3:${awsVersion}"
+    compile "com.amazonaws:aws-android-sdk-ddb:${awsVersion}"
 }
