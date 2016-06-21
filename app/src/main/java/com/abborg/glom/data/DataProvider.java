@@ -19,7 +19,7 @@ import android.provider.OpenableColumns;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.abborg.glom.AppState;
+import com.abborg.glom.ApplicationState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.interfaces.FileDownloadListener;
@@ -69,7 +69,7 @@ import java.util.concurrent.Executors;
  *
  * Created by Jitrapon Tiachunpun on 22/9/58.
  */
-public class DataUpdater {
+public class DataProvider {
 
     private static final String TAG = "DATA PROVIDER";
     private Context context;
@@ -89,7 +89,7 @@ public class DataUpdater {
     private Handler handler;
 
     /* Global app states */
-    private AppState appState;
+    private ApplicationState appState;
 
     /* GCM Instance */
     private GoogleCloudMessaging gcm;
@@ -118,14 +118,20 @@ public class DataUpdater {
         threadPool.submit(runnable);
     }
 
-    public static DataUpdater init(Context context) {
-        DataUpdater dataUpdater = new DataUpdater(null, context, null);
-        dataUpdater.dbHelper = new DBHelper(context);
-        return dataUpdater;
+    /**
+     * Initializes the instance without the AppState
+     */
+    public static DataProvider init(Context context) {
+        DataProvider dataProvider = new DataProvider(null, context, null);
+        dataProvider.dbHelper = new DBHelper(context);
+        return dataProvider;
     }
 
-    public static void init(final AppState appState, final Context context, final Handler handler) {
-        final DataUpdater instance = new DataUpdater(appState, context, handler);
+    /**
+     * Initializes the instance with the AppState
+     */
+    public static void init(final ApplicationState appState, final Context context, final Handler handler) {
+        final DataProvider instance = new DataProvider(appState, context, handler);
         instance.run(new Runnable() {
             @Override
             public void run() {
@@ -166,7 +172,7 @@ public class DataUpdater {
                 appState.setActiveUser(instance.activeUser);
                 appState.setCircleInfos(circleInfoList);
                 appState.setActiveCircle(circle);
-                appState.setDataUpdater(instance);
+                appState.setDataProvider(instance);
 
                 if (handler != null) {
                     handler.sendEmptyMessage(Const.MSG_INIT_SUCCESS);
@@ -175,7 +181,11 @@ public class DataUpdater {
         });
     }
 
-    private DataUpdater(AppState appState, Context context, Handler handler) {
+    public void setHandler(Handler h) {
+        handler = h;
+    }
+
+    private DataProvider(ApplicationState appState, Context context, Handler handler) {
         this.context = context;
         this.appState = appState;
         this.handler = handler;
@@ -1770,33 +1780,33 @@ public class DataUpdater {
     }
 
     public void requestUploadFileRemote(final Circle circle, final FileItem file, final CloudProvider provider) {
-        final DataUpdater dataUpdater = this;
+        final DataProvider dataProvider = this;
         run(new Runnable() {
             @Override
             public void run() {
-                if (fileTransfer == null) fileTransfer = new FileTransfer(dataUpdater, context, handler);
+                if (fileTransfer == null) fileTransfer = new FileTransfer(dataProvider, context, handler);
                 fileTransfer.upload(provider, circle, file);
             }
         });
     }
 
     public void requestDeleteFileRemote(final Circle circle, final FileItem file, final CloudProvider provider) {
-        final DataUpdater dataUpdater = this;
+        final DataProvider dataProvider = this;
         run(new Runnable() {
             @Override
             public void run() {
-                if (fileTransfer == null) fileTransfer = new FileTransfer(dataUpdater, context, handler);
+                if (fileTransfer == null) fileTransfer = new FileTransfer(dataProvider, context, handler);
                 fileTransfer.delete(provider, circle, file);
             }
         });
     }
 
     public void requestDownloadFileRemote(final Circle circle, final FileItem file, final CloudProvider provider) {
-        final DataUpdater dataUpdater = this;
+        final DataProvider dataProvider = this;
         run(new Runnable() {
             @Override
             public void run() {
-                if (fileTransfer == null) fileTransfer = new FileTransfer(dataUpdater, context, handler);
+                if (fileTransfer == null) fileTransfer = new FileTransfer(dataProvider, context, handler);
                 fileTransfer.download(provider, circle, file);
             }
         });
@@ -1891,11 +1901,11 @@ public class DataUpdater {
     }
 
     public void requestUploadDrawingRemote(final Circle circle, final DrawItem item, final CloudProvider provider) {
-        final DataUpdater dataUpdater = this;
+        final DataProvider dataProvider = this;
         run(new Runnable() {
             @Override
             public void run() {
-                if (fileTransfer == null) fileTransfer = new FileTransfer(dataUpdater, context, handler);
+                if (fileTransfer == null) fileTransfer = new FileTransfer(dataProvider, context, handler);
                 fileTransfer.upload(provider, circle, item);
             }
         });

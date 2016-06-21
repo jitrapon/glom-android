@@ -31,10 +31,10 @@ import android.webkit.WebViewClient;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
-import com.abborg.glom.AppState;
+import com.abborg.glom.ApplicationState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
-import com.abborg.glom.data.DataUpdater;
+import com.abborg.glom.data.DataProvider;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.DrawItem;
@@ -61,10 +61,10 @@ public class DrawActivity extends AppCompatActivity implements
     private static final String TAG = "DrawActivity";
 
     /** Item state information **/
-    AppState appState;
+    ApplicationState appState;
     Circle circle;
     User user;
-    DataUpdater dataUpdater;
+    DataProvider dataProvider;
     DrawItem drawItem;
 
     CanvasView canvas;
@@ -107,13 +107,13 @@ public class DrawActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        appState = AppState.getInstance();
-        if (appState == null || appState.getDataUpdater() == null || getIntent() == null) {
+        appState = ApplicationState.getInstance();
+        if (appState == null || appState.getDataProvider() == null || getIntent() == null) {
             finish();
         }
         circle = appState.getActiveCircle();
         user = appState.getActiveUser();
-        dataUpdater = appState.getDataUpdater();
+        dataProvider = appState.getDataProvider();
         handler = new Handler(this);
         shouldCreateRoom = getIntent().getAction().equals(getResources().getString(R.string.ACTION_CREATE_DRAWING));
         savedFilePath = getIntent().getStringExtra(getResources().getString(R.string.EXTRA_DRAWING_PATH));
@@ -149,7 +149,7 @@ public class DrawActivity extends AppCompatActivity implements
         if (drawItem == null) super.onBackPressed();
         else {
             String name = TextUtils.isEmpty(drawItem.getName()) ? drawItem.getId() : drawItem.getName();
-            String savedFile = AppState.getInstance().getExternalFilesDir().getPath() + "/" + name + ".png";
+            String savedFile = ApplicationState.getInstance().getExternalFilesDir().getPath() + "/" + name + ".png";
             canvas.save(savedFile);
 
             Intent intent = new Intent();

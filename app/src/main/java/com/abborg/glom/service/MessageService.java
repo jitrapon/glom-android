@@ -12,11 +12,11 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.abborg.glom.AppState;
+import com.abborg.glom.ApplicationState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.activities.MainActivity;
-import com.abborg.glom.data.DataUpdater;
+import com.abborg.glom.data.DataProvider;
 import com.google.android.gms.gcm.GcmListenerService;
 
 /**
@@ -76,14 +76,14 @@ public class MessageService extends GcmListenerService {
                 int opCode = Integer.parseInt(opCodeString);
                 Log.d(TAG, "Message of type " + opCode + " received");
 
-                AppState appState = AppState.getInstance();
-                DataUpdater dataUpdater;
+                ApplicationState appState = ApplicationState.getInstance();
+                DataProvider dataProvider;
                 String currentUserId = null;
                 if (appState != null) {
                     currentUserId = appState.getActiveUser().getId();
-                    dataUpdater = appState.getDataUpdater();
+                    dataProvider = appState.getDataProvider();
                 }
-                else dataUpdater = DataUpdater.init(this);
+                else dataProvider = DataProvider.init(this);
 
                 //TODO keep track of received message of user and circleId
                 //TODO store it in USERS table under column notification
@@ -94,8 +94,8 @@ public class MessageService extends GcmListenerService {
                         Intent locUpdateIntent = new Intent(getResources().getString(R.string.ACTION_RECEIVE_LOCATION));
 
                         // save updated location in DB
-                        dataUpdater.open();
-                        dataUpdater.onLocationUpdateReceived(data, currentUserId);
+                        dataProvider.open();
+                        dataProvider.onLocationUpdateReceived(data, currentUserId);
 
                         // broadcast update
                         locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_USERS),

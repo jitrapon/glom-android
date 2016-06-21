@@ -20,11 +20,11 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 
-import com.abborg.glom.AppState;
+import com.abborg.glom.ApplicationState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.adapters.ChatMessageAdapter;
-import com.abborg.glom.data.DataUpdater;
+import com.abborg.glom.data.DataProvider;
 import com.abborg.glom.interfaces.OnMessageClickListener;
 import com.abborg.glom.model.BaseChatMessage;
 import com.abborg.glom.model.ChatMessage;
@@ -41,10 +41,10 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         OnMessageClickListener {
 
     /** Circle state information **/
-    AppState appState;
+    ApplicationState appState;
     Circle circle;
     User user;
-    DataUpdater dataUpdater;
+    DataProvider dataProvider;
 
     /** model **/
     List<BaseChatMessage> messages;
@@ -69,13 +69,13 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         handler = new Handler(this);
 
         //TODO load circle info if null
-        appState = AppState.getInstance();
-        if (appState == null || appState.getDataUpdater() == null) {
+        appState = ApplicationState.getInstance();
+        if (appState == null || appState.getDataProvider() == null) {
             finish();
         }
         circle = appState.getActiveCircle();
         user = appState.getActiveUser();
-        dataUpdater = appState.getDataUpdater();
+        dataProvider = appState.getDataProvider();
         messages = new ArrayList<>();
 
         setContentView(R.layout.activity_chat);
@@ -147,6 +147,12 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
                 }
             }
         };
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
         registerBroadcastReceiver(broadcastReceiver);
     }
 
@@ -203,7 +209,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         String id = generateMessageId();
         ChatMessage message = new ChatMessage(id, content, user, true);
         addMessage(message);
-        dataUpdater.sendUpstreamMessage(message);
+        dataProvider.sendUpstreamMessage(message);
     }
 
     private synchronized void addMessage(BaseChatMessage message) {

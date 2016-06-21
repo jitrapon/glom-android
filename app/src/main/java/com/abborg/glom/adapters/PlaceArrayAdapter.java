@@ -7,7 +7,7 @@ import android.widget.Filter;
 import android.widget.Filterable;
 import android.widget.Toast;
 
-import com.abborg.glom.AppState;
+import com.abborg.glom.ApplicationState;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.Status;
@@ -64,7 +64,7 @@ public class PlaceArrayAdapter extends ArrayAdapter<PlaceArrayAdapter.PlaceAutoc
     }
 
     private List<PlaceAutocomplete> getPredictions(CharSequence constraint) {
-        GoogleApiClient apiClient = AppState.getInstance().getGoogleApiClient();
+        GoogleApiClient apiClient = ApplicationState.getInstance().getGoogleApiClient();
         if (apiClient != null) {
             Log.d(TAG, "Executing autocomplete query for: " + constraint);
             PendingResult<AutocompletePredictionBuffer> results =

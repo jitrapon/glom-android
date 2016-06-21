@@ -19,7 +19,7 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.abborg.glom.AppState;
+import com.abborg.glom.ApplicationState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.interfaces.BoardItemClickListener;
@@ -540,7 +540,7 @@ public class BoardRecyclerViewAdapter
                 holder.actionButton1.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        GoogleApiClient apiClient = AppState.getInstance().getGoogleApiClient();
+                        GoogleApiClient apiClient = ApplicationState.getInstance().getGoogleApiClient();
                         if (apiClient != null && apiClient.isConnected()) {
                             PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(apiClient, placeId);
                             placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {
@@ -739,7 +739,7 @@ public class BoardRecyclerViewAdapter
             String placeName = event.getLocation()!=null ?
                     event.getLocation().getLatitude() + ", " + event.getLocation().getLongitude() :
                     context.getResources().getString(R.string.notify_retrieving_place_info);
-            GoogleApiClient apiClient = AppState.getInstance().getGoogleApiClient();
+            GoogleApiClient apiClient = ApplicationState.getInstance().getGoogleApiClient();
             if (apiClient != null && apiClient.isConnected()) {
                 PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(apiClient, event.getPlace());
                 placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {

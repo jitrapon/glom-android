@@ -10,7 +10,7 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.abborg.glom.AppState;
+import com.abborg.glom.ApplicationState;
 import com.abborg.glom.R;
 import com.abborg.glom.model.User;
 import com.abborg.glom.utils.CircleTransform;
@@ -138,7 +138,7 @@ public class UserAvatarAdapter extends BaseAdapter {
         holder.secondaryText.setText(user.getId());
 
         // start any animation regarding the user state
-        AppState appState = AppState.getInstance();
+        ApplicationState appState = ApplicationState.getInstance();
         if (user.getId().equals(appState.getActiveUser().getId())) {
             setUserIsBroadcastingLocation(convertView, appState.getActiveCircle().isUserBroadcastingLocation());
         }

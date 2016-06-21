@@ -14,7 +14,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.abborg.glom.AppState;
+import com.abborg.glom.ApplicationState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.activities.MainActivity;
@@ -111,11 +111,11 @@ public class CirclePushService extends Service implements LocationListener,
 
             // loop through list of circles and send updates to them
             if (!circles.isEmpty()) {
-                AppState appState = AppState.getInstance();
-                appState.getDataUpdater().open();
+                ApplicationState appState = ApplicationState.getInstance();
+                appState.getDataProvider().open();
                 for (String circleId : circles) {
                     sendLocationUpdateRequest(circleId, userLocation);
-                    appState.getDataUpdater().updateUserLocation(appState.getActiveUser().getId(),
+                    appState.getDataProvider().updateUserLocation(appState.getActiveUser().getId(),
                             circleId, location.getLatitude(), location.getLongitude());
                     Log.d(TAG, "Sending location info of " + location.getLatitude() + ", " + location.getLongitude());
                 }
@@ -388,11 +388,11 @@ public class CirclePushService extends Service implements LocationListener,
         hideNotification();
 
         // make sure to remove all broadcasting circles accordingly before closing
-        AppState appState = AppState.getInstance();
-        appState.getDataUpdater().open();
+        ApplicationState appState = ApplicationState.getInstance();
+        appState.getDataProvider().open();
         if (circles != null && !circles.isEmpty()) {
             for (String circleId : circles) {
-                appState.getDataUpdater().updateCircleLocationBroadcast(circleId, false);
+                appState.getDataProvider().updateCircleLocationBroadcast(circleId, false);
             }
             circles.clear();
         }

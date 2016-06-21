@@ -14,7 +14,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.abborg.glom.AppState;
+import com.abborg.glom.ApplicationState;
 import com.abborg.glom.R;
 import com.abborg.glom.adapters.NavigationDrawerAdapter;
 import com.abborg.glom.interfaces.ClickListener;
@@ -71,7 +71,7 @@ public class DrawerFragment extends Fragment {
     }
 
     public void setUp(int fragmentId, DrawerLayout drawerLayout, final Toolbar toolbar) {
-        circles = AppState.getInstance().getAllCircleInfo();
+        circles = ApplicationState.getInstance().getAllCircleInfo();
         adapter = new NavigationDrawerAdapter(getActivity(), getData());
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));

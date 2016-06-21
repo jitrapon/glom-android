@@ -4,9 +4,9 @@ import android.content.Context;
 import android.os.Handler;
 import android.util.Log;
 
-import com.abborg.glom.AppState;
+import com.abborg.glom.ApplicationState;
 import com.abborg.glom.Const;
-import com.abborg.glom.data.DataUpdater;
+import com.abborg.glom.data.DataProvider;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CloudProvider;
@@ -45,7 +45,7 @@ public class FileTransfer {
     /* Main thread handler */
     private Handler handler;
 
-    private DataUpdater dataUpdater;
+    private DataProvider dataProvider;
 
     private List<String> downloadList;
 
@@ -55,12 +55,12 @@ public class FileTransfer {
     private TransferUtility s3Transfer;
     private AmazonS3Client s3Client;
 
-    public FileTransfer(DataUpdater updater, Context ctx, Handler hand) {
+    public FileTransfer(DataProvider updater, Context ctx, Handler hand) {
         context = ctx;
         handler = hand;
-        dataUpdater = updater;
+        dataProvider = updater;
         downloadList = Collections.synchronizedList(new ArrayList<String>());
-        downloadDir = AppState.getInstance().getExternalFilesDir();
+        downloadDir = ApplicationState.getInstance().getExternalFilesDir();
     }
 
     public void upload(final CloudProvider provider, final Circle circle, final DrawItem item) {
@@ -83,10 +83,10 @@ public class FileTransfer {
                                 switch (state) {
                                     case CANCELED:
                                     case FAILED:
-                                        dataUpdater.setSyncStatus(item, Const.MSG_DRAWING_POST_FAILED, BoardItem.SYNC_ERROR);
+                                        dataProvider.setSyncStatus(item, Const.MSG_DRAWING_POST_FAILED, BoardItem.SYNC_ERROR);
                                         break;
                                     case COMPLETED:
-                                        dataUpdater.requestUpdateDrawing(circle, DateTime.now(), item);
+                                        dataProvider.requestUpdateDrawing(circle, DateTime.now(), item);
                                         break;
                                 }
                             }
@@ -104,7 +104,7 @@ public class FileTransfer {
                         @Override
                         public void onError(int id, Exception ex) {
                             Log.e(TAG, "Amazon S3 upload id " + id + " has encountered an error due to " + ex.getMessage());
-                            dataUpdater.setSyncStatus(item, Const.MSG_DRAWING_POST_FAILED, BoardItem.SYNC_ERROR);
+                            dataProvider.setSyncStatus(item, Const.MSG_DRAWING_POST_FAILED, BoardItem.SYNC_ERROR);
                         }
                     });
                     break;
@@ -123,7 +123,7 @@ public class FileTransfer {
         }
         catch (Exception ex) {
             Log.e(TAG, ex.getMessage());
-            dataUpdater.setSyncStatus(item, Const.MSG_DRAWING_POST_FAILED, BoardItem.SYNC_ERROR);
+            dataProvider.setSyncStatus(item, Const.MSG_DRAWING_POST_FAILED, BoardItem.SYNC_ERROR);
         }
     }
 
@@ -147,10 +147,10 @@ public class FileTransfer {
                                 switch (state) {
                                     case CANCELED:
                                     case FAILED:
-                                        dataUpdater.setSyncStatus(item, Const.MSG_FILE_POST_FAILED, BoardItem.SYNC_ERROR);
+                                        dataProvider.setSyncStatus(item, Const.MSG_FILE_POST_FAILED, BoardItem.SYNC_ERROR);
                                         break;
                                     case COMPLETED:
-                                        dataUpdater.requestPostFile(circle, item, provider);
+                                        dataProvider.requestPostFile(circle, item, provider);
                                         break;
                                 }
                             }
@@ -168,7 +168,7 @@ public class FileTransfer {
                         @Override
                         public void onError(int id, Exception ex) {
                             Log.e(TAG, "Amazon S3 upload id " + id + " has encountered an error due to " + ex.getMessage());
-                            dataUpdater.setSyncStatus(item, Const.MSG_FILE_POST_FAILED, BoardItem.SYNC_ERROR);
+                            dataProvider.setSyncStatus(item, Const.MSG_FILE_POST_FAILED, BoardItem.SYNC_ERROR);
                         }
                     });
                     break;
@@ -187,7 +187,7 @@ public class FileTransfer {
         }
         catch (Exception ex) {
             Log.e(TAG, ex.getMessage());
-            dataUpdater.setSyncStatus(item, Const.MSG_FILE_POST_FAILED, BoardItem.SYNC_ERROR);
+            dataProvider.setSyncStatus(item, Const.MSG_FILE_POST_FAILED, BoardItem.SYNC_ERROR);
         }
     }
 
@@ -227,7 +227,7 @@ public class FileTransfer {
                                         break;
                                     case COMPLETED:
                                         downloadList.remove(item.getId());
-                                        dataUpdater.updateFilePath(circle, item.getId(), tempFile.getPath());
+                                        dataProvider.updateFilePath(circle, item.getId(), tempFile.getPath());
                                         break;
                                 }
                             }
@@ -271,7 +271,7 @@ public class FileTransfer {
 
                     Log.d(TAG, "Attempting to delete " + item.getName() + " from Amazon S3...");
                     s3Client.deleteObject(Const.AWS_S3_BUCKET, circle.getId() + "/" + item.getName());
-                    dataUpdater.requestDeleteItem(circle, item);
+                    dataProvider.requestDeleteItem(circle, item);
 
                     break;
                 }

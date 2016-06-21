@@ -13,11 +13,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.abborg.glom.AppState;
+import com.abborg.glom.ApplicationState;
 import com.abborg.glom.R;
 import com.abborg.glom.activities.MainActivity;
 import com.abborg.glom.adapters.DiscoverRecyclerViewAdapter;
-import com.abborg.glom.data.DataUpdater;
+import com.abborg.glom.data.DataProvider;
 import com.abborg.glom.interfaces.DiscoverItemChangeListener;
 import com.abborg.glom.model.DiscoverItem;
 
@@ -44,7 +44,7 @@ public class DiscoverFragment extends Fragment implements SwipeRefreshLayout.OnR
     private DiscoverRecyclerViewAdapter adapter;
 
     /* Main activity's data updater */
-    private DataUpdater dataUpdater;
+    private DataProvider dataProvider;
 
     private boolean firstView;
 
@@ -52,7 +52,7 @@ public class DiscoverFragment extends Fragment implements SwipeRefreshLayout.OnR
 
     private Handler handler;
 
-    private AppState appState;
+    private ApplicationState appState;
 
     public DiscoverFragment() {}
 
@@ -70,8 +70,8 @@ public class DiscoverFragment extends Fragment implements SwipeRefreshLayout.OnR
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        appState = AppState.getInstance();
-        dataUpdater = appState.getDataUpdater();
+        appState = ApplicationState.getInstance();
+        dataProvider = appState.getDataProvider();
         adapter = new DiscoverRecyclerViewAdapter(getContext(), handler);
     }
 
@@ -96,7 +96,7 @@ public class DiscoverFragment extends Fragment implements SwipeRefreshLayout.OnR
 
     @Override
     public void onRefresh() {
-        dataUpdater.requestMovies();
+        dataProvider.requestMovies();
     }
 
     @Override
@@ -105,7 +105,7 @@ public class DiscoverFragment extends Fragment implements SwipeRefreshLayout.OnR
         if (isVisibleToUser) {
             isFragmentVisible = true;
 
-            if (dataUpdater != null) {
+            if (dataProvider != null) {
                 if (!firstView) {
                     if (refreshView != null) {
                         if (handler != null) {
@@ -117,7 +117,7 @@ public class DiscoverFragment extends Fragment implements SwipeRefreshLayout.OnR
                             });
                         }
                     }
-                    dataUpdater.requestMovies();
+                    dataProvider.requestMovies();
                 }
             }
 

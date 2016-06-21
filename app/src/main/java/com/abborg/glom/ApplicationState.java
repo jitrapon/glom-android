@@ -7,7 +7,7 @@ import android.os.Handler;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.abborg.glom.data.DataUpdater;
+import com.abborg.glom.data.DataProvider;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CircleInfo;
 import com.abborg.glom.model.User;
@@ -31,11 +31,11 @@ import java.util.List;
  *
  * Created by Boat on 22/10/58.
  */
-public class AppState
+public class ApplicationState
         implements GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks {
 
     // static variables persist as long as the class is in memory
-    private static AppState instance = null;
+    private static ApplicationState instance = null;
 
     private Context context;
 
@@ -48,7 +48,7 @@ public class AppState
     /* List of circle info */
     private List<CircleInfo> circles;
 
-    private DataUpdater dataUpdater;
+    private DataProvider dataProvider;
 
     /* Helper class that verifies Google's Api client */
     private GoogleApiAvailability apiAvailability;
@@ -74,12 +74,12 @@ public class AppState
     /* External storage memory */
     private File externalFilesDir;
 
-    public static AppState init(Context ctx, Handler handler) {
-        instance = new AppState(ctx, handler);
+    public static ApplicationState init(Context ctx, Handler handler) {
+        instance = new ApplicationState(ctx, handler);
         return instance;
     }
 
-    private AppState(Context ctx, Handler handler) {
+    private ApplicationState(Context ctx, Handler handler) {
         context = ctx.getApplicationContext();
 
         // It's important to initialize the ResourceZoneInfoProvider; otherwise
@@ -113,14 +113,14 @@ public class AppState
         externalFilesDir = new File(Environment.getExternalStorageDirectory() + "/" + Environment.DIRECTORY_DOWNLOADS + "/");
 
         // initialize model and data provider
-        DataUpdater.init(this, context, handler);
+        DataProvider.init(this, context, handler);
     }
 
     public DateTimeFormatter getDateTimeFormatter() {
         return dateTimeFormatter;
     }
 
-    public static AppState getInstance() {
+    public static ApplicationState getInstance() {
         return instance;
     }
 
@@ -179,7 +179,7 @@ public class AppState
         Log.e("Google API Client", "Google Places API connection suspended.");
     }
 
-    public void setDataUpdater(DataUpdater updater) { dataUpdater = updater; }
+    public void setDataProvider(DataProvider updater) { dataProvider = updater; }
 
     public void setCircleInfos(List<CircleInfo> info) { circles = info; }
 
@@ -193,7 +193,7 @@ public class AppState
 
     public List<CircleInfo> getAllCircleInfo() { return circles; }
 
-    public DataUpdater getDataUpdater() { return dataUpdater; }
+    public DataProvider getDataProvider() { return dataProvider; }
 
     public GoogleApiClient getGoogleApiClient() { return apiClient; }
 

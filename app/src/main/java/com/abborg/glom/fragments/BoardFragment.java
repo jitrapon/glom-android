@@ -16,14 +16,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.abborg.glom.AppState;
+import com.abborg.glom.ApplicationState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.activities.DrawActivity;
 import com.abborg.glom.activities.EventActivity;
 import com.abborg.glom.activities.MainActivity;
 import com.abborg.glom.adapters.BoardRecyclerViewAdapter;
-import com.abborg.glom.data.DataUpdater;
+import com.abborg.glom.data.DataProvider;
 import com.abborg.glom.interfaces.BoardItemChangeListener;
 import com.abborg.glom.interfaces.BoardItemClickListener;
 import com.abborg.glom.model.BoardItem;
@@ -58,7 +58,7 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
     private RecyclerView.LayoutManager layoutManager;
 
     /* Main activity's data updater */
-    private DataUpdater dataUpdater;
+    private DataProvider dataProvider;
 
     /* The list of items in this circle */
     private List<BoardItem> items;
@@ -69,7 +69,7 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
 
     private Handler handler;
 
-    private AppState appState;
+    private ApplicationState appState;
 
     private static final int ITEM_APPEARANCE_ANIM_TIME = 650;
     private static final long ITEM_ADD_ANIM_TIME = 100;
@@ -104,9 +104,9 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        appState = AppState.getInstance();
+        appState = ApplicationState.getInstance();
         adapter = new BoardRecyclerViewAdapter(getContext(), getItems(), this, handler);
-        dataUpdater = appState.getDataUpdater();
+        dataProvider = appState.getDataProvider();
     }
 
     @Override
@@ -145,7 +145,7 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
 
             // send request to server to get board items
             //TODO delay by some timer for request
-            if (dataUpdater != null) {
+            if (dataProvider != null) {
                 if (!firstView) {
                     if (refreshView != null) {
                         if (handler != null) {
@@ -157,7 +157,7 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
                             });
                         }
                     }
-                    dataUpdater.requestBoardItems(appState.getActiveCircle());
+                    dataProvider.requestBoardItems(appState.getActiveCircle());
                 }
             }
 
@@ -221,7 +221,7 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
 
     @Override
     public void onRefresh() {
-        dataUpdater.requestBoardItems(appState.getActiveCircle());
+        dataProvider.requestBoardItems(appState.getActiveCircle());
     }
 
     /**********************************************************

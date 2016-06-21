@@ -25,7 +25,7 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import com.abborg.glom.AppState;
+import com.abborg.glom.ApplicationState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.activities.EventActivity;
@@ -91,7 +91,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
     /* The custom user marker view constructed from the custom layour */
     private View userMarkerView;
 
-    private AppState appState;
+    private ApplicationState appState;
 
     /* List of event markers that need to be updated */
     private List<EventItem> staleEvents;
@@ -129,7 +129,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         userMarkers = new ConcurrentHashMap<>();
         eventMarkers = new ConcurrentHashMap<>();
         staleEvents = new ArrayList<>();
-        appState = AppState.getInstance();
+        appState = ApplicationState.getInstance();
         formatter = DateTimeFormat.forPattern(getContext().getResources().getString(R.string.card_event_datetime_format));
     }
 
@@ -274,7 +274,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
                         Intent intent = new Intent(getActivity(), EventActivity.class);
                         intent.putExtra(getResources().getString(R.string.EXTRA_EVENT_ID), eventId);
                         intent.setAction(getResources().getString(R.string.ACTION_UPDATE_EVENT));
-                        AppState.getInstance().setKeepGoogleApiClientAlive(true);
+                        ApplicationState.getInstance().setKeepGoogleApiClientAlive(true);
                         getActivity().startActivityForResult(intent, Const.UPDATE_EVENT_RESULT_CODE);
                     }
                 }
@@ -613,7 +613,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
 
     private void updateEventMarkers(final EventItem event) {
         // connect to Google's PlaceAPI to update the location
-        GoogleApiClient apiClient = AppState.getInstance().getGoogleApiClient();
+        GoogleApiClient apiClient = ApplicationState.getInstance().getGoogleApiClient();
         if (apiClient != null && apiClient.isConnected() && !TextUtils.isEmpty(event.getPlace())) {
             PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(apiClient, event.getPlace());
             placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {
@@ -723,7 +723,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         // show nearby-place for this user
         if (true) {
             if (userMarkers.get(appState.getActiveUser().getId()).getId().equals(marker.getId())) {
-                GoogleApiClient apiClient = AppState.getInstance().getGoogleApiClient();
+                GoogleApiClient apiClient = ApplicationState.getInstance().getGoogleApiClient();
                 if (apiClient != null && apiClient.isConnected()) {
                     PendingResult<PlaceLikelihoodBuffer> placeResult = Places.PlaceDetectionApi.getCurrentPlace(apiClient, null);
                     placeResult.setResultCallback(new ResultCallback<PlaceLikelihoodBuffer>() {

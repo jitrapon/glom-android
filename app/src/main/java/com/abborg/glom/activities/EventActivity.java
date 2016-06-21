@@ -28,10 +28,10 @@ import android.widget.EditText;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
-import com.abborg.glom.AppState;
+import com.abborg.glom.ApplicationState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
-import com.abborg.glom.data.DataUpdater;
+import com.abborg.glom.data.DataProvider;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.User;
@@ -59,7 +59,7 @@ import java.util.List;
 
 public class EventActivity extends AppCompatActivity {
 
-    private AppState appState;
+    private ApplicationState appState;
 
     public static final String TAG = "EventActivity";
     public static final String START_DATE_TAG = "CREATE_EVENT_START_DATE";
@@ -67,7 +67,7 @@ public class EventActivity extends AppCompatActivity {
     public static final String START_TIME_TAG = "CREATE_EVENT_START_TIME";
     public static final String END_TIME_TAG = "CREATE_EVENT_END_TIME";
 
-    private DataUpdater dataUpdater;
+    private DataProvider dataProvider;
     private TextInputLayout nameTextLayout;
     private EditText nameText;
     private EditText startDateText;
@@ -105,8 +105,8 @@ public class EventActivity extends AppCompatActivity {
         if (intent == null) {
             finishWithResult(null); // end abruptly if we don't know what MODE we're in
         }
-        appState = AppState.getInstance();
-        dataUpdater = appState.getDataUpdater();
+        appState = ApplicationState.getInstance();
+        dataProvider = appState.getDataProvider();
         startDateTime = null;
         endDateTime = null;
 
@@ -818,7 +818,7 @@ public class EventActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         try {
-            dataUpdater.open();
+            dataProvider.open();
         }
         catch (SQLException ex) {
             Log.e(TAG, ex.getMessage());

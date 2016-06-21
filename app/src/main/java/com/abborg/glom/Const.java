@@ -15,7 +15,7 @@ public class Const {
      * **/
 //    public static final String TEST_USER_ID = "yoshi3003";
     public static final String TEST_USER_ID = "fatcat18";
-    public static final String TEST_CIRCLE_ID = "dev-test-circle-1";
+    public static final String TEST_CIRCLE_ID = "dev-circle-1";
     public static final String TEST_API_AUTHORIZATION_HEADER = "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789";
 
     /**
@@ -102,7 +102,7 @@ public class Const {
     public static final String JSON_SERVER_FILE_MIMETYPE = "mimetype";
     public static final String JSON_SERVER_FILE_NOTE = "note";
     public static final String JSON_SERVER_FILE_PROVIDER = "provider";
-    public static final String JSON_SERVER_DRAWING_NAME = "note_name";
+    public static final String JSON_SERVER_DRAWING_NAME = "drawing_name";
 
     /**
      * HANDLER WHAT CONSTANTS

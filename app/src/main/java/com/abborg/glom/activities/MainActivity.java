@@ -43,10 +43,10 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.abborg.glom.AppState;
+import com.abborg.glom.ApplicationState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
-import com.abborg.glom.data.DataUpdater;
+import com.abborg.glom.data.DataProvider;
 import com.abborg.glom.fragments.BoardFragment;
 import com.abborg.glom.fragments.CircleFragment;
 import com.abborg.glom.fragments.DiscoverFragment;
@@ -89,12 +89,12 @@ public class MainActivity extends AppCompatActivity
     /**
      * The global class at the application context level
      */
-    private AppState appState;
+    private ApplicationState appState;
 
     /**
      * Abstracts data management via SQLite and network operations
      */
-    public DataUpdater dataUpdater;
+    public DataProvider dataProvider;
 
     /**
      * A receiver for incoming location updates and other various GCM push updates
@@ -203,7 +203,7 @@ public class MainActivity extends AppCompatActivity
 
         setupView();
 
-        appState = AppState.init(this, handler);
+        appState = ApplicationState.init(this, handler);
     }
 
     @Override
@@ -222,9 +222,9 @@ public class MainActivity extends AppCompatActivity
         }
 
         // get database writable object, if already initialized
-        if (dataUpdater != null) {
+        if (dataProvider != null) {
             try {
-                dataUpdater.open();
+                dataProvider.open();
             } catch (SQLException ex) {
                 Log.e(TAG, ex.getMessage());
             }
@@ -244,7 +244,7 @@ public class MainActivity extends AppCompatActivity
             if (!appState.shouldKeepGoogleApiAlive()) appState.disconnectGoogleApiClient();
 
         // close database
-        if (dataUpdater != null) dataUpdater.close();
+        if (dataProvider != null) dataProvider.close();
 
         super.onStop();
     }
@@ -417,7 +417,7 @@ public class MainActivity extends AppCompatActivity
 
                     // update DB about broadcast location change to this circle
                     //TODO update time of broadcast to in DB
-                    dataUpdater.updateCircleLocationBroadcast(appState.getActiveCircle().getId(), true);
+                    dataProvider.updateCircleLocationBroadcast(appState.getActiveCircle().getId(), true);
 
                     // start the push service, telling it to add the user's current circle to start broadcasting location to it
                     intent.putExtra(getResources().getString(R.string.EXTRA_BROADCAST_LOCATION_DURATION), duration);
@@ -439,7 +439,7 @@ public class MainActivity extends AppCompatActivity
                     appState.getActiveCircle().setBroadcastingLocation(false);
 
                     // update DB about broadcast location change to this cirlce
-                    dataUpdater.updateCircleLocationBroadcast(appState.getActiveCircle().getId(), false);
+                    dataProvider.updateCircleLocationBroadcast(appState.getActiveCircle().getId(), false);
 
                     // informs the push service to remove the user's current circle to stop broadcasting location to it
                     intent.setAction(getResources().getString(R.string.ACTION_CIRCLE_DISABLE_LOCATION_BROADCAST));
@@ -535,7 +535,7 @@ public class MainActivity extends AppCompatActivity
                 // location updates from MessageService
                 // updates from OTHER users
                 if ( intent.getAction().equals(getResources().getString(R.string.ACTION_RECEIVE_LOCATION)) ) {
-                    List<User> users = dataUpdater.getLocationUpdates(intent, appState.getActiveCircle());
+                    List<User> users = dataProvider.getLocationUpdates(intent, appState.getActiveCircle());
 
                     if (users != null && users.size() > 0) {
 
@@ -899,8 +899,8 @@ public class MainActivity extends AppCompatActivity
             /* On first load */
             case Const.MSG_INIT_SUCCESS:
                 try {
-                    dataUpdater = appState.getDataUpdater();
-                    dataUpdater.open();
+                    dataProvider = appState.getDataProvider();
+                    dataProvider.open();
                 } catch (SQLException ex) {
                     Log.e(TAG, ex.getMessage());
                 }
@@ -913,7 +913,7 @@ public class MainActivity extends AppCompatActivity
 
                 setupService();
 
-                dataUpdater.requestGetUsersInCircle(appState.getActiveCircle());
+                dataProvider.requestGetUsersInCircle(appState.getActiveCircle());
 
                 break;
 
@@ -1001,7 +1001,7 @@ public class MainActivity extends AppCompatActivity
                             @Override
                             public void onClick(View v) {
                                 if (item != null) {
-                                    dataUpdater.requestCreateEvent(appState.getActiveCircle(), item);
+                                    dataProvider.requestCreateEvent(appState.getActiveCircle(), item);
                                 }
                             }
                         })
@@ -1063,7 +1063,7 @@ public class MainActivity extends AppCompatActivity
                             @Override
                             public void onClick(View v) {
                                 if (item != null) {
-                                    dataUpdater.requestUpdateEvent(appState.getActiveCircle(), item);
+                                    dataProvider.requestUpdateEvent(appState.getActiveCircle(), item);
                                 }
                             }
                         })
@@ -1075,7 +1075,7 @@ public class MainActivity extends AppCompatActivity
             case Const.MSG_ITEM_TO_DELETE: {
                 String id = (String) msg.obj;
 
-                dataUpdater.deleteItemAsync(id, appState.getActiveCircle(), true);
+                dataProvider.deleteItemAsync(id, appState.getActiveCircle(), true);
 
                 break;
             }
@@ -1114,7 +1114,7 @@ public class MainActivity extends AppCompatActivity
                             @Override
                             public void onClick(View v) {
                                 if (item != null) {
-                                    dataUpdater.deleteItemAsync(item.getId(), appState.getActiveCircle(), true);
+                                    dataProvider.deleteItemAsync(item.getId(), appState.getActiveCircle(), true);
                                 }
                             }
                         }).show();
@@ -1226,7 +1226,7 @@ public class MainActivity extends AppCompatActivity
                 final FileItem item = msg.obj == null ? null : (FileItem) msg.obj;
 
                 if (item != null) {
-                    dataUpdater.requestDownloadFileRemote(appState.getActiveCircle(), item, CloudProvider.AMAZON_S3);
+                    dataProvider.requestDownloadFileRemote(appState.getActiveCircle(), item, CloudProvider.AMAZON_S3);
                 }
 
                 break;
@@ -1394,7 +1394,7 @@ public class MainActivity extends AppCompatActivity
     public void onDrawerItemSelected(View view, int position) {
         List<CircleInfo> circles = appState.getAllCircleInfo();
         CircleInfo c = circles.get(position);
-        Circle selected = dataUpdater.getCircleById(c.id);
+        Circle selected = dataProvider.getCircleById(c.id);
 
         if (selected != null) {
             //TODO save date to SQLITE for this circle
@@ -1424,7 +1424,7 @@ public class MainActivity extends AppCompatActivity
                     String placeId = data.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_PLACE_ID));
                     Location location = data.getParcelableExtra(getResources().getString(R.string.EXTRA_EVENT_LOCATION));
                     String note = data.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_NOTE));
-                    dataUpdater.createEventAsync(appState.getActiveCircle(), createTime, null, name, startTime, endTime,
+                    dataProvider.createEventAsync(appState.getActiveCircle(), createTime, null, name, startTime, endTime,
                             placeId, location, note, true);
                 }
                 break;
@@ -1443,7 +1443,7 @@ public class MainActivity extends AppCompatActivity
                     String placeId = data.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_PLACE_ID));
                     Location location = data.getParcelableExtra(getResources().getString(R.string.EXTRA_EVENT_LOCATION));
                     String note = data.getStringExtra(getResources().getString(R.string.EXTRA_EVENT_NOTE));
-                    dataUpdater.updateEventAsync(appState.getActiveCircle(), updateTime, id, name,
+                    dataProvider.updateEventAsync(appState.getActiveCircle(), updateTime, id, name,
                             startTime, endTime, placeId, location, note, true);
                 }
                 break;
@@ -1467,10 +1467,10 @@ public class MainActivity extends AppCompatActivity
                     boolean shouldCreateDrawing = data.getBooleanExtra(getString(R.string.EXTRA_DRAWING_MODE), false);
 
                     if (shouldCreateDrawing) {
-                        dataUpdater.postDrawingAsync(id, name, path, appState.getActiveCircle(), updateTime, true);
+                        dataProvider.postDrawingAsync(id, name, path, appState.getActiveCircle(), updateTime, true);
                     }
                     else {
-                        dataUpdater.updateDrawingAsync(id, name, path, appState.getActiveCircle(), updateTime, true);
+                        dataProvider.updateDrawingAsync(id, name, path, appState.getActiveCircle(), updateTime, true);
                     }
                 }
                 break;
@@ -1499,7 +1499,7 @@ public class MainActivity extends AppCompatActivity
             // begin creating file board item(s)
             if (uriList.size() > 0) {
                 Log.d(TAG, "Selected " + uriList.size() + " file(s)");
-                dataUpdater.postFilesAsync(uriList, appState.getActiveCircle(), true);
+                dataProvider.postFilesAsync(uriList, appState.getActiveCircle(), true);
             }
             else {
                 Log.d(TAG, "No files selected");
