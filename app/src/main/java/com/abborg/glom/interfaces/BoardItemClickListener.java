@@ -7,5 +7,7 @@ import com.abborg.glom.model.BoardItem;
  */
 public interface BoardItemClickListener {
 
-    void onItemClicked(BoardItem item);
+    void onItemClicked(BoardItem item, int position);
+
+    boolean onItemLongClicked(BoardItem item, int position);
 }

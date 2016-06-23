@@ -24,6 +24,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.view.ActionMode;
 import android.support.v7.widget.SwitchCompat;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
@@ -80,9 +81,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity
-        implements DrawerFragment.FragmentDrawerListener, Handler.Callback,
-        AdapterView.OnItemClickListener {
+public class MainActivity extends AppCompatActivity implements
+        DrawerFragment.FragmentDrawerListener,
+        Handler.Callback,
+        AdapterView.OnItemClickListener,
+        ActionMode.Callback {
 
     protected static final String TAG = "MainActivity";
 
@@ -150,15 +153,19 @@ public class MainActivity extends AppCompatActivity
     private Toolbar toolbar;
     private android.support.design.widget.FloatingActionButton fab;
     private boolean isRadialMenuOptionsOpening;
+    private ActionMode actionMode;
+
+    private static final boolean SHOW_TAB_TITLE = false;
     private static final int MENU_OVERLAY_ANIM_TIME = 150;
     private static final boolean START_YOUTUBE_VIDEO_LIGHTBOX = false;
 
-    /**
+    /**************************************************
      * View pager adapter that controls the pages
-     */
+     **************************************************/
+
     class ViewPagerAdapter extends FragmentPagerAdapter {
-        private final List<Fragment> mFragmentList = new ArrayList<>();
-        private final List<String> mFragmentTitleList = new ArrayList<>();
+        private final List<Fragment> fragmentList = new ArrayList<>();
+        private final List<String> fragmentTitleList = new ArrayList<>();
 
         public ViewPagerAdapter(FragmentManager manager) {
             super(manager);
@@ -166,32 +173,27 @@ public class MainActivity extends AppCompatActivity
 
         @Override
         public Fragment getItem(int position) {
-            return mFragmentList.get(position);
+            return fragmentList.get(position);
         }
 
         @Override
         public int getCount() {
-            return mFragmentList.size();
+            return fragmentList.size();
         }
 
         public void addFragment(Fragment fragment, String title) {
-            mFragmentList.add(fragment);
-            mFragmentTitleList.add(title);
-        }
-
-        public List<String> getFragmentTitleList() {
-            return mFragmentTitleList;
+            fragmentList.add(fragment);
+            fragmentTitleList.add(title);
         }
 
         @Override
         public CharSequence getPageTitle(int position) {
-//            return mFragmentTitleList.get(position);
-            return null;
+            return SHOW_TAB_TITLE ? fragmentTitleList.get(position) : null;
         }
     }
 
     /**********************************************************
-     * View Initializations
+     * VIEW INITIALIZATIONS
      **********************************************************/
 
     @Override
@@ -293,10 +295,24 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void updateView() {
+        // set up tabs
         setupViewPager(viewPager);
         tabLayout.setupWithViewPager(viewPager);
-        setupTabIcons();
+        tabLayout.getTabAt(0).setIcon(tabIcons[0]).setTag(Const.TAB_CIRCLE);
+        tabLayout.getTabAt(1).setIcon(tabIcons[1]).setTag(Const.TAB_MAP);
+        tabLayout.getTabAt(2).setIcon(tabIcons[2]).setTag(Const.TAB_BOARD);
+        tabLayout.getTabAt(3).setIcon(tabIcons[3]).setTag(Const.TAB_DISCOVER);
+        tabLayout.setOnTabSelectedListener(
+                new TabLayout.ViewPagerOnTabSelectedListener(viewPager) {
+                    @Override
+                    public void onTabUnselected(TabLayout.Tab tab) {
+                        if (tab.getTag().equals(Const.TAB_BOARD)) {
+                            if (actionMode != null) actionMode.finish();
+                        }
+                    }
+                });
 
+        // set up the action bar
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setTitle(appState.getActiveCircle().getTitle()
@@ -635,19 +651,12 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    private void setupTabIcons() {
-        tabLayout.getTabAt(0).setIcon(tabIcons[0]);
-        tabLayout.getTabAt(1).setIcon(tabIcons[1]);
-        tabLayout.getTabAt(2).setIcon(tabIcons[2]);
-        tabLayout.getTabAt(3).setIcon(tabIcons[3]);
-    }
-
     private void setupViewPager(ViewPager viewPager) {
         adapter = new ViewPagerAdapter(getSupportFragmentManager());
-        adapter.addFragment(new CircleFragment(), "Circle");
-        adapter.addFragment(new LocationFragment(), "Map");
-        adapter.addFragment(new BoardFragment(), "Board");
-        adapter.addFragment(new DiscoverFragment(), "Discover");
+        adapter.addFragment(new CircleFragment(), Const.TAB_CIRCLE);
+        adapter.addFragment(new LocationFragment(), Const.TAB_MAP);
+        adapter.addFragment(new BoardFragment(), Const.TAB_BOARD);
+        adapter.addFragment(new DiscoverFragment(), Const.TAB_DISCOVER);
         viewPager.setAdapter(adapter);
     }
 
@@ -865,6 +874,13 @@ public class MainActivity extends AppCompatActivity
         if (avatarActionMenu != null) avatarActionMenu.close(animated);
     }
 
+    public void setFloatingActionButtonVisible(boolean visible) {
+        if (fab != null) {
+            if (visible) fab.show();
+            else fab.hide();
+        }
+    }
+
     /**
      * Forces updates of all fragments and UI. Use only if selecting a new circle to display.
      */
@@ -882,12 +898,6 @@ public class MainActivity extends AppCompatActivity
         ((BoardFragment) adapter.getItem(2)).update();
     }
 
-    public void setFloatingActionButtonVisible(boolean visible) {
-        if (fab != null) {
-            if (visible) fab.show();
-            else fab.hide();
-        }
-    }
 
     /**********************************************************
      * Handler
@@ -1352,6 +1362,27 @@ public class MainActivity extends AppCompatActivity
                         Snackbar.LENGTH_LONG).show();
                 break;
             }
+
+            /* Starting of ACTION MODE */
+            case Const.MSG_START_ACTION_MODE: {
+                if (actionMode == null) {
+                    actionMode = this.startSupportActionMode(this);
+                    actionMode.setTitle(String.format(getString(R.string.title_action_mode_board_items), 1));
+                }
+
+                break;
+            }
+
+            /* Board item selection */
+            case Const.MSG_SELECT_BOARD_ITEM: {
+                if (actionMode != null) {
+                    int selected = (Integer) msg.obj;
+                    actionMode.setTitle(String.format(getString(R.string.title_action_mode_board_items), selected));
+                    actionMode.invalidate();
+                }
+
+                break;
+            }
         }
 
         return false;
@@ -1519,5 +1550,51 @@ public class MainActivity extends AppCompatActivity
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         User user = appState.getActiveCircle().getUsers().get(position);
         showRadialMenuOptions(user);
+    }
+
+    /**********************************************************
+     * CONTEXTUAL ACTION MODE CALLBACKS
+     **********************************************************/
+
+    @Override
+    public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+        mode.getMenuInflater().inflate(R.menu.menu_context_board_item, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+        BoardFragment fragment = ((BoardFragment) adapter.getItem(2));
+        boolean show = fragment.getSelectedItemCount() > 0;
+        menu.findItem(R.id.action_delete).setVisible(show);
+        menu.findItem(R.id.action_star).setVisible(show);
+        menu.findItem(R.id.action_copy).setVisible(show);
+        menu.findItem(R.id.action_share).setVisible(show);
+        return true;
+    }
+
+    @Override
+    public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+        BoardFragment fragment = ((BoardFragment) adapter.getItem(2));
+        switch (item.getItemId()) {
+            case R.id.action_delete:
+                List<String> ids= fragment.getSelectedItemsId();
+                for (String id : ids) {
+                    Log.d(TAG, "Attempting to delete item " + id);
+                    dataProvider.deleteItemAsync(id, appState.getActiveCircle(), true);
+                }
+                mode.finish();
+                return true;
+            default: return true;
+        }
+    }
+
+    @Override
+    public void onDestroyActionMode(ActionMode mode) {
+        actionMode = null;
+
+        BoardFragment fragment = ((BoardFragment) adapter.getItem(2));
+        fragment.clearItemSelections();
+        fragment.setActionModeEnabled(false);
     }
 }

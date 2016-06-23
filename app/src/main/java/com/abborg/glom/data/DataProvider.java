@@ -1390,9 +1390,11 @@ public class DataProvider {
                     deleteItemDB(deletedItem);
                 }
                 else {
-                    Log.d(TAG, "Sending request to delete item");
+                    Log.d(TAG, "Sending request to delete item " + id);
                     if (item.getType() == BoardItem.TYPE_FILE)
                         requestDeleteFileRemote(circle, (FileItem) item, CloudProvider.AMAZON_S3);
+                    else if (item.getType() == BoardItem.TYPE_DRAWING)
+                        requestDeleteDrawingRemote(circle, (DrawItem) item, CloudProvider.AMAZON_S3);
                     else requestDeleteItem(circle, item);
                 }
             }
@@ -1414,6 +1416,10 @@ public class DataProvider {
             else if (item.getType() == BoardItem.TYPE_FILE) {
                 rows = database.delete(DBHelper.TABLE_FILES, DBHelper.FILE_COLUMN_ID + "='" + id + "'", null);
                 Log.d(TAG, "Deleted file id " + id + " from file table, affected " + rows + " row(s)");
+            }
+            else if (item.getType() == BoardItem.TYPE_DRAWING) {
+                rows = database.delete(DBHelper.TABLE_DRAWINGS, DBHelper.DRAWING_COLUMN_ID + "='" + id + "'", null);
+                Log.d(TAG, "Deleted drawing id " + id + " from drawing table, affected " + rows + " row(s)");
             }
 
             if (handler != null) {
@@ -1896,6 +1902,17 @@ public class DataProvider {
                         Log.e(TAG, ex.getMessage());
                     }
                 }
+            }
+        });
+    }
+
+    public void requestDeleteDrawingRemote(final Circle circle, final DrawItem item, final CloudProvider provider) {
+        final DataProvider dataProvider = this;
+        run(new Runnable() {
+            @Override
+            public void run() {
+                if (fileTransfer == null) fileTransfer = new FileTransfer(dataProvider, context, handler);
+                fileTransfer.delete(provider, circle, item);
             }
         });
     }

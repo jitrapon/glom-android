@@ -2,6 +2,7 @@ package com.abborg.glom.utils;
 
 import android.content.Context;
 import android.os.Handler;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.abborg.glom.ApplicationState;
@@ -271,6 +272,39 @@ public class FileTransfer {
 
                     Log.d(TAG, "Attempting to delete " + item.getName() + " from Amazon S3...");
                     s3Client.deleteObject(Const.AWS_S3_BUCKET, circle.getId() + "/" + item.getName());
+                    dataProvider.requestDeleteItem(circle, item);
+
+                    break;
+                }
+                case DROPBOX: {
+
+                    break;
+                }
+                case GOOGLE_DRIVE: {
+
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+        catch (Exception ex) {
+            Log.e(TAG, ex.getMessage());
+            if (handler != null) {
+                handler.sendMessage(handler.obtainMessage(Const.MSG_ITEM_DELETED_FAILED, item));
+            }
+        }
+    }
+
+    public void delete(CloudProvider provider, Circle circle, DrawItem item) {
+        try {
+            switch (provider) {
+                case AMAZON_S3: {
+                    if (s3Client == null) createAmazonS3Client();
+
+                    String name = TextUtils.isEmpty(item.getName()) ? item.getId() : item.getName();
+                    Log.d(TAG, "Attempting to delete " + name + " from Amazon S3...");
+                    s3Client.deleteObject(Const.AWS_S3_BUCKET, circle.getId() + "/" + name + ".png");
                     dataProvider.requestDeleteItem(circle, item);
 
                     break;

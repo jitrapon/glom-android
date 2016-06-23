@@ -1,8 +1,6 @@
 package com.abborg.glom.adapters;
 
-import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
@@ -20,7 +18,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.abborg.glom.ApplicationState;
-import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.interfaces.BoardItemClickListener;
 import com.abborg.glom.model.BoardItem;
@@ -276,25 +273,24 @@ public class BoardRecyclerViewAdapter1 extends SectionedRecyclerViewAdapter<Recy
         public EventHolder(View itemView) {
             super(itemView);
 
-            menuButton = (ImageView) itemView.findViewById(R.id.cardActionButtonMenu);
-            actionButton1 = (Button) itemView.findViewById(R.id.cardActionButton1);
+            actionButton1 = (Button) itemView.findViewById(R.id.card_action_1);
 
-            posterAvatar = (ImageView) itemView.findViewById(R.id.cardUserAvatar);
-            posterName = (TextView) itemView.findViewById(R.id.cardUserName);
-            postTime = (TextView) itemView.findViewById(R.id.cardUserPostTime);
+            posterAvatar = (ImageView) itemView.findViewById(R.id.card_user_avatar);
+            posterName = (TextView) itemView.findViewById(R.id.card_user_name);
+            postTime = (TextView) itemView.findViewById(R.id.card_user_post_time);
             syncStatus = (ImageView) itemView.findViewById(R.id.card_sync_status);
 
-            eventName = (TextView) itemView.findViewById(R.id.cardEventName);
-            eventVenue = (TextView) itemView.findViewById(R.id.cardEventVenue);
-            eventNote = (TextView) itemView.findViewById(R.id.cardEventNote);
+            eventName = (TextView) itemView.findViewById(R.id.card_event_name);
+            eventVenue = (TextView) itemView.findViewById(R.id.card_event_venue);
+            eventNote = (TextView) itemView.findViewById(R.id.card_event_note);
 
-            googleLogo = (ImageView) itemView.findViewById(R.id.cardPoweredByGoogle);
+            googleLogo = (ImageView) itemView.findViewById(R.id.card_powered_by_google);
         }
 
         public void bind(final EventItem event, final BoardItemClickListener listener) {
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
-                    listener.onItemClicked(event);
+                    listener.onItemClicked(event, getAdapterPosition());
                 }
             });
         }
@@ -319,7 +315,6 @@ public class BoardRecyclerViewAdapter1 extends SectionedRecyclerViewAdapter<Recy
         public FileHolder(View itemView) {
             super(itemView);
 
-            menuButton = (ImageView) itemView.findViewById(R.id.card_action_button_menu);
             actionButton1 = (Button) itemView.findViewById(R.id.card_action_1);
             actionButton2 = (Button) itemView.findViewById(R.id.card_action_2);
 
@@ -338,7 +333,7 @@ public class BoardRecyclerViewAdapter1 extends SectionedRecyclerViewAdapter<Recy
         public void bind(final FileItem file, final BoardItemClickListener listener) {
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
-                    listener.onItemClicked(file);
+                    listener.onItemClicked(file, getAdapterPosition());
                 }
             });
         }
@@ -446,43 +441,6 @@ public class BoardRecyclerViewAdapter1 extends SectionedRecyclerViewAdapter<Recy
      * View Holder helpers
      **************************************************************/
 
-    private void attachMenuOptions(ImageView menuBtn, final String id) {
-        menuBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                final CharSequence[] items = {
-                        context.getResources().getString(R.string.menu_item_delete),
-                        context.getResources().getString(R.string.menu_item_copy),
-                        context.getResources().getString(R.string.menu_item_send),
-                        context.getResources().getString(R.string.menu_item_star)
-                };
-                AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                builder.setItems(items, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int item) {
-                        switch (item) {
-                            case 0:
-                                if (handler != null) handler.sendMessage(handler.obtainMessage(Const.MSG_ITEM_TO_DELETE, id));
-                                break;
-                            case 1:
-
-                                break;
-                            case 2:
-
-                                break;
-                            case 3:
-
-                                break;
-                            default: return;
-                        }
-                    }
-                });
-                AlertDialog alert = builder.create();
-                alert.setCanceledOnTouchOutside(true);
-                alert.show();
-            }
-        });
-    }
-
     private void attachPostInfo(FeedAction feedAction, TextView posterName, ImageView posterAvatar, TextView postTime) {
         if (feedAction != null) {
             if (feedAction.user != null) {
@@ -491,15 +449,15 @@ public class BoardRecyclerViewAdapter1 extends SectionedRecyclerViewAdapter<Recy
                 switch(feedAction.type) {
                     case FeedAction.CREATE_EVENT:
                         posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
-                                context.getResources().getString(R.string.card_post_create_event)));
+                                context.getResources().getString(R.string.card_post_info)));
                         break;
                     case FeedAction.CANCEL_EVENT:
                         posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
-                                context.getResources().getString(R.string.card_post_cancel_event)));
+                                context.getResources().getString(R.string.card_cancel_info)));
                         break;
                     case FeedAction.UPDATE_EVENT:
                         posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
-                                context.getResources().getString(R.string.card_post_update_event)));
+                                context.getResources().getString(R.string.card_edit_info)));
                         break;
                     default:
                         posterName.setText(feedAction.user.getName());
@@ -541,9 +499,6 @@ public class BoardRecyclerViewAdapter1 extends SectionedRecyclerViewAdapter<Recy
         final FileHolder holder = (FileHolder) recyclerViewHolder;
 
         holder.bind(file, listener);
-
-        // attach context menu button
-        attachMenuOptions(holder.menuButton, id);
 
         // attach the last feed info about this post
         attachPostInfo(file.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);
@@ -646,9 +601,6 @@ public class BoardRecyclerViewAdapter1 extends SectionedRecyclerViewAdapter<Recy
         EventHolder holder = (EventHolder) recyclerViewHolder;
 
         holder.bind(event, listener);
-
-        // attach context menu button
-        attachMenuOptions(holder.menuButton, id);
 
         // attach the last feed info about this post
         attachPostInfo(event.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);

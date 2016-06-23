@@ -1,16 +1,16 @@
 package com.abborg.glom.adapters;
 
-import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
-import android.os.Handler;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.text.Html;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,9 +20,9 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.abborg.glom.ApplicationState;
-import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.interfaces.BoardItemClickListener;
+import com.abborg.glom.interfaces.MultiSelectionListener;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.DrawItem;
 import com.abborg.glom.model.EventItem;
@@ -55,22 +55,23 @@ import java.util.Locale;
  * showing items in two layouts: the traditional linear layout and in a staggered grid.
  */
 public class BoardRecyclerViewAdapter
-        extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+        extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements MultiSelectionListener {
 
     private static String TAG = "BoardRecyclerViewAdapter";
 
-    private List<BoardItem> items;
-
     private Context context;
 
+    private List<BoardItem> items;
     private List<Integer> staleItems;
+    private SparseBooleanArray selectedItems;
 
     private BoardItemClickListener listener;
 
-    private Handler handler;
+    /**************************************************
+     * VIEW HOLDERS
+     **************************************************/
 
     public static class EventHolder extends RecyclerView.ViewHolder {
-        ImageView menuButton;
         Button actionButton1;
 
         ImageView posterAvatar;
@@ -84,35 +85,44 @@ public class BoardRecyclerViewAdapter
 
         ImageView googleLogo;
 
+        CardView card;
+
         public EventHolder(View itemView) {
             super(itemView);
 
-            menuButton = (ImageView) itemView.findViewById(R.id.cardActionButtonMenu);
-            actionButton1 = (Button) itemView.findViewById(R.id.cardActionButton1);
+            actionButton1 = (Button) itemView.findViewById(R.id.card_action_1);
 
-            posterAvatar = (ImageView) itemView.findViewById(R.id.cardUserAvatar);
-            posterName = (TextView) itemView.findViewById(R.id.cardUserName);
-            postTime = (TextView) itemView.findViewById(R.id.cardUserPostTime);
+            posterAvatar = (ImageView) itemView.findViewById(R.id.card_user_avatar);
+            posterName = (TextView) itemView.findViewById(R.id.card_user_name);
+            postTime = (TextView) itemView.findViewById(R.id.card_user_post_time);
             syncStatus = (ImageView) itemView.findViewById(R.id.card_sync_status);
 
-            eventName = (TextView) itemView.findViewById(R.id.cardEventName);
-            eventVenue = (TextView) itemView.findViewById(R.id.cardEventVenue);
-            eventNote = (TextView) itemView.findViewById(R.id.cardEventNote);
+            eventName = (TextView) itemView.findViewById(R.id.card_event_name);
+            eventVenue = (TextView) itemView.findViewById(R.id.card_event_venue);
+            eventNote = (TextView) itemView.findViewById(R.id.card_event_note);
 
-            googleLogo = (ImageView) itemView.findViewById(R.id.cardPoweredByGoogle);
+            googleLogo = (ImageView) itemView.findViewById(R.id.card_powered_by_google);
+
+            card = (CardView) itemView.findViewById(R.id.card_view);
         }
 
-        public void bind(final EventItem event, final BoardItemClickListener listener) {
+        public void bind(final EventItem item, final BoardItemClickListener listener) {
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
-                    listener.onItemClicked(event);
+                    listener.onItemClicked(item, getAdapterPosition());
+                }
+            });
+
+            itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    return listener.onItemLongClicked(item, getAdapterPosition());
                 }
             });
         }
     }
 
     public static class FileHolder extends RecyclerView.ViewHolder {
-        ImageView menuButton;
         Button actionButton1;
         Button actionButton2;
 
@@ -127,10 +137,11 @@ public class BoardRecyclerViewAdapter
 
         ProgressBar progressBar;
 
+        CardView card;
+
         public FileHolder(View itemView) {
             super(itemView);
 
-            menuButton = (ImageView) itemView.findViewById(R.id.card_action_button_menu);
             actionButton1 = (Button) itemView.findViewById(R.id.card_action_1);
             actionButton2 = (Button) itemView.findViewById(R.id.card_action_2);
 
@@ -144,12 +155,21 @@ public class BoardRecyclerViewAdapter
             fileThumbnail = (ImageView) itemView.findViewById(R.id.file_thumbnail);
 
             progressBar = (ProgressBar) itemView.findViewById(R.id.file_progress);
+
+            card = (CardView) itemView.findViewById(R.id.card_view);
         }
 
-        public void bind(final FileItem file, final BoardItemClickListener listener) {
+        public void bind(final FileItem item, final BoardItemClickListener listener) {
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
-                    listener.onItemClicked(file);
+                    listener.onItemClicked(item, getAdapterPosition());
+                }
+            });
+
+            itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    return listener.onItemLongClicked(item, getAdapterPosition());
                 }
             });
         }
@@ -163,6 +183,8 @@ public class BoardRecyclerViewAdapter
 
         ImageView thumbnail;
 
+        CardView card;
+
         public DrawingHolder(View itemView) {
             super(itemView);
 
@@ -172,45 +194,37 @@ public class BoardRecyclerViewAdapter
             syncStatus = (ImageView) itemView.findViewById(R.id.card_sync_status);
 
             thumbnail = (ImageView) itemView.findViewById(R.id.note_thumbnail);
+
+           card = (CardView) itemView.findViewById(R.id.card_view);
         }
 
-        public void bind(final DrawItem file, final BoardItemClickListener listener) {
+        public void bind(final DrawItem item, final BoardItemClickListener listener) {
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
-                    listener.onItemClicked(file);
+                    listener.onItemClicked(item, getAdapterPosition());
+                }
+            });
+
+            itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    return listener.onItemLongClicked(item, getAdapterPosition());
                 }
             });
         }
     }
 
-    public BoardRecyclerViewAdapter(Context context, List<BoardItem> items, BoardItemClickListener clickListener, Handler handler) {
-        this.context = context;
-        this.items = items;
+    /**************************************************
+     * VIEW CALLBACKS
+     **************************************************/
+
+    public BoardRecyclerViewAdapter(Context ctx, List<BoardItem> models, BoardItemClickListener clickListener) {
+        context = ctx;
+        items = models;
         listener = clickListener;
         staleItems = new ArrayList<>();
-        this.handler = handler;
+        selectedItems = new SparseBooleanArray();
         setHasStableIds(true);
-    }
-
-    public void update(List<BoardItem> events) {
-        // update from specific list of items
-        if (events != null) {
-            items = events;
-            notifyDataSetChanged();
-        }
-
-        // TODO update everything from request
-        else {
-            for (int position : staleItems) {
-                notifyItemChanged(position);
-            }
-            staleItems.clear();
-        }
-    }
-
-    public void updateAt(boolean add, int index) {
-        if (add) notifyItemInserted(index);
-        else notifyItemRemoved(index);
     }
 
     @Override
@@ -224,7 +238,7 @@ public class BoardRecyclerViewAdapter
             return new FileHolder(view);
         }
         else if (viewType == BoardItem.TYPE_DRAWING) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_note, parent, false);
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_drawing, parent, false);
             return new DrawingHolder(view);
         }
         else return null;
@@ -295,76 +309,39 @@ public class BoardRecyclerViewAdapter
         return items.size();
     }
 
+    /**************************************************
+     * MODEL UPDATES
+     **************************************************/
+
     public void addItem(String id) {
-        notifyItemInserted(0);
+        notifyDataSetChanged();
     }
 
     public void updateItem(String id) {
-        int index = -1;
-        for (int i = 0; i < items.size(); i++) {
-            if (items.get(i).getId().equals(id)) {
-                index = i;
-                break;
-            }
-        }
-        if (index == -1) return;
-
-        notifyItemChanged(index);
+        notifyDataSetChanged();
     }
 
     public void deleteItem(String id) {
-        int index = -1;
-        for (int i = 0; i < items.size(); i++) {
-            if (items.get(i).getId().equals(id)) {
-                index = i;
-                break;
-            }
+        notifyDataSetChanged();
+    }
+
+    public void update(List<BoardItem> events) {
+        // update from specific list of items
+        if (events != null) {
+            items = events;
+            notifyDataSetChanged();
         }
-        if (index == -1) return;
-
-        notifyItemRemoved(index);
-    }
-
-    /**************************************************************
-     * View Holder helpers
-     **************************************************************/
-
-    private void attachMenuOptions(ImageView menuBtn, final String id) {
-        menuBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                final CharSequence[] items = {
-                        context.getResources().getString(R.string.menu_item_delete),
-                        context.getResources().getString(R.string.menu_item_copy),
-                        context.getResources().getString(R.string.menu_item_send),
-                        context.getResources().getString(R.string.menu_item_star)
-                };
-                AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                builder.setItems(items, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int item) {
-                        switch (item) {
-                            case 0:
-                                if (handler != null) handler.sendMessage(handler.obtainMessage(Const.MSG_ITEM_TO_DELETE, id));
-                                break;
-                            case 1:
-
-                                break;
-                            case 2:
-
-                                break;
-                            case 3:
-
-                                break;
-                            default: return;
-                        }
-                    }
-                });
-                AlertDialog alert = builder.create();
-                alert.setCanceledOnTouchOutside(true);
-                alert.show();
+        else {
+            for (int position : staleItems) {
+                notifyItemChanged(position);
             }
-        });
+            staleItems.clear();
+        }
     }
+
+    /**************************************************
+     * UI HELPERS
+     **************************************************/
 
     private void attachPostInfo(FeedAction feedAction, TextView posterName, ImageView posterAvatar, TextView postTime) {
         if (feedAction != null) {
@@ -374,15 +351,15 @@ public class BoardRecyclerViewAdapter
                 switch(feedAction.type) {
                     case FeedAction.CREATE_EVENT:
                         posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
-                                context.getResources().getString(R.string.card_post_create_event)));
+                                context.getResources().getString(R.string.card_post_info)));
                         break;
                     case FeedAction.CANCEL_EVENT:
                         posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
-                                context.getResources().getString(R.string.card_post_cancel_event)));
+                                context.getResources().getString(R.string.card_cancel_info)));
                         break;
                     case FeedAction.UPDATE_EVENT:
                         posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
-                                context.getResources().getString(R.string.card_post_update_event)));
+                                context.getResources().getString(R.string.card_edit_info)));
                         break;
                     default:
                         posterName.setText(feedAction.user.getName());
@@ -417,6 +394,11 @@ public class BoardRecyclerViewAdapter
         }
     }
 
+    private void attachSelectionOverlay(int position, CardView card) {
+        card.setCardBackgroundColor(selectedItems.get(position) ? ContextCompat.getColor(context, R.color.selectItemOverlay) :
+                Color.WHITE);
+    }
+
     private void setFileViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {
         FileItem file = (FileItem) items.get(position);
         final String id = file.getId();
@@ -424,11 +406,11 @@ public class BoardRecyclerViewAdapter
 
         holder.bind(file, listener);
 
-        // attach context menu button
-        attachMenuOptions(holder.menuButton, id);
-
         // attach the last feed info about this post
         attachPostInfo(file.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);
+
+        // set activation change
+        attachSelectionOverlay(position, holder.card);
 
         // set action buttons
         if (file.getLocalCache() == null || !file.getLocalCache().exists()) {
@@ -523,11 +505,11 @@ public class BoardRecyclerViewAdapter
 
         holder.bind(event, listener);
 
-        // attach context menu button
-        attachMenuOptions(holder.menuButton, id);
-
         // attach the last feed info about this post
         attachPostInfo(event.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);
+
+        // set activation change
+        attachSelectionOverlay(position, holder.card);
 
         // if the hosts contains the user, set action and text accordingly (Edit, Share)
         // if the hosts doesn't contain the user, set action to (Attend, Miss)
@@ -803,11 +785,11 @@ public class BoardRecyclerViewAdapter
 
         holder.bind(drawing, listener);
 
-//        // attach context menu button
-//        attachMenuOptions(holder.menuButton, id);
-
         // attach the last feed info about this post
         attachPostInfo(drawing.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);
+
+        // set activation change
+        attachSelectionOverlay(position, holder.card);
 
         // set sync status and progress bar
         if (drawing.getSyncStatus() == BoardItem.SYNC_COMPLETE) {
@@ -836,14 +818,50 @@ public class BoardRecyclerViewAdapter
         }
     }
 
-    /**************************************************************
-     * CARD ACTION OPERATIONS
-     **************************************************************/
     private void launchGoogleMapsNavigation(double lat, double lng) {
         Uri gmmIntentUri = Uri.parse(
                 String.format(Locale.ENGLISH, "google.navigation:q=%1f,%2f", lat, lng));
         Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
         mapIntent.setPackage("com.google.android.apps.maps");
         context.startActivity(mapIntent);
+    }
+
+    /**************************************************************
+     * MULTIPLE ITEM SELECTION LISTENER
+     **************************************************************/
+
+    @Override
+    public void toggleSelection(int pos) {
+        if (selectedItems.get(pos, false)) {
+            Log.d(TAG, "Unselected item at " + pos);
+            selectedItems.delete(pos);
+        }
+        else {
+            Log.d(TAG, "Selected item at " + pos);
+            selectedItems.put(pos, true);
+        }
+        Log.d(TAG, "Total selections is " + getSelectedItemCount());
+        notifyItemChanged(pos);
+    }
+
+    @Override
+    public void clearSelections() {
+        Log.d(TAG, "Clear all item selections");
+        selectedItems.clear();
+        notifyDataSetChanged();
+    }
+
+    @Override
+    public int getSelectedItemCount() {
+        return selectedItems.size();
+    }
+
+    @Override
+    public List<Integer> getSelectedItems() {
+        List<Integer> items = new ArrayList<>(selectedItems.size());
+        for (int i = 0; i < selectedItems.size(); i++) {
+            items.add(selectedItems.keyAt(i));
+        }
+        return items;
     }
 }

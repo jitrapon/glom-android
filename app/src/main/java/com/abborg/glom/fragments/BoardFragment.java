@@ -32,6 +32,7 @@ import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FileItem;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -66,10 +67,10 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
     private boolean firstView;
 
     private MainActivity activity;
-
     private Handler handler;
-
     private ApplicationState appState;
+
+    private boolean isActionModeEnabled;
 
     private static final int ITEM_APPEARANCE_ANIM_TIME = 650;
     private static final long ITEM_ADD_ANIM_TIME = 100;
@@ -105,7 +106,7 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         appState = ApplicationState.getInstance();
-        adapter = new BoardRecyclerViewAdapter(getContext(), getItems(), this, handler);
+        adapter = new BoardRecyclerViewAdapter(getContext(), getItems(), this);
         dataProvider = appState.getDataProvider();
     }
 
@@ -175,44 +176,65 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
      **********************************************************/
 
     @Override
-    public void onItemClicked(BoardItem selected) {
-        if (selected != null) {
-            if (selected instanceof EventItem) {
-                EventItem event = (EventItem) selected;
-                Log.d(TAG, "EventItem (" + event.getName() + ") selected");
-                Intent intent = new Intent(activity, EventActivity.class);
-                intent.putExtra(getResources().getString(R.string.EXTRA_EVENT_ID), event.getId());
-                intent.setAction(getResources().getString(R.string.ACTION_UPDATE_EVENT));
-                appState.setKeepGoogleApiClientAlive(true);
-                getActivity().startActivityForResult(intent, Const.UPDATE_EVENT_RESULT_CODE);
-            }
-            else if (selected instanceof FileItem) {
-                FileItem item = (FileItem) selected;
-                Log.d(TAG, "FileItem (" + item.getName() + ") selected");
+    public void onItemClicked(BoardItem selected, int position) {
+        if (!isActionModeEnabled) {
+            if (selected != null) {
+                if (selected instanceof EventItem) {
+                    EventItem event = (EventItem) selected;
+                    Log.d(TAG, "EventItem (" + event.getName() + ") selected");
+                    Intent intent = new Intent(activity, EventActivity.class);
+                    intent.putExtra(getResources().getString(R.string.EXTRA_EVENT_ID), event.getId());
+                    intent.setAction(getResources().getString(R.string.ACTION_UPDATE_EVENT));
+                    appState.setKeepGoogleApiClientAlive(true);
+                    getActivity().startActivityForResult(intent, Const.UPDATE_EVENT_RESULT_CODE);
+                } else if (selected instanceof FileItem) {
+                    FileItem item = (FileItem) selected;
+                    Log.d(TAG, "FileItem (" + item.getName() + ") selected");
 
-                // if file does not exist, download, otherwise view it
-                if (item.getLocalCache() == null || !item.getLocalCache().exists()) {
-                    if (handler != null) handler.sendMessage(handler.obtainMessage(Const.MSG_DOWNLOAD_ITEM, item));
+                    // if file does not exist, download, otherwise view it
+                    if (item.getLocalCache() == null || !item.getLocalCache().exists()) {
+                        if (handler != null)
+                            handler.sendMessage(handler.obtainMessage(Const.MSG_DOWNLOAD_ITEM, item));
+                    } else {
+                        Intent intent = new Intent(Intent.ACTION_VIEW);
+                        intent.setDataAndType(Uri.fromFile(item.getLocalCache()), item.getMimetype());
+                        getActivity().startActivity(Intent.createChooser(intent, getString(R.string.card_select_app_to_launch)));
+                    }
+                } else if (selected instanceof DrawItem) {
+                    DrawItem item = (DrawItem) selected;
+                    Log.d(TAG, "DrawItem (" + item.getId() + ") selected");
+                    //TODO if file does not exist, download, otherwise view it
+                    String path = (item.getLocalCache() == null) ? null :
+                            new File(item.getLocalCache().getPath()).exists() ? item.getLocalCache().getPath() : null;
+                    Intent intent = new Intent(activity, DrawActivity.class);
+                    intent.setAction(getString(R.string.ACTION_JOIN_DRAWING));
+                    intent.putExtra(getString(R.string.EXTRA_DRAWING_ID), item.getId());
+                    intent.putExtra(getString(R.string.EXTRA_DRAWING_PATH), path);
+                    getActivity().startActivityForResult(intent, Const.DRAW_RESULT_CODE);
                 }
-                else {
-                    Intent intent = new Intent(Intent.ACTION_VIEW);
-                    intent.setDataAndType(Uri.fromFile(item.getLocalCache()), item.getMimetype());
-                    getActivity().startActivity(Intent.createChooser(intent, getString(R.string.card_select_app_to_launch)));
-                }
-            }
-            else if (selected instanceof DrawItem) {
-                DrawItem item = (DrawItem) selected;
-                Log.d(TAG, "DrawItem (" + item.getId() + ") selected");
-                //TODO if file does not exist, download, otherwise view it
-                String path = (item.getLocalCache() == null) ? null :
-                        new File(item.getLocalCache().getPath()).exists() ? item.getLocalCache().getPath() : null;
-                Intent intent = new Intent(activity, DrawActivity.class);
-                intent.setAction(getString(R.string.ACTION_JOIN_DRAWING));
-                intent.putExtra(getString(R.string.EXTRA_DRAWING_ID), item.getId());
-                intent.putExtra(getString(R.string.EXTRA_DRAWING_PATH), path);
-                getActivity().startActivityForResult(intent, Const.DRAW_RESULT_CODE);
             }
         }
+        else {
+            adapter.toggleSelection(position);
+
+            if (handler != null) {
+                handler.sendMessage(handler.obtainMessage((Const.MSG_SELECT_BOARD_ITEM), adapter.getSelectedItemCount()));
+            }
+        }
+    }
+
+    @Override
+    public boolean onItemLongClicked(BoardItem item, int position) {
+        Log.d(TAG, "Long clicked item " + item.getId());
+
+        // if this is the first long press, mark this item as selected
+        if (!isActionModeEnabled) {
+            isActionModeEnabled = true;
+
+            handler.sendMessage(handler.obtainMessage(Const.MSG_START_ACTION_MODE, item.getId()));
+            adapter.toggleSelection(position);
+        }
+        return true;
     }
 
     /**********************************************************
@@ -281,5 +303,24 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
                 if (refreshView.isRefreshing()) refreshView.setRefreshing(false);
             }
         }
+    }
+
+    public List<String> getSelectedItemsId() {
+        List<String> ids = new ArrayList<>(adapter.getSelectedItems().size());
+        for (Integer position : adapter.getSelectedItems()) {
+            ids.add(items.get(position).getId());
+        }
+        return ids;
+    }
+
+    public int getSelectedItemCount() { return adapter.getSelectedItemCount(); }
+
+    public void setActionModeEnabled(boolean enabled) {
+        isActionModeEnabled = enabled;
+        refreshView.setEnabled(!enabled);
+    }
+
+    public void clearItemSelections() {
+        adapter.clearSelections();
     }
 }

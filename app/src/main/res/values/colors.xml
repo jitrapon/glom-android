@@ -18,4 +18,5 @@
     <color name="defaultOutgoingTextBackgroundPressed">#c62828</color>
     <color name="defaultIncomingTextColor">#000000</color>
     <color name="defaultOutgoingTextColor">#FFFFFF</color>
+    <color name="selectItemOverlay">#b1757575</color>
 </resources>

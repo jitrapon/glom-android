@@ -10,23 +10,31 @@ public class Const {
     public static final String REGISTRATION_COMPLETE = "registrationComplete";
     public static final String SERVER_URL = BuildConfig.SERVER_URL;
 
-    /**
+    /************************
+     * TABS
+     ************************/
+    public static final String TAB_CIRCLE = "Circle";
+    public static final String TAB_MAP = "Map";
+    public static final String TAB_BOARD = "Board";
+    public static final String TAB_DISCOVER = "Discover";
+
+    /************************
      * TEST INFO
-     * **/
-//    public static final String TEST_USER_ID = "yoshi3003";
-    public static final String TEST_USER_ID = "fatcat18";
+     ************************/
+    public static final String TEST_USER_ID = "yoshi3003";
+//    public static final String TEST_USER_ID = "fatcat18";
     public static final String TEST_CIRCLE_ID = "dev-circle-1";
     public static final String TEST_API_AUTHORIZATION_HEADER = "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789";
 
-    /**
+    /************************
      * NOTIFICATIONS ID
-     */
+     ************************/
     public static final int NOTIFY_LOCATION_UPDATE = 0;
     public static final int NOTIFY_BROADCAST_LOCATION = 1;
 
-    /**
+    /************************
      * ACTIVITY RESULTCODES
-     */
+     ************************/
     public static final int CREATE_EVENT_RESULT_CODE = 700;
     public static final int UPDATE_EVENT_RESULT_CODE = 701;
     public static final int IMAGE_SELECTED_RESULT_CODE = 702;
@@ -34,9 +42,9 @@ public class Const {
     public static final int PLACE_AUTOCOMPLETE_REQUEST_CODE = 704;
     public static final int PLACE_PICKER_REQUEST_CODE = 705;
 
-    /**
+    /************************
      * API
-     */
+     ************************/
     public static final String API_AUTHORIZATION_HEADER = "Authorization";
     public static final String API_CHECKIN = "/checkin";
     public static final String API_LOCATION = "/location";
@@ -138,10 +146,12 @@ public class Const {
     public static final int MSG_DRAWING_POST_FAILED = 5029;
     public static final int MSG_DRAWING_POST_IN_PROGRESS = 5030;
     public static final int MSG_DRAWING_POST_SUCCESS = 5031;
+    public static final int MSG_START_ACTION_MODE = 5032;
+    public static final int MSG_SELECT_BOARD_ITEM = 5034;
 
-    /**
+    /************************
      * Mimetypes
-     */
+     ************************/
     public static final String FILE_TYPE_JPEG = "image/jpeg";
     public static final String FILE_TYPE_JPG = "image/jpg";
     public static final String FILE_TYPE_GIF = "image/gif";
@@ -150,9 +160,9 @@ public class Const {
     public static final String FILE_TYPE_WBMP = "image/vnd.wap.wbmp";
     public static final String FILE_TYPE_WEBP = "image/webp";
 
-    /**
+    /************************
      * WEB RELATED
-     */
+     ************************/
     public static final String ASSETS_FOLDER = "file:///android_asset/";
     public static final String SERVER_APP_URL = SERVER_URL + "/app";
 }

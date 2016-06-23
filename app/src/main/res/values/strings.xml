@@ -87,9 +87,9 @@
     <string name="card_event_name_placeholder">Untitled</string>
     <string name="card_event_venue_placeholder">Undefined</string>
     <string name="card_event_note_placeholder">Event note is undefined</string>
-    <string name="card_post_create_event">created an event</string>
-    <string name="card_post_cancel_event">cancelled an event</string>
-    <string name="card_post_update_event">updated an event</string>
+    <string name="card_post_info">created event</string>
+    <string name="card_cancel_info">cancelled event</string>
+    <string name="card_edit_info">edited</string>
     <string name="time_info_just_now">Just now</string>
     <string name="time_unit_second">secs</string>
     <string name="time_unit_minute">mins</string>
@@ -169,7 +169,7 @@
     <!-- Global menu items -->
     <string name="menu_item_delete">Delete</string>
     <string name="menu_item_copy">Copy</string>
-    <string name="menu_item_send">Send</string>
+    <string name="menu_item_share">Share</string>
     <string name="menu_item_star">Star</string>
     <string name="menu_item_undo">Undo</string>
     <string name="menu_item_try_again">Try Again</string>
@@ -209,4 +209,7 @@
     <string name="menu_item_set_background">Set Background</string>
     <string name="menu_item_clear_drawing">Clear</string>
     <string name="notification_saving_bitmap">Saving this drawing locally…</string>
+
+    <!-- Action mode -->
+    <string name="title_action_mode_board_items">%d selected</string>
 </resources>
