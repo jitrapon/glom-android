@@ -43,6 +43,8 @@ import com.abborg.glom.model.WatchableVideo;
 import com.abborg.glom.utils.FileTransfer;
 import com.abborg.glom.utils.FileUtils;
 import com.abborg.glom.utils.RequestHandler;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
 import com.android.volley.VolleyError;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 
@@ -267,9 +269,45 @@ public class DataProvider {
     public void close() {
         Log.d(TAG, "Closing database");
         dbHelper.close();
+    }
 
+    public void cancelAllNetworkRequests() {
+        RequestHandler.getInstance(context).getRequestQueue().cancelAll(new RequestQueue.RequestFilter() {
+            @Override
+            public boolean apply(Request<?> request) {
+                return true;
+            }
+        });
+    }
 
-       }
+    private void handleNetworkError(VolleyError error) {
+        boolean connectivityError = RequestHandler.getInstance(context).handleError(error);
+        if (connectivityError) {
+            appState.setConnectivityStatus(ApplicationState.ConnectivityStatus.DISCONNECTED);
+            if (handler != null) handler.sendEmptyMessage(Const.MSG_SERVER_DISCONNECTED);
+        }
+    }
+
+    private void handleNetworkSuccess() {
+        if (handler != null && appState.getConnectionStatus() != ApplicationState.ConnectivityStatus.CONNECTED) {
+            appState.setConnectivityStatus(ApplicationState.ConnectivityStatus.CONNECTED);
+            handler.sendEmptyMessage(Const.MSG_SERVER_CONNECTED);
+        }
+    }
+
+    public void requestServerStatus() {
+        RequestHandler.getInstance(context).get("Check Status", Const.API_SERVER_STATUS, new ResponseListener() {
+            @Override
+            public void onSuccess(JSONObject response) {
+                handleNetworkSuccess();
+            }
+
+            @Override
+            public void onError(VolleyError error) {
+                handleNetworkError(error);
+            }
+        });
+    }
 
     /*************************************************
      * CIRCLE OPERATIONS
@@ -552,6 +590,8 @@ public class DataProvider {
                 new ResponseListener() {
                     @Override
                     public void onSuccess(JSONObject response) {
+                        handleNetworkSuccess();
+
                         try {
                             if (response != null) {
                                 JSONArray jsonArray = response.getJSONArray(Const.JSON_SERVER_USERS);
@@ -639,7 +679,7 @@ public class DataProvider {
 
                     @Override
                     public void onError(VolleyError error) {
-                        RequestHandler.getInstance(context).handleError(error);
+                        handleNetworkError(error);
                     }
                 });
     }
@@ -797,6 +837,8 @@ public class DataProvider {
                 new ResponseListener() {
                     @Override
                     public void onSuccess(JSONObject response) {
+                        handleNetworkSuccess();
+
                         final JSONObject respJson = response;
                         run(new Runnable() {
                             @Override
@@ -965,8 +1007,10 @@ public class DataProvider {
 
                     @Override
                     public void onError(VolleyError error) {
-                        RequestHandler.getInstance(context).handleError(error);
-                        if (handler != null) handler.sendEmptyMessage(Const.MSG_GET_ITEMS);
+                        if (handler != null) {
+                            handler.sendEmptyMessage(Const.MSG_GET_ITEMS);
+                            handleNetworkError(error);
+                        }
                     }
                 }
             );
@@ -1194,11 +1238,13 @@ public class DataProvider {
                             @Override
                             public void onSuccess(JSONObject response) {
                                 setSyncStatus(event, Const.MSG_EVENT_CREATED_SUCCESS, BoardItem.SYNC_COMPLETE);
+                                handleNetworkSuccess();
                             }
 
                             @Override
                             public void onError(VolleyError error) {
                                 setSyncStatus(event, Const.MSG_EVENT_CREATED_FAILED, BoardItem.SYNC_ERROR);
+                                handleNetworkError(error);
                             }
                         });
             }
@@ -1355,11 +1401,13 @@ public class DataProvider {
                             @Override
                             public void onSuccess(JSONObject response) {
                                 setSyncStatus(event, Const.MSG_EVENT_UPDATED_SUCCESS, BoardItem.SYNC_COMPLETE);
+                                handleNetworkSuccess();
                             }
 
                             @Override
                             public void onError(VolleyError error) {
                                 setSyncStatus(event, Const.MSG_EVENT_UPDATED_FAILED, BoardItem.SYNC_ERROR);
+                                handleNetworkError(error);
                             }
                         });
             }
@@ -1440,12 +1488,14 @@ public class DataProvider {
                                     deleteItemDB(item);
                                 }
                             });
+                            handleNetworkSuccess();
                         }
 
                         @Override
                         public void onError(VolleyError error) {
                             if (handler != null) {
                                 handler.sendMessage(handler.obtainMessage(Const.MSG_ITEM_DELETED_FAILED, item));
+                                handleNetworkError(error);
                             }
                         }
                     });
@@ -1837,6 +1887,7 @@ public class DataProvider {
                         @Override
                         public void onSuccess(JSONObject response) {
                             setSyncStatus(file, Const.MSG_FILE_POST_SUCCESS, BoardItem.SYNC_COMPLETE);
+                            handleNetworkSuccess();
                         }
 
                         @Override
@@ -1845,6 +1896,8 @@ public class DataProvider {
 
                             // send delete request to s3 because sync has failed
                             requestDeleteFileRemote(circle, file, provider);
+
+                            handleNetworkError(error);
                         }
                     });
         }
@@ -1972,11 +2025,13 @@ public class DataProvider {
                             @Override
                             public void onSuccess(JSONObject response) {
                                 setSyncStatus(item, Const.MSG_DRAWING_POST_SUCCESS, BoardItem.SYNC_COMPLETE);
+                                handleNetworkSuccess();
                             }
 
                             @Override
                             public void onError(VolleyError error) {
                                 setSyncStatus(item, Const.MSG_DRAWING_POST_FAILED, BoardItem.SYNC_ERROR);
+                                handleNetworkError(error);
                             }
                         });
             }
@@ -2064,6 +2119,36 @@ public class DataProvider {
         return item;
     }
 
+    public void updateDrawingPath(Circle circle, String id, String path) {
+        List<BoardItem> items = circle.getItems();
+        DrawItem drawItem = null;
+        for (BoardItem item : items) {
+            if (item.getId().equals(id) && item instanceof DrawItem) {
+                drawItem = (DrawItem) item;
+                break;
+            }
+        }
+
+        if (drawItem != null) {
+            drawItem.setPath(path);
+            updateDrawingDB(drawItem.getUpdatedTime(), drawItem, BoardItem.SYNC_COMPLETE);
+
+            if (handler != null)
+                handler.sendMessage(handler.obtainMessage(Const.MSG_DRAWING_DOWNLOAD_COMPLETE, drawItem));
+        }
+    }
+
+    public void requestDownloadDrawingRemote(final Circle circle, final DrawItem drawItem, final CloudProvider provider) {
+        final DataProvider dataProvider = this;
+        run(new Runnable() {
+            @Override
+            public void run() {
+                if (fileTransfer == null) fileTransfer = new FileTransfer(dataProvider, context, handler);
+                fileTransfer.download(provider, circle, drawItem);
+            }
+        });
+    }
+
     /*************************************************
      * XMPP MESSAGE HANDLER
      *************************************************/
@@ -2103,6 +2188,8 @@ public class DataProvider {
                 new ResponseListener() {
                     @Override
                     public void onSuccess(JSONObject response) {
+                        handleNetworkSuccess();
+
                         final JSONObject respJson = response;
                         run(new Runnable() {
                             @Override
@@ -2192,9 +2279,10 @@ public class DataProvider {
 
                     @Override
                     public void onError(VolleyError error) {
-                        RequestHandler.getInstance(context).handleError(error);
-                        if (handler != null)
+                        if (handler != null) {
                             handler.sendMessage(handler.obtainMessage(Const.MSG_DISCOVER_ITEM, DiscoverItem.TYPE_MOVIE, -1, null));
+                            handleNetworkError(error);
+                        }
                     }
                 }
         );

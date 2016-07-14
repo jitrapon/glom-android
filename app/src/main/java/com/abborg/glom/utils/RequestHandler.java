@@ -78,41 +78,45 @@ public class RequestHandler {
 
     /**
      * Call this generic error-handling method to handle various connection errors from server
-     *
-     * @param error
+     * Returns true if it is a connectivity issue
      */
-    public void handleError(VolleyError error) {
+    public boolean handleError(VolleyError error) {
         if (error instanceof TimeoutError) {
             Toast.makeText(context,
                     context.getString(R.string.error_network_timeout),
-                    Toast.LENGTH_LONG).show();
+                    Toast.LENGTH_SHORT).show();
+            return true;
         }
 
         else if (error instanceof NoConnectionError) {
             Toast.makeText(context,
                     context.getString(R.string.error_no_connection),
-                    Toast.LENGTH_LONG).show();
+                    Toast.LENGTH_SHORT).show();
+            return true;
         }
         else if (error instanceof AuthFailureError) {
             Toast.makeText(context,
                     context.getString(R.string.error_auth_failure),
-                    Toast.LENGTH_LONG).show();
+                    Toast.LENGTH_SHORT).show();
         }
         else if (error instanceof ServerError) {
             Toast.makeText(context,
                     context.getString(R.string.error_server_generic),
-                    Toast.LENGTH_LONG).show();
+                    Toast.LENGTH_SHORT).show();
         }
         else if (error instanceof NetworkError) {
             Toast.makeText(context,
                     context.getString(R.string.error_network_generic),
-                    Toast.LENGTH_LONG).show();
+                    Toast.LENGTH_SHORT).show();
+            return true;
         }
         else if (error instanceof ParseError) {
             Toast.makeText(context,
                     context.getString(R.string.error_parse_generic),
-                    Toast.LENGTH_LONG).show();
+                    Toast.LENGTH_SHORT).show();
         }
+
+        return false;
     }
 
     /**

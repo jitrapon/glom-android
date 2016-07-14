@@ -21,8 +21,8 @@ public class Const {
     /************************
      * TEST INFO
      ************************/
-    public static final String TEST_USER_ID = "yoshi3003";
-//    public static final String TEST_USER_ID = "fatcat18";
+//    public static final String TEST_USER_ID = "yoshi3003";
+    public static final String TEST_USER_ID = "fatcat18";
     public static final String TEST_CIRCLE_ID = "dev-circle-1";
     public static final String TEST_API_AUTHORIZATION_HEADER = "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -52,6 +52,7 @@ public class Const {
     public static final String API_BOARD = "/circle/%s/board";
     public static final String API_BOARD_ITEM = "/circle/%1$s/board/%2$s";
     public static final String API_GET_MOVIES = "/movie";
+    public static final String API_SERVER_STATUS = "/";
 
     public static final String JSON_SERVER_MESSAGE = "message";
     public static final String JSON_SERVER_USERID = "user_id";
@@ -148,6 +149,12 @@ public class Const {
     public static final int MSG_DRAWING_POST_SUCCESS = 5031;
     public static final int MSG_START_ACTION_MODE = 5032;
     public static final int MSG_SELECT_BOARD_ITEM = 5034;
+    public static final int MSG_DRAWING_DOWNLOAD_FAILED = 5035;
+    public static final int MSG_DRAWING_DOWNLOAD_COMPLETE = 5036;
+    public static final int MSG_DOWNLOAD_DRAWING = 5037;
+    public static final int MSG_SERVER_DISCONNECTED = 5038;
+    public static final int MSG_SERVER_CONNECTING = 5039;
+    public static final int MSG_SERVER_CONNECTED = 5040;
 
     /************************
      * Mimetypes

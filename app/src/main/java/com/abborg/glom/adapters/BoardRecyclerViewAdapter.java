@@ -489,10 +489,9 @@ public class BoardRecyclerViewAdapter
             }
         }
         else {
-            icon = R.drawable.ic_placeholder_file;
+            icon = file.isImage() ? R.drawable.ic_placeholder_image : R.drawable.ic_placeholder_file;
             Glide.with(context)
                     .load(icon).centerCrop()
-                    .signature(new StringSignature(String.valueOf(file.getLocalCache().lastModified())))
                     .crossFade(1000)
                     .into(holder.fileThumbnail);
         }

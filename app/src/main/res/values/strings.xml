@@ -61,6 +61,7 @@
     <string name="EXTRA_DRAWING_TIME">com.abborg.glom.extra.DRAWING_TIME</string>
     <string name="EXTRA_DRAWING_MODE">com.abborg.glom.extra.DRAWING_MODE</string>
     <string name="EXTRA_DRAWING_PATH">com.abborg.glom.extra.DRAWING_PATH</string>
+    <string name="ACTION_CONNECTIVITY_STATE_CHANGE">android.net.conn.CONNECTIVITY_CHANGE</string>
 
     <!-- Profile activity strings -->
     <string name="profile_activity_label">My Profile</string>
@@ -113,6 +114,10 @@
     <string name="card_select_app_to_launch">Complete action using</string>
 
     <!-- Notification messages -->
+    <string name="notification_placeholder">No message</string>
+    <string name="notification_offline">Not Connected</string>
+    <string name="notification_connecting">Connecting…</string>
+    <string name="notification_connected">Connected</string>
     <string name="notification_title_location_update">Message from GlomServer</string>
     <string name="notification_title_broadcast_location">Broadcasting location</string>
     <string name="notification_action_cancel_broadcast_location">Stop</string>

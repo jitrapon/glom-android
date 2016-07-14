@@ -19,7 +19,6 @@ import android.view.ViewGroup;
 import com.abborg.glom.ApplicationState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
-import com.abborg.glom.activities.DrawActivity;
 import com.abborg.glom.activities.EventActivity;
 import com.abborg.glom.activities.MainActivity;
 import com.abborg.glom.adapters.BoardRecyclerViewAdapter;
@@ -31,7 +30,6 @@ import com.abborg.glom.model.DrawItem;
 import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FileItem;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -203,14 +201,8 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
                 } else if (selected instanceof DrawItem) {
                     DrawItem item = (DrawItem) selected;
                     Log.d(TAG, "DrawItem (" + item.getId() + ") selected");
-                    //TODO if file does not exist, download, otherwise view it
-                    String path = (item.getLocalCache() == null) ? null :
-                            new File(item.getLocalCache().getPath()).exists() ? item.getLocalCache().getPath() : null;
-                    Intent intent = new Intent(activity, DrawActivity.class);
-                    intent.setAction(getString(R.string.ACTION_JOIN_DRAWING));
-                    intent.putExtra(getString(R.string.EXTRA_DRAWING_ID), item.getId());
-                    intent.putExtra(getString(R.string.EXTRA_DRAWING_PATH), path);
-                    getActivity().startActivityForResult(intent, Const.DRAW_RESULT_CODE);
+                    if (handler != null)
+                        handler.sendMessage(handler.obtainMessage(Const.MSG_DOWNLOAD_DRAWING, item));
                 }
             }
         }

@@ -1,6 +1,8 @@
 package com.abborg.glom;
 
 import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -74,6 +76,15 @@ public class ApplicationState
     /* External storage memory */
     private File externalFilesDir;
 
+    /* Server connectivity state */
+    private ConnectivityStatus connectivityStatus;
+    private ConnectivityManager connectivityManager;
+    public enum ConnectivityStatus {
+        DISCONNECTED,
+        CONNECTING,
+        CONNECTED
+    }
+
     public static ApplicationState init(Context ctx, Handler handler) {
         instance = new ApplicationState(ctx, handler);
         return instance;
@@ -81,6 +92,10 @@ public class ApplicationState
 
     private ApplicationState(Context ctx, Handler handler) {
         context = ctx.getApplicationContext();
+
+        // check device connectivity
+        connectivityManager = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        connectivityStatus = isNetworkAvailable() ? ConnectivityStatus.CONNECTED : ConnectivityStatus.DISCONNECTED;
 
         // It's important to initialize the ResourceZoneInfoProvider; otherwise
         // joda-time-android will not work.
@@ -114,6 +129,11 @@ public class ApplicationState
 
         // initialize model and data provider
         DataProvider.init(this, context, handler);
+    }
+
+    public boolean isNetworkAvailable() {
+        NetworkInfo activeNetwork = connectivityManager.getActiveNetworkInfo();
+        return activeNetwork != null && activeNetwork.isConnected();
     }
 
     public DateTimeFormatter getDateTimeFormatter() {
@@ -204,4 +224,8 @@ public class ApplicationState
     public File getInternalFilesDir() { return internalFilesDir; }
 
     public File getExternalFilesDir() { return externalFilesDir; }
+
+    public ConnectivityStatus getConnectionStatus() { return connectivityStatus; }
+
+    public void setConnectivityStatus(ConnectivityStatus status) { connectivityStatus = status; }
 }

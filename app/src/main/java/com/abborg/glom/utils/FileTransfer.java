@@ -192,8 +192,70 @@ public class FileTransfer {
         }
     }
 
-    public void download() {
+    public void download(final CloudProvider provider, final Circle circle, final DrawItem item) {
+        try {
+            if (downloadList.contains(item.getId())) {
+                Log.d(TAG, "File " + item.getName() + " is already being downloaded!");
+                return;
+            }
 
+            switch (provider) {
+                case AMAZON_S3: {
+                    if (s3Transfer == null) createAmazonS3Client();
+                    String name = TextUtils.isEmpty(item.getName()) ? item.getId() : item.getName();
+                    final File tempFile = new File(downloadDir.getPath() + "/" + name + ".png");
+
+                    Log.d(TAG, "Begin downloading " + name + " from Amazon S3...to " + tempFile.getPath());
+                    downloadList.add(item.getId());
+                    s3Transfer.download(
+                            Const.AWS_S3_BUCKET,
+                            circle.getId() + "/" + name + ".png",
+                            tempFile
+                    ).setTransferListener(new TransferListener() {
+                        @Override
+                        public void onStateChanged(int id, TransferState state) {
+                            Log.d(TAG, "Amazon S3 download id " + id + " state changed to " + state.name());
+
+                            if (handler != null) {
+                                switch (state) {
+                                    case CANCELED:
+                                    case FAILED:
+                                        downloadList.remove(item.getId());
+                                        handler.sendMessage(handler.obtainMessage(Const.MSG_DRAWING_DOWNLOAD_FAILED, item));
+                                        break;
+                                    case COMPLETED:
+                                        downloadList.remove(item.getId());
+                                        dataProvider.updateDrawingPath(circle, item.getId(), tempFile.getPath());
+                                        break;
+                                }
+                            }
+                        }
+
+                        @Override
+                        public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
+                            int progress = (int) (bytesCurrent/bytesTotal * 100);
+                            Log.d(TAG, "Amazon S3 download id " + id + ", download at progress " + progress);
+                        }
+
+                        @Override
+                        public void onError(int id, Exception ex) {
+                            Log.e(TAG, "Amazon S3 download id " + id + " has encountered an error due to " + ex.getMessage());
+                            downloadList.remove(item.getId());
+                            if (handler != null)
+                                handler.sendMessage(handler.obtainMessage(
+                                        Const.MSG_DRAWING_DOWNLOAD_FAILED, item));
+                        }
+                    });
+
+                    break;
+                }
+                default: break;
+            }
+        }
+        catch (Exception ex) {
+            downloadList.remove(item.getId());
+            Log.e(TAG, ex.getMessage());
+        }
     }
 
     public void download(final CloudProvider provider, final Circle circle, final FileItem item) {

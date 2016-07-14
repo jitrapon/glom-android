@@ -20,6 +20,7 @@ import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
@@ -33,6 +34,7 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewStub;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
@@ -77,6 +79,7 @@ import com.oguzdev.circularfloatingactionmenu.library.SubActionButton;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -102,7 +105,12 @@ public class MainActivity extends AppCompatActivity implements
     /**
      * A receiver for incoming location updates and other various GCM push updates
      */
-    private BroadcastReceiver broadcastReceiver;
+    private BroadcastReceiver localBroadcastReceiver;
+
+    /**
+     * A receiver for Android OS broadcasts
+     */
+    private BroadcastReceiver globalBroadcastReceiver;
 
     /**
      * Adapter for the tab view
@@ -155,6 +163,11 @@ public class MainActivity extends AppCompatActivity implements
     private boolean isRadialMenuOptionsOpening;
     private ActionMode actionMode;
 
+    private View notificationBar;
+    private TextView notificationText;
+    private ImageView notificationCloseBtn;
+    private boolean firstLaunch;
+
     private static final boolean SHOW_TAB_TITLE = false;
     private static final int MENU_OVERLAY_ANIM_TIME = 150;
     private static final boolean START_YOUTUBE_VIDEO_LIGHTBOX = false;
@@ -200,10 +213,14 @@ public class MainActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        firstLaunch = true;
+
         // set up handler for receiving all messages
         handler = new Handler(this);
 
         setupView();
+
+        setupBroadcastReceiver();
 
         appState = ApplicationState.init(this, handler);
     }
@@ -219,9 +236,7 @@ public class MainActivity extends AppCompatActivity implements
         }
 
         // register local broadcast receiver
-        if (broadcastReceiver != null) {
-            registerBroadcastReceiver(broadcastReceiver);
-        }
+        registerBroadcastReceivers();
 
         // get database writable object, if already initialized
         if (dataProvider != null) {
@@ -235,18 +250,18 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     protected void onStop() {
-        // unregister the local broadcast receiver
-        if (broadcastReceiver != null) {
-            LocalBroadcastManager broadcastManager = LocalBroadcastManager.getInstance(this);
-            broadcastManager.unregisterReceiver(broadcastReceiver);
-        }
+        // unregister the broadcast receivers
+        unregisterBroadcastReceivers();
 
         // disconnect google api client
         if (appState != null)
             if (!appState.shouldKeepGoogleApiAlive()) appState.disconnectGoogleApiClient();
 
-        // close database
-        if (dataProvider != null) dataProvider.close();
+        // close database and cancells all network operations
+        if (dataProvider != null) {
+            dataProvider.cancelAllNetworkRequests();
+            dataProvider.close();
+        }
 
         super.onStop();
     }
@@ -254,6 +269,8 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onResume() {
         super.onResume();
+
+        if (dataProvider != null) dataProvider.setHandler(handler);
     }
 
     @Override
@@ -542,8 +559,8 @@ public class MainActivity extends AppCompatActivity implements
 
     private void setupBroadcastReceiver() {
 
-        // register the local broadcast receiver for our gcm listener service updates
-        broadcastReceiver = new BroadcastReceiver() {
+        // setup the local broadcast receiver
+        localBroadcastReceiver = new BroadcastReceiver() {
 
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -603,16 +620,55 @@ public class MainActivity extends AppCompatActivity implements
             }
         };
 
-        registerBroadcastReceiver(broadcastReceiver);
+        // set up the global broadcast receivers to receive OS broadcasts
+        globalBroadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+
+                // device connectivity state change as broadcasted by the OS
+                if (intent.getAction().equals(getResources().getString(R.string.ACTION_CONNECTIVITY_STATE_CHANGE))) {
+                    Log.d(TAG, "Incoming network connectivity change broadcast");
+
+                    if (!appState.isNetworkAvailable()) {
+                        appState.setConnectivityStatus(ApplicationState.ConnectivityStatus.DISCONNECTED);
+                        handler.sendEmptyMessage(Const.MSG_SERVER_DISCONNECTED);
+                    }
+                    else {
+                        if (!firstLaunch) {
+                            appState.setConnectivityStatus(ApplicationState.ConnectivityStatus.CONNECTING);
+                            handler.sendEmptyMessage(Const.MSG_SERVER_CONNECTING);
+                        }
+                    }
+                    firstLaunch = false;
+                }
+            }
+        };
     }
 
-    private void registerBroadcastReceiver(BroadcastReceiver receiver) {
-        LocalBroadcastManager broadcastManager = LocalBroadcastManager.getInstance(this);
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(getResources().getString(R.string.ACTION_RECEIVE_LOCATION));
-        intentFilter.addAction(getResources().getString(R.string.ACTION_USER_LOCATION_UPDATE));
-        intentFilter.addAction(getResources().getString(R.string.ACTION_NEW_MESSAGE));
-        broadcastManager.registerReceiver(receiver, intentFilter);
+    private void registerBroadcastReceivers() {
+        if (localBroadcastReceiver != null) {
+            IntentFilter intentFilter = new IntentFilter();
+            intentFilter.addAction(getResources().getString(R.string.ACTION_RECEIVE_LOCATION));
+            intentFilter.addAction(getResources().getString(R.string.ACTION_USER_LOCATION_UPDATE));
+            intentFilter.addAction(getResources().getString(R.string.ACTION_NEW_MESSAGE));
+            LocalBroadcastManager.getInstance(this).registerReceiver(localBroadcastReceiver, intentFilter);
+        }
+
+        if (globalBroadcastReceiver != null) {
+            IntentFilter intentFilter = new IntentFilter();
+            intentFilter.addAction(getResources().getString(R.string.ACTION_CONNECTIVITY_STATE_CHANGE));
+            registerReceiver(globalBroadcastReceiver, intentFilter);
+        }
+    }
+
+    private void unregisterBroadcastReceivers() {
+        if (localBroadcastReceiver != null) {
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(localBroadcastReceiver);
+        }
+
+        if (globalBroadcastReceiver != null) {
+            unregisterReceiver(globalBroadcastReceiver);
+        }
     }
 
     private void setupService() {
@@ -881,6 +937,52 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
+    private void showNotificationBar(int bgColor, String text, long duration) {
+        if (notificationBar != null) {
+            notificationBar.setVisibility(View.VISIBLE);
+            notificationText.setText(text);
+            notificationText.setBackgroundColor(bgColor);
+
+            if (duration > 0L) {
+                notificationBar.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        notificationBar.setVisibility(View.GONE);
+                    }
+                }, duration);
+            }
+        }
+        else {
+            View view = findViewById(R.id.stub_notification_bar);
+            if (view != null && view instanceof ViewStub) {
+                if (notificationBar == null) {
+                    notificationBar = ((ViewStub) view).inflate();
+
+                    notificationText = (TextView) notificationBar.findViewById(R.id.notification_text);
+                    notificationCloseBtn = (ImageView) notificationBar.findViewById(R.id.notification_close_btn);
+
+                    notificationText.setText(text);
+                    notificationText.setBackgroundColor(bgColor);
+                    notificationCloseBtn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            notificationBar.setVisibility(View.GONE);
+                        }
+                    });
+
+                    if (duration > 0L) {
+                        notificationBar.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                notificationBar.setVisibility(View.GONE);
+                            }
+                        }, duration);
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * Forces updates of all fragments and UI. Use only if selecting a new circle to display.
      */
@@ -917,13 +1019,16 @@ public class MainActivity extends AppCompatActivity implements
 
                 updateView();
 
-                setupBroadcastReceiver();
-
                 setupEventListeners();
 
                 setupService();
 
-                dataProvider.requestGetUsersInCircle(appState.getActiveCircle());
+                if (appState.getConnectionStatus() == ApplicationState.ConnectivityStatus.DISCONNECTED) {
+                    handler.sendEmptyMessage(Const.MSG_SERVER_DISCONNECTED);
+                }
+                else {
+                    dataProvider.requestGetUsersInCircle(appState.getActiveCircle());
+                }
 
                 break;
 
@@ -934,6 +1039,44 @@ public class MainActivity extends AppCompatActivity implements
                 if (!TextUtils.isEmpty(message)) {
                     Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
                 }
+
+                break;
+            }
+
+            /* Diconnected from server */
+            case Const.MSG_SERVER_DISCONNECTED: {
+                Log.d(TAG, "Disconnected from server due to connection problem or server not running");
+
+                if (dataProvider != null) {
+                    dataProvider.cancelAllNetworkRequests();
+                }
+
+                showNotificationBar(ContextCompat.getColor(getApplicationContext(), R.color.notificationWarning),
+                        getResources().getString(R.string.notification_offline), -1L);
+
+                break;
+            }
+
+            /* Connecting to server */
+            case Const.MSG_SERVER_CONNECTING: {
+                Log.d(TAG, "Attempting to establish connection to server...");
+
+                if (dataProvider != null) {
+                    dataProvider.requestServerStatus();
+                }
+
+                showNotificationBar(ContextCompat.getColor(getApplicationContext(), R.color.notificationWarning),
+                        getResources().getString(R.string.notification_connecting), -1L);
+
+                break;
+            }
+
+            /* Connected to server */
+            case Const.MSG_SERVER_CONNECTED: {
+                Log.d(TAG, "Connection established to server successfully!");
+
+                showNotificationBar(ContextCompat.getColor(getApplicationContext(), R.color.notificationOk),
+                        getResources().getString(R.string.notification_connected), 3000);
 
                 break;
             }
@@ -1379,6 +1522,54 @@ public class MainActivity extends AppCompatActivity implements
                     int selected = (Integer) msg.obj;
                     actionMode.setTitle(String.format(getString(R.string.title_action_mode_board_items), selected));
                     actionMode.invalidate();
+                }
+
+                break;
+            }
+
+            /* Begin downloading draw item */
+            case Const.MSG_DOWNLOAD_DRAWING: {
+                final DrawItem item = msg.obj == null ? null : (DrawItem) msg.obj;
+
+                if (item != null) {
+                    dataProvider.requestDownloadDrawingRemote(appState.getActiveCircle(), item, CloudProvider.AMAZON_S3);
+                }
+
+                break;
+            }
+
+            /* Drawing download complete */
+            case Const.MSG_DRAWING_DOWNLOAD_COMPLETE: {
+                final DrawItem item = msg.obj == null ? null : (DrawItem) msg.obj;
+
+                if (item != null) {
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+
+                    String path = (item.getLocalCache() == null) ? null :
+                            new File(item.getLocalCache().getPath()).exists() ? item.getLocalCache().getPath() : null;
+                    Intent intent = new Intent(this, DrawActivity.class);
+                    intent.setAction(getString(R.string.ACTION_JOIN_DRAWING));
+                    intent.putExtra(getString(R.string.EXTRA_DRAWING_ID), item.getId());
+                    intent.putExtra(getString(R.string.EXTRA_DRAWING_PATH), path);
+                    startActivityForResult(intent, Const.DRAW_RESULT_CODE);
+                }
+
+                break;
+            }
+
+            /* Drawing download failed */
+            case Const.MSG_DRAWING_DOWNLOAD_FAILED: {
+                final DrawItem item = msg.obj == null ? null : (DrawItem) msg.obj;
+
+                if (item != null) {
+                    String name = TextUtils.isEmpty(item.getName()) ? "drawing" : item.getName();
+                    Toast.makeText(getApplicationContext(),
+                            String.format(getResources().getString(R.string.notification_download_item_failed), name),
+                            Toast.LENGTH_LONG).show();
                 }
 
                 break;

@@ -104,6 +104,10 @@ public class DrawActivity extends AppCompatActivity implements
 
     private boolean shouldCreateRoom;
 
+    /********************************************
+     * ACTIVITY LIFECYCLES
+     *******************************************/
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -132,6 +136,18 @@ public class DrawActivity extends AppCompatActivity implements
         }
 
         setupView();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (dataProvider != null) dataProvider.setHandler(handler);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
     }
 
     private void finishWithResult(Intent intent) {
@@ -552,6 +568,7 @@ public class DrawActivity extends AppCompatActivity implements
                     Log.d(TAG, ex.getMessage());
                 }
                 break;
+
             default: return false;
         }
 
