@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.SQLException;
@@ -13,6 +14,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.design.widget.BottomSheetBehavior;
+import android.support.design.widget.BottomSheetDialog;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -22,6 +25,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.view.ViewCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
@@ -30,10 +34,10 @@ import android.support.v7.widget.SwitchCompat;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewStub;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
@@ -71,7 +75,6 @@ import com.abborg.glom.service.CirclePushService;
 import com.abborg.glom.service.RegistrationIntentService;
 import com.abborg.glom.utils.CircleTransform;
 import com.bumptech.glide.Glide;
-import com.flipboard.bottomsheet.BottomSheetLayout;
 import com.google.android.youtube.player.YouTubeStandalonePlayer;
 import com.oguzdev.circularfloatingactionmenu.library.FloatingActionMenu;
 import com.oguzdev.circularfloatingactionmenu.library.SubActionButton;
@@ -84,6 +87,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * This is the default entry point launching activity that contains all the tabs to display
+ * information to the user
+ *
+ * @author jitrapon
+ */
 public class MainActivity extends AppCompatActivity implements
         DrawerFragment.FragmentDrawerListener,
         Handler.Callback,
@@ -145,10 +154,6 @@ public class MainActivity extends AppCompatActivity implements
             R.drawable.ic_tab_event,
             R.drawable.ic_tab_discover
     };
-    private BottomSheetLayout bottomSheet;
-    private View broadcastLocationSheetLayout;
-    private SwitchCompat broadcastLocationToggle;
-    private CoordinatorLayout mainCoordinatorLayout;
     private FloatingActionMenu avatarActionMenu;
     private Animation fadeInAnim;
     private Animation fadeOutAnim;
@@ -162,11 +167,17 @@ public class MainActivity extends AppCompatActivity implements
     private android.support.design.widget.FloatingActionButton fab;
     private boolean isRadialMenuOptionsOpening;
     private ActionMode actionMode;
+    private boolean isActionMenuOpened;
 
     private View notificationBar;
     private TextView notificationText;
     private ImageView notificationCloseBtn;
     private boolean firstLaunch;
+
+    private BottomSheetDialog broadcastLocationBottomSheet;
+    private View broadcastLocationSheetLayout;
+    private SwitchCompat broadcastLocationToggle;
+    private CoordinatorLayout mainCoordinatorLayout;
 
     private static final boolean SHOW_TAB_TITLE = false;
     private static final int MENU_OVERLAY_ANIM_TIME = 150;
@@ -203,6 +214,15 @@ public class MainActivity extends AppCompatActivity implements
         public CharSequence getPageTitle(int position) {
             return SHOW_TAB_TITLE ? fragmentTitleList.get(position) : null;
         }
+    }
+
+    private void setupViewPager(ViewPager viewPager) {
+        adapter = new ViewPagerAdapter(getSupportFragmentManager());
+        adapter.addFragment(new CircleFragment(), Const.TAB_CIRCLE);
+        adapter.addFragment(new LocationFragment(), Const.TAB_MAP);
+        adapter.addFragment(new BoardFragment(), Const.TAB_BOARD);
+        adapter.addFragment(new DiscoverFragment(), Const.TAB_DISCOVER);
+        viewPager.setAdapter(adapter);
     }
 
     /**********************************************************
@@ -278,31 +298,13 @@ public class MainActivity extends AppCompatActivity implements
         super.onPause();
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    private void setupEventListeners() {
-        addEventChangeListener((LocationFragment) adapter.getItem(1));
-        addEventChangeListener((BoardFragment) adapter.getItem(2));
-
-        addBroadcastLocationListener((CircleFragment) adapter.getItem(0));
-        addBroadcastLocationListener((LocationFragment) adapter.getItem(1));
-
-        addDiscoverItemChangeListener((DiscoverFragment) adapter.getItem(3));
-    }
-
     private void setupView() {
         setContentView(R.layout.activity_main);
 
-        mainCoordinatorLayout = (CoordinatorLayout) findViewById(R.id.parentView);
+        mainCoordinatorLayout = (CoordinatorLayout) findViewById(R.id.coordinator_layout);
         tabLayout = (TabLayout) findViewById(R.id.tabs);
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         viewPager = (ViewPager) findViewById(R.id.viewpager);
-        bottomSheet = (BottomSheetLayout) findViewById(R.id.bottomsheet);
         fab = (FloatingActionButton) findViewById(R.id.fab);
         overlayLayout = (RelativeLayout) findViewById(R.id.overlayLayout);
 
@@ -323,7 +325,7 @@ public class MainActivity extends AppCompatActivity implements
                 new TabLayout.ViewPagerOnTabSelectedListener(viewPager) {
                     @Override
                     public void onTabUnselected(TabLayout.Tab tab) {
-                        if (tab.getTag().equals(Const.TAB_BOARD)) {
+                        if (Const.TAB_BOARD.equals(tab.getTag())) {
                             if (actionMode != null) actionMode.finish();
                         }
                     }
@@ -343,8 +345,7 @@ public class MainActivity extends AppCompatActivity implements
         drawerFragment.setDrawerListener(this);
 
         // set up the bottom sheets
-        bottomSheet.setShouldDimContentView(false);
-        broadcastLocationSheetLayout = LayoutInflater.from(this).inflate(R.layout.bottom_sheet_broadcast_location, bottomSheet, false);
+        broadcastLocationSheetLayout = getLayoutInflater().inflate(R.layout.bottom_sheet_broadcast_location, null);
         broadcastLocationToggle = (SwitchCompat) broadcastLocationSheetLayout.findViewById(R.id.toggleBroadcastLocationSwitch);
         broadcastLocationToggle.setChecked(appState.getActiveCircle().isUserBroadcastingLocation());
 
@@ -492,10 +493,28 @@ public class MainActivity extends AppCompatActivity implements
                     // click event for circle fragment
                     if (adapter.getItem(viewPager.getCurrentItem()) instanceof CircleFragment) {
                         showRadialMenuOptions(appState.getActiveUser());
-                    } else if (adapter.getItem(viewPager.getCurrentItem()) instanceof LocationFragment) {
+                    }
+                    else if (adapter.getItem(viewPager.getCurrentItem()) instanceof LocationFragment) {
 
-                    } else if (adapter.getItem(viewPager.getCurrentItem()) instanceof BoardFragment) {
-                        showRadialMenuOptions(appState.getActiveUser());
+                    }
+                    else if (adapter.getItem(viewPager.getCurrentItem()) instanceof BoardFragment) {
+                        if (!isRadialMenuOptionsOpening) {
+                            float rotationDeg;
+                            if (isActionMenuOpened) {
+                                hideRadialMenuOptions(true);
+                                rotationDeg = 0f;
+                            } else {
+                                showRadialMenuOptions(appState.getActiveUser());
+                                rotationDeg = 45f;
+                            }
+
+                            // rotate the FAB accordingly
+                            ViewCompat.animate(fab)
+                                    .rotation(rotationDeg)
+                                    .withLayer()
+                                    .setDuration(300L)
+                                    .start();
+                        }
                     }
                 }
             });
@@ -527,7 +546,16 @@ public class MainActivity extends AppCompatActivity implements
 
             @Override
             public void onClick(View v) {
-                if (!isRadialMenuOptionsOpening) hideMenuOverlay(true);
+                if (!isRadialMenuOptionsOpening) {
+                    hideRadialMenuOptions(true);
+
+                    // rotate the FAB accordingly
+                    ViewCompat.animate(fab)
+                            .rotation(0f)
+                            .withLayer()
+                            .setDuration(300L)
+                            .start();
+                }
             }
         });
 
@@ -556,6 +584,10 @@ public class MainActivity extends AppCompatActivity implements
         FrameLayout.LayoutParams blueParams = new FrameLayout.LayoutParams(blueSubActionButtonSize, blueSubActionButtonSize);
         lCSubBuilder.setLayoutParams(blueParams);
     }
+
+    /**************************************************
+     * Broadcast Receivers
+     **************************************************/
 
     private void setupBroadcastReceiver() {
 
@@ -671,11 +703,29 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
+    /**************************************************
+     * Service
+     **************************************************/
+
     private void setupService() {
         // start IntentService to register this application with GCM
         Intent intent = new Intent(this, RegistrationIntentService.class);
         intent.putExtra(getResources().getString(R.string.EXTRA_SEND_TOKEN_USER_ID), appState.getActiveUser().getId());
         startService(intent);
+    }
+
+    /**************************************************
+     * Event Callbacks
+     **************************************************/
+
+    private void setupEventListeners() {
+        addEventChangeListener((LocationFragment) adapter.getItem(1));
+        addEventChangeListener((BoardFragment) adapter.getItem(2));
+
+        addBroadcastLocationListener((CircleFragment) adapter.getItem(0));
+        addBroadcastLocationListener((LocationFragment) adapter.getItem(1));
+
+        addDiscoverItemChangeListener((DiscoverFragment) adapter.getItem(3));
     }
 
     private void addEventChangeListener(BoardItemChangeListener listener) {
@@ -707,14 +757,9 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    private void setupViewPager(ViewPager viewPager) {
-        adapter = new ViewPagerAdapter(getSupportFragmentManager());
-        adapter.addFragment(new CircleFragment(), Const.TAB_CIRCLE);
-        adapter.addFragment(new LocationFragment(), Const.TAB_MAP);
-        adapter.addFragment(new BoardFragment(), Const.TAB_BOARD);
-        adapter.addFragment(new DiscoverFragment(), Const.TAB_DISCOVER);
-        viewPager.setAdapter(adapter);
-    }
+    /**************************************************
+     * Circular Menu
+     **************************************************/
 
     public void showRadialMenuOptions(User user) {
         showMenuOverlay(true);
@@ -749,18 +794,18 @@ public class MainActivity extends AppCompatActivity implements
 
         switch(userPerm) {
             case User.POST_IMAGE_GALLERY:
-                icon.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_picture));
+                icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_action_picture));
                 actionButton = builder.setContentView(icon, params).build();
                 actionButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         openFileBrowser("image/*");
-                        hideMenuOverlay(false);
+                        hideRadialMenuOptions(false);
                     }
                 });
                 break;
             case User.MEDIA_AUDIO_RECEIVE:
-                icon.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_audio));
+                icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_action_audio));
                 actionButton = builder.setContentView(icon, params).build();
                 actionButton.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -769,7 +814,7 @@ public class MainActivity extends AppCompatActivity implements
                     }
                 });
                 break;
-            case User.MEDIA_VIDEO_RECEIVE: icon.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_video));
+            case User.MEDIA_VIDEO_RECEIVE: icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_action_video));
                 actionButton = builder.setContentView(icon, params).build();
                 actionButton.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -778,7 +823,7 @@ public class MainActivity extends AppCompatActivity implements
                     }
                 });
                 break;
-            case User.ALARM_RECEIVE: icon.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_alarm));
+            case User.ALARM_RECEIVE: icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_action_alarm));
                 actionButton = builder.setContentView(icon, params).build();
                 actionButton.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -787,7 +832,7 @@ public class MainActivity extends AppCompatActivity implements
                     }
                 });
                 break;
-            case User.NOTE_RECEIVE: icon.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_grease_pencil));
+            case User.NOTE_RECEIVE: icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_action_grease_pencil));
                 actionButton = builder.setContentView(icon, params).build();
                 actionButton.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -795,34 +840,34 @@ public class MainActivity extends AppCompatActivity implements
                         Intent intent = new Intent(activity, DrawActivity.class);
                         intent.setAction(getResources().getString(R.string.ACTION_CREATE_DRAWING));
                         startActivityForResult(intent, Const.DRAW_RESULT_CODE);
-                        hideMenuOverlay(false);
+                        hideRadialMenuOptions(false);
                     }
                 });
                 break;
-            case User.REQUEST_LOCATION: icon.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_place));
+            case User.REQUEST_LOCATION: icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_action_place));
                 actionButton = builder.setContentView(icon, params).build();
                 actionButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         if (user.getId().equals(appState.getActiveUser().getId())) {
                             //TODO broadcast location dialog setting interval and duration of updates
-                            hideMenuOverlay(false);
+                            hideRadialMenuOptions(false);
                             showBroadcastLocationMenuOptions();
                         }
                         else {
-                            hideMenuOverlay(false);
+                            hideRadialMenuOptions(false);
                             Toast.makeText(activity, "Location request sent to " + user.getName(), Toast.LENGTH_SHORT).show();
                         }
                     }
                 });
                 break;
-            case User.CREATE_EVENT: icon.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_planner));
+            case User.CREATE_EVENT: icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_action_planner));
                 actionButton = builder.setContentView(icon, params).build();
                 final Context context = this;
                 actionButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        hideMenuOverlay(false);
+                        hideRadialMenuOptions(false);
                         Intent intent = new Intent(context, EventActivity.class);
                         intent.setAction(getResources().getString(R.string.ACTION_CREATE_EVENT));
 
@@ -836,23 +881,6 @@ public class MainActivity extends AppCompatActivity implements
         }
 
         return actionButton;
-    }
-
-    private void openFileBrowser(String fileType) {
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT)
-                .setType(fileType);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-        }
-        startActivityForResult(Intent.createChooser(intent,
-                getString(R.string.intent_select_images)), Const.IMAGE_SELECTED_RESULT_CODE);
-    }
-
-    private void showBroadcastLocationMenuOptions() {
-        bottomSheet.showWithSheetView(broadcastLocationSheetLayout);
-//            float peekTranslation = bottomSheetLayout.findViewById(R.id.toggleBroadcastLocationSwitch).getHeight();
-//            bottomSheet.setPeekSheetTranslation(peekTranslation);
-//            bottomSheet.peekSheet();
     }
 
     private FloatingActionMenu setupAvatarOptionMenu(final Activity activity, SubActionButton.Builder builder,
@@ -872,6 +900,7 @@ public class MainActivity extends AppCompatActivity implements
                     @Override
                     public void run() {
                         isRadialMenuOptionsOpening = false;
+                        isActionMenuOpened = true;
                     }
                 }, 700);
             }
@@ -879,6 +908,7 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onMenuClosed(FloatingActionMenu floatingActionMenu) {
                 isRadialMenuOptionsOpening = false;
+                isActionMenuOpened = false;
             }
         });
 
@@ -887,6 +917,36 @@ public class MainActivity extends AppCompatActivity implements
                 .setEndAngle(360)
                 .attachTo(avatarIcon)
                 .build();
+    }
+
+    private void openFileBrowser(String fileType) {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT)
+                .setType(fileType);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        }
+        startActivityForResult(Intent.createChooser(intent,
+                getString(R.string.intent_select_images)), Const.IMAGE_SELECTED_RESULT_CODE);
+    }
+
+    private void showBroadcastLocationMenuOptions() {
+        if (broadcastLocationSheetLayout.getParent() != null) {
+            ((ViewGroup)broadcastLocationSheetLayout.getParent()).removeView(broadcastLocationSheetLayout);
+        }
+
+        broadcastLocationBottomSheet = new BottomSheetDialog(this);
+        broadcastLocationBottomSheet.setContentView(broadcastLocationSheetLayout);
+        BottomSheetBehavior behavior = BottomSheetBehavior.from((View) broadcastLocationSheetLayout.getParent());
+        behavior.setPeekHeight(350);
+
+        broadcastLocationBottomSheet.show();
+
+        broadcastLocationBottomSheet.setOnDismissListener(new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(DialogInterface dialog) {
+                broadcastLocationBottomSheet = null;
+            }
+        });
     }
 
     private void showMenuOverlay(boolean animated) {
@@ -909,11 +969,11 @@ public class MainActivity extends AppCompatActivity implements
         menuOverlay.startAnimation(fadeInAnim);
     }
 
-    private void hideMenuOverlay(boolean animated) {
+    private void hideRadialMenuOptions(boolean animated) {
         fadeOutAnim.setAnimationListener(new Animation.AnimationListener() {
             @Override
             public void onAnimationStart(Animation animation) {
-                Log.d(TAG, "Clicked outside of avatar icon");
+                Log.d(TAG, "Closing avatar action menu");
             }
 
             @Override
@@ -927,7 +987,15 @@ public class MainActivity extends AppCompatActivity implements
         });
         if (animated) menuOverlay.startAnimation(fadeOutAnim);
         else overlayLayout.setVisibility(RelativeLayout.GONE);
+
         if (avatarActionMenu != null) avatarActionMenu.close(animated);
+
+        if (fab != null)
+            ViewCompat.animate(fab)
+                .rotation(0f)
+                .withLayer()
+                .setDuration(300L)
+                .start();
     }
 
     public void setFloatingActionButtonVisible(boolean visible) {
@@ -936,6 +1004,10 @@ public class MainActivity extends AppCompatActivity implements
             else fab.hide();
         }
     }
+
+    /**************************************************
+     * Notification Bar
+     **************************************************/
 
     private void showNotificationBar(int bgColor, String text, long duration) {
         if (notificationBar != null) {
@@ -1002,7 +1074,7 @@ public class MainActivity extends AppCompatActivity implements
 
 
     /**********************************************************
-     * Handler
+     * Handler Callbacks
      **********************************************************/
     @Override
     public boolean handleMessage(Message msg) {
@@ -1584,6 +1656,13 @@ public class MainActivity extends AppCompatActivity implements
     /**********************************************************
      * Menu Handler
      **********************************************************/
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will

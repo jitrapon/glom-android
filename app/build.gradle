@@ -8,10 +8,11 @@ android {
     defaultConfig {
         applicationId "com.abborg.glom"
         minSdkVersion 16
-        targetSdkVersion 22
+        targetSdkVersion 23
         versionCode 1
         versionName "1.0"
         multiDexEnabled true
+        vectorDrawables.useSupportLibrary = true
     }
     buildTypes {
         release {
@@ -80,8 +81,6 @@ dependencies {
     compile 'com.nhaarman.listviewanimations:lib-manipulation:3.1.0@aar'
     compile 'com.nhaarman.listviewanimations:lib-core-slh:3.1.0@aar'
     compile 'com.nineoldandroids:library:2.4.0'
-    compile 'com.flipboard:bottomsheet-core:1.4.3'
-    compile 'com.flipboard:bottomsheet-commons:1.4.3'
     compile 'me.himanshusoni.chatmessageview:chat-message-view:1.0.3'
     //    compile 'jp.wasabeef:recyclerview-animators:2.2.0'    // commented out for now due to incompatible with new support lib
     compile files('libs/YouTubeAndroidPlayerApi.jar')
