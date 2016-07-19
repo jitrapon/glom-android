@@ -57,6 +57,7 @@ public class BoardItemIconAdapter extends RecyclerView.Adapter<RecyclerView.View
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.icon_board_item, parent, false);
+        view.setClickable(true);
         return new BoardItemActionViewHolder(view);
     }
 
@@ -64,6 +65,8 @@ public class BoardItemIconAdapter extends RecyclerView.Adapter<RecyclerView.View
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         BoardItemAction item = items.get(position);
         BoardItemActionViewHolder viewHolder = (BoardItemActionViewHolder) holder;
+
+        viewHolder.bind(item, listener);
 
         viewHolder.icon.setImageDrawable(ContextCompat.getDrawable(context, item.getIcon()));
         viewHolder.label.setText(item.getLabel());

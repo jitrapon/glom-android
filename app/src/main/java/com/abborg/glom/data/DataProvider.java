@@ -22,6 +22,7 @@ import android.util.Log;
 import com.abborg.glom.ApplicationState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
+import com.abborg.glom.adapters.BoardItemAction;
 import com.abborg.glom.interfaces.FileDownloadListener;
 import com.abborg.glom.interfaces.ResponseListener;
 import com.abborg.glom.model.BaseChatMessage;
@@ -60,6 +61,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -202,12 +204,6 @@ public class DataProvider {
         location.setLongitude(0);
         User user = new User("", id, location, User.TYPE_USER);
         user.setAvatar("");
-
-        List<Integer> userPerm = new ArrayList<>();
-        userPerm.add(User.POST_IMAGE_GALLERY);
-        userPerm.add(User.REQUEST_LOCATION);
-        userPerm.add(User.CREATE_EVENT);
-        user.setUserPermission(userPerm);
         return user;
     }
 
@@ -458,17 +454,18 @@ public class DataProvider {
             int type = cursor.getInt(cursor.getColumnIndex(DBHelper.USER_COLUMN_TYPE));
             user = new User(name, userId, null, type);
             user.setAvatar(avatar);
-
-            //TODO retrieve the list of user permissions
-            List<Integer> userPerm = new ArrayList<>();
-            userPerm.add(User.POST_IMAGE_GALLERY);
-            userPerm.add(User.REQUEST_LOCATION);
-            userPerm.add(User.CREATE_EVENT);
-            user.setUserPermission(userPerm);
         }
         cursor.close();
 
         return user;
+    }
+
+    public List<BoardItemAction> getFavoriteBoardItemActions() {
+        return Arrays.asList(
+                BoardItemAction.IMAGE,
+                BoardItemAction.EVENT,
+                BoardItemAction.DRAW
+        );
     }
 
     public void addUsersToCircle(Circle circle, List<User> users) {
@@ -693,12 +690,6 @@ public class DataProvider {
         location.setLatitude(cursor.getDouble(cursor.getColumnIndex(DBHelper.USERCIRCLE_COLUMN_LATITUDE)));
         location.setLongitude(cursor.getDouble(cursor.getColumnIndex(DBHelper.USERCIRCLE_COLUMN_LONGITUDE)));
         user.setLocation(location);
-
-        //TODO set all user permission to receive everything
-        List<Integer> userPerm = new ArrayList<>();
-        userPerm.add(User.REQUEST_LOCATION);
-
-        user.setUserPermission(userPerm);
         user.setCurrentCircle(circle);
 
         return user;

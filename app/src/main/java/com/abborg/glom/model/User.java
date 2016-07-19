@@ -4,9 +4,6 @@ import android.location.Location;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Base class for all users
  * Note that Parcel does not work yet (circular reference as issued in https://github.com/johncarl81/parceler/issues/66)
@@ -24,8 +21,6 @@ public class User implements Parcelable {
     private String avatar;
 
     private Circle currentCircle;
-
-    private List<Integer> userPerm;
 
     private String status;
 
@@ -52,7 +47,6 @@ public class User implements Parcelable {
         this.id = id;
         this.location = location;
         this.currentCircle = null;
-        userPerm = new ArrayList<>();
         this.status = null;
         this.type = type;
     }
@@ -73,7 +67,6 @@ public class User implements Parcelable {
         location.writeToParcel(dest, flags);
         dest.writeString(avatar);
         dest.writeParcelable(currentCircle, flags);
-        dest.writeList(userPerm);
         dest.writeString(status);
     }
 
@@ -84,8 +77,6 @@ public class User implements Parcelable {
         location = Location.CREATOR.createFromParcel(in);
         avatar = in.readString();
         currentCircle = in.readParcelable(Circle.class.getClassLoader());
-        userPerm = new ArrayList<>();
-        in.readList(userPerm, Integer.class.getClassLoader());
         status = in.readString();
     }
 
@@ -133,14 +124,6 @@ public class User implements Parcelable {
     public void setCurrentCircle(Circle circle) { this.currentCircle = circle; }
 
     public Circle getCurrentCircle() { return currentCircle; }
-
-    public void setUserPermission(List<Integer> userPerm) {
-        this.userPerm = userPerm;
-    }
-
-    public List<Integer> getUserPermission() {
-        return userPerm;
-    }
 
     public void setStatus(String status) { this.status = status; }
 

@@ -78,5 +78,5 @@
     <dimen name="bottom_sheet_margin_side">24dp</dimen>
     <dimen name="bottom_sheet_vertical_space">16dp</dimen>
     <dimen name="bottom_sheet_icon_size">48dp</dimen>
-    <dimen name="bottom_sheet_label_size">16dp</dimen>
+    <dimen name="bottom_sheet_label_size">16sp</dimen>
 </resources>

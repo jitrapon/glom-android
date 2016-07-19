@@ -79,6 +79,7 @@ import com.abborg.glom.model.FileItem;
 import com.abborg.glom.model.User;
 import com.abborg.glom.service.CirclePushService;
 import com.abborg.glom.service.RegistrationIntentService;
+import com.abborg.glom.utils.BottomSheetItemDecoration;
 import com.abborg.glom.utils.CircleTransform;
 import com.bumptech.glide.Glide;
 import com.google.android.youtube.player.YouTubeStandalonePlayer;
@@ -374,6 +375,7 @@ public class MainActivity extends AppCompatActivity implements
             LinearLayoutManager layoutManager = new GridLayoutManager(this, 3);
             recyclerView.setLayoutManager(layoutManager);
             recyclerView.setAdapter(iconAdapter);
+            recyclerView.addItemDecoration(new BottomSheetItemDecoration(3, 16, false));
         }
 
         broadcastLocationSheetLayout = getLayoutInflater().inflate(R.layout.bottom_sheet_broadcast_location, null);
@@ -523,7 +525,7 @@ public class MainActivity extends AppCompatActivity implements
 
                     // click event for circle fragment
                     if (adapter.getItem(viewPager.getCurrentItem()) instanceof CircleFragment) {
-                        showRadialMenuOptions(appState.getActiveUser());
+
                     }
                     else if (adapter.getItem(viewPager.getCurrentItem()) instanceof LocationFragment) {
 
@@ -796,6 +798,8 @@ public class MainActivity extends AppCompatActivity implements
     public void onItemClicked(BoardItemAction item) {
         if (boardItemBottomSheet != null) {
             boardItemBottomSheet.dismiss();
+
+            handleBoardItemAction(appState.getActiveUser(), item);
         }
     }
 
@@ -804,133 +808,92 @@ public class MainActivity extends AppCompatActivity implements
      **************************************************/
 
     public void showRadialMenuOptions(User user) {
-        showMenuOverlay(true);
+        if (user != null) {
+            if (user.getId().equals(appState.getActiveUser().getId())) {
+                showMenuOverlay(true);
 
-        // load the avatar picture
-        Glide.with(this)
-                .load(user.getAvatar()).fitCenter()
-                .transform(new CircleTransform(this))
-                .override((int) getResources().getDimension(R.dimen.user_avatar_width),
-                        (int) getResources().getDimension(R.dimen.user_avatar_height))
-                .placeholder(R.drawable.ic_profile)
-                .error(R.drawable.ic_profile)
-                .crossFade(1000)
-                .into(avatarIcon);
+                // load the avatar picture
+                Glide.with(this)
+                        .load(user.getAvatar()).fitCenter()
+                        .transform(new CircleTransform(this))
+                        .override((int) getResources().getDimension(R.dimen.user_avatar_width),
+                                (int) getResources().getDimension(R.dimen.user_avatar_height))
+                        .placeholder(R.drawable.ic_profile)
+                        .error(R.drawable.ic_profile)
+                        .crossFade(1000)
+                        .into(avatarIcon);
 
-        // load the menu based on user permission list
-        avatarActionMenu = setupAvatarOptionMenu(this, lCSubBuilder, actionButtonContentParams, user, avatarIcon);
-        handler.postDelayed(new Runnable() {
+                // load the menu based on user permission list
+                avatarActionMenu = setupAvatarOptionMenu(this, lCSubBuilder, actionButtonContentParams, user, avatarIcon);
+                handler.postDelayed(new Runnable() {
 
-            @Override
-            public void run() {
-                if (!avatarActionMenu.isOpen())
-                    avatarActionMenu.open(true);
+                    @Override
+                    public void run() {
+                        if (!avatarActionMenu.isOpen())
+                            avatarActionMenu.open(true);
+                    }
+                }, 50);
             }
-        }, 50);
+        }
     }
 
-    private SubActionButton setIconFromPermission(final Activity activity, SubActionButton.Builder builder,
-                                                  FrameLayout.LayoutParams params, final User user, int userPerm) {
-        ImageView icon = new ImageView(activity);
-        SubActionButton actionButton;
+    private void handleBoardItemAction(User user, BoardItemAction action) {
+        switch(action) {
+            case IMAGE: {
+                openFileBrowser("image/*");
+                hideRadialMenuOptions(false);
+                break;
+            }
+            case DRAW: {
+                Intent intent = new Intent(this, DrawActivity.class);
+                intent.setAction(getResources().getString(R.string.ACTION_CREATE_DRAWING));
+                startActivityForResult(intent, Const.DRAW_RESULT_CODE);
+                hideRadialMenuOptions(false);
+                break;
+            }
+            case LOCATION: {
+                if (user.getId().equals(appState.getActiveUser().getId())) {
+                    //TODO broadcast location dialog setting interval and duration of updates
+                    hideRadialMenuOptions(false);
+                    showBroadcastLocationMenuOptions();
+                } else {
+                    hideRadialMenuOptions(false);
+                    Toast.makeText(getApplicationContext(), "Location request sent to " + user.getName(), Toast.LENGTH_SHORT).show();
+                }
+                break;
+            }
+            case EVENT: {
+                hideRadialMenuOptions(false);
+                Intent intent = new Intent(this, EventActivity.class);
+                intent.setAction(getResources().getString(R.string.ACTION_CREATE_EVENT));
 
-        switch(userPerm) {
-            case User.POST_IMAGE_GALLERY:
-                icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_vector_image));
-                actionButton = builder.setContentView(icon, params).build();
-                actionButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        openFileBrowser("image/*");
-                        hideRadialMenuOptions(false);
-                    }
-                });
+                // make sure to not disconnect Google Api just yet
+                appState.setKeepGoogleApiClientAlive(true);
+                startActivityForResult(intent, Const.CREATE_EVENT_RESULT_CODE);
                 break;
-            case User.MEDIA_AUDIO_RECEIVE:
-                icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_vector_audio));
-                actionButton = builder.setContentView(icon, params).build();
-                actionButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Toast.makeText(activity, "Sending audio is not supported yet", Toast.LENGTH_SHORT).show();
-                    }
-                });
-                break;
-            case User.MEDIA_VIDEO_RECEIVE: icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_vector_camera));
-                actionButton = builder.setContentView(icon, params).build();
-                actionButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Toast.makeText(activity, "Sending video is not supported yet", Toast.LENGTH_SHORT).show();
-                    }
-                });
-                break;
-            case User.ALARM_RECEIVE: icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_vector_alarm));
-                actionButton = builder.setContentView(icon, params).build();
-                actionButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Toast.makeText(activity, "Sending alarm is not supported yet", Toast.LENGTH_SHORT).show();
-                    }
-                });
-                break;
-            case User.NOTE_RECEIVE: icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_vector_pencil));
-                actionButton = builder.setContentView(icon, params).build();
-                actionButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Intent intent = new Intent(activity, DrawActivity.class);
-                        intent.setAction(getResources().getString(R.string.ACTION_CREATE_DRAWING));
-                        startActivityForResult(intent, Const.DRAW_RESULT_CODE);
-                        hideRadialMenuOptions(false);
-                    }
-                });
-                break;
-            case User.REQUEST_LOCATION: icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_vector_location));
-                actionButton = builder.setContentView(icon, params).build();
-                actionButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (user.getId().equals(appState.getActiveUser().getId())) {
-                            //TODO broadcast location dialog setting interval and duration of updates
-                            hideRadialMenuOptions(false);
-                            showBroadcastLocationMenuOptions();
-                        }
-                        else {
-                            hideRadialMenuOptions(false);
-                            Toast.makeText(activity, "Location request sent to " + user.getName(), Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                });
-                break;
-            case User.CREATE_EVENT: icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_vector_event));
-                actionButton = builder.setContentView(icon, params).build();
-                final Context context = this;
-                actionButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        hideRadialMenuOptions(false);
-                        Intent intent = new Intent(context, EventActivity.class);
-                        intent.setAction(getResources().getString(R.string.ACTION_CREATE_EVENT));
-
-                        // make sure to not disconnect Google Api just yet
-                        appState.setKeepGoogleApiClientAlive(true);
-                        startActivityForResult(intent, Const.CREATE_EVENT_RESULT_CODE);
-                    }
-                });
-                break;
-            default: return null;
+            }
+            case NOTE:
+            case TODO:
+            case ALARM:
+            case VIDEO:
+            default:  Toast.makeText(getApplicationContext(), "Operation is not yet supported, coming soon!", Toast.LENGTH_SHORT).show();
         }
-
-        return actionButton;
     }
 
     private FloatingActionMenu setupAvatarOptionMenu(final Activity activity, SubActionButton.Builder builder,
-                                                     FrameLayout.LayoutParams params, User user, ImageView avatarIcon) {
+                                                     FrameLayout.LayoutParams params, final User user, ImageView avatarIcon) {
         FloatingActionMenu.Builder menuBuilder =  new FloatingActionMenu.Builder(activity);
-        List<Integer> userMenuOptions = user.getUserPermission();
-        for (int option : userMenuOptions) {
-            SubActionButton actionButton = setIconFromPermission(activity, builder, params, user, option);
+        List<BoardItemAction> availableActions = dataProvider.getFavoriteBoardItemActions();
+        for (final BoardItemAction action : availableActions) {
+            ImageView icon = new ImageView(activity);
+            icon.setImageDrawable(ContextCompat.getDrawable(this, action.getIcon()));
+            SubActionButton actionButton = builder.setContentView(icon, params).build();
+            actionButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    handleBoardItemAction(user, action);
+                }
+            });
             menuBuilder.addSubActionView(actionButton);
         }
         ImageView icon = new ImageView(activity);
@@ -940,6 +903,7 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onClick(View v) {
                 showBoardItemMenu();
+                hideRadialMenuOptions(false);
             }
         });
         menuBuilder.addSubActionView(moreButton);
