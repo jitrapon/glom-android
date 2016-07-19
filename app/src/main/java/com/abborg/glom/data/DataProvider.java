@@ -207,7 +207,6 @@ public class DataProvider {
         userPerm.add(User.POST_IMAGE_GALLERY);
         userPerm.add(User.REQUEST_LOCATION);
         userPerm.add(User.CREATE_EVENT);
-        userPerm.add(User.NOTE_RECEIVE);
         user.setUserPermission(userPerm);
         return user;
     }
@@ -465,7 +464,6 @@ public class DataProvider {
             userPerm.add(User.POST_IMAGE_GALLERY);
             userPerm.add(User.REQUEST_LOCATION);
             userPerm.add(User.CREATE_EVENT);
-            userPerm.add(User.NOTE_RECEIVE);
             user.setUserPermission(userPerm);
         }
         cursor.close();
@@ -699,9 +697,7 @@ public class DataProvider {
         //TODO set all user permission to receive everything
         List<Integer> userPerm = new ArrayList<>();
         userPerm.add(User.REQUEST_LOCATION);
-        if (activeUser.getId().equals(user.getId())) {
-            userPerm.add(User.CREATE_EVENT);
-        }
+
         user.setUserPermission(userPerm);
         user.setCurrentCircle(circle);
 

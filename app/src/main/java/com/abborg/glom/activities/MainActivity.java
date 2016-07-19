@@ -30,6 +30,9 @@ import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.ActionMode;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SwitchCompat;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
@@ -51,8 +54,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.abborg.glom.ApplicationState;
+import com.abborg.glom.BoardItemIconAdapter;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
+import com.abborg.glom.adapters.BoardItemAction;
+import com.abborg.glom.adapters.BoardItemActionClickListener;
 import com.abborg.glom.data.DataProvider;
 import com.abborg.glom.fragments.BoardFragment;
 import com.abborg.glom.fragments.CircleFragment;
@@ -97,7 +103,8 @@ public class MainActivity extends AppCompatActivity implements
         DrawerFragment.FragmentDrawerListener,
         Handler.Callback,
         AdapterView.OnItemClickListener,
-        ActionMode.Callback {
+        ActionMode.Callback,
+        BoardItemActionClickListener {
 
     protected static final String TAG = "MainActivity";
 
@@ -161,7 +168,7 @@ public class MainActivity extends AppCompatActivity implements
     private ImageView menuOverlay;
     private ImageView avatarIcon;
     private SubActionButton.Builder lCSubBuilder;
-    private FrameLayout.LayoutParams blueContentParams;
+    private FrameLayout.LayoutParams actionButtonContentParams;
     private ViewPager viewPager;
     private Toolbar toolbar;
     private android.support.design.widget.FloatingActionButton fab;
@@ -174,7 +181,9 @@ public class MainActivity extends AppCompatActivity implements
     private ImageView notificationCloseBtn;
     private boolean firstLaunch;
 
+    private BottomSheetDialog boardItemBottomSheet;
     private BottomSheetDialog broadcastLocationBottomSheet;
+    private View boardItemActionSheetLayout;
     private View broadcastLocationSheetLayout;
     private SwitchCompat broadcastLocationToggle;
     private CoordinatorLayout mainCoordinatorLayout;
@@ -345,6 +354,28 @@ public class MainActivity extends AppCompatActivity implements
         drawerFragment.setDrawerListener(this);
 
         // set up the bottom sheets
+        List<BoardItemAction> boardItemActions = Arrays.asList(
+                BoardItemAction.IMAGE,
+                BoardItemAction.AUDIO,
+                BoardItemAction.VIDEO,
+                BoardItemAction.ALARM,
+                BoardItemAction.DRAW,
+                BoardItemAction.NOTE,
+                BoardItemAction.EVENT,
+                BoardItemAction.LINK,
+                BoardItemAction.LOCATION,
+                BoardItemAction.TODO
+        );
+        boardItemActionSheetLayout = getLayoutInflater().inflate(R.layout.bottom_sheet_board_items, null);
+        BoardItemIconAdapter iconAdapter = new BoardItemIconAdapter(this, boardItemActions, this);
+        RecyclerView recyclerView = (RecyclerView) boardItemActionSheetLayout.findViewById(R.id.board_item_actions_recyclerview);
+        if (recyclerView != null) {
+            recyclerView.setHasFixedSize(true);
+            LinearLayoutManager layoutManager = new GridLayoutManager(this, 3);
+            recyclerView.setLayoutManager(layoutManager);
+            recyclerView.setAdapter(iconAdapter);
+        }
+
         broadcastLocationSheetLayout = getLayoutInflater().inflate(R.layout.bottom_sheet_broadcast_location, null);
         broadcastLocationToggle = (SwitchCompat) broadcastLocationSheetLayout.findViewById(R.id.toggleBroadcastLocationSwitch);
         broadcastLocationToggle.setChecked(appState.getActiveCircle().isUserBroadcastingLocation());
@@ -566,23 +597,23 @@ public class MainActivity extends AppCompatActivity implements
         // hide the layout for now until an avatar is clicked
         overlayLayout.setVisibility(RelativeLayout.GONE);
 
-        int blueSubActionButtonSize = getResources().getDimensionPixelSize(R.dimen.blue_sub_action_button_size);
-        int blueSubActionButtonContentMargin = getResources().getDimensionPixelSize(R.dimen.blue_sub_action_button_content_margin);
+        int subActionButtonSize = getResources().getDimensionPixelSize(R.dimen.light_sub_action_button_size);
+        int subActionButtonContentMargin = getResources().getDimensionPixelSize(R.dimen.light_sub_action_button_content_margin);
 
         lCSubBuilder = new SubActionButton.Builder(this);
-        lCSubBuilder.setBackgroundDrawable(getResources().getDrawable(R.drawable.button_action_blue_selector));
+        lCSubBuilder.setBackgroundDrawable(ContextCompat.getDrawable(this, R.drawable.button_action_light_selector));
 
-        blueContentParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
+        actionButtonContentParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT);
-        blueContentParams.setMargins(blueSubActionButtonContentMargin,
-                blueSubActionButtonContentMargin,
-                blueSubActionButtonContentMargin,
-                blueSubActionButtonContentMargin);
-        lCSubBuilder.setLayoutParams(blueContentParams);
+        actionButtonContentParams.setMargins(subActionButtonContentMargin,
+                subActionButtonContentMargin,
+                subActionButtonContentMargin,
+                subActionButtonContentMargin);
+        lCSubBuilder.setLayoutParams(actionButtonContentParams);
 
         // Set custom layout params
-        FrameLayout.LayoutParams blueParams = new FrameLayout.LayoutParams(blueSubActionButtonSize, blueSubActionButtonSize);
-        lCSubBuilder.setLayoutParams(blueParams);
+        FrameLayout.LayoutParams subActionButtonParams = new FrameLayout.LayoutParams(subActionButtonSize, subActionButtonSize);
+        lCSubBuilder.setLayoutParams(subActionButtonParams);
     }
 
     /**************************************************
@@ -758,6 +789,17 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     /**************************************************
+     * Board Item Actions
+     **************************************************/
+
+    @Override
+    public void onItemClicked(BoardItemAction item) {
+        if (boardItemBottomSheet != null) {
+            boardItemBottomSheet.dismiss();
+        }
+    }
+
+    /**************************************************
      * Circular Menu
      **************************************************/
 
@@ -776,7 +818,7 @@ public class MainActivity extends AppCompatActivity implements
                 .into(avatarIcon);
 
         // load the menu based on user permission list
-        avatarActionMenu = setupAvatarOptionMenu(this, lCSubBuilder, blueContentParams, user, avatarIcon);
+        avatarActionMenu = setupAvatarOptionMenu(this, lCSubBuilder, actionButtonContentParams, user, avatarIcon);
         handler.postDelayed(new Runnable() {
 
             @Override
@@ -794,7 +836,7 @@ public class MainActivity extends AppCompatActivity implements
 
         switch(userPerm) {
             case User.POST_IMAGE_GALLERY:
-                icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_action_picture));
+                icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_vector_image));
                 actionButton = builder.setContentView(icon, params).build();
                 actionButton.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -805,7 +847,7 @@ public class MainActivity extends AppCompatActivity implements
                 });
                 break;
             case User.MEDIA_AUDIO_RECEIVE:
-                icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_action_audio));
+                icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_vector_audio));
                 actionButton = builder.setContentView(icon, params).build();
                 actionButton.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -814,7 +856,7 @@ public class MainActivity extends AppCompatActivity implements
                     }
                 });
                 break;
-            case User.MEDIA_VIDEO_RECEIVE: icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_action_video));
+            case User.MEDIA_VIDEO_RECEIVE: icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_vector_camera));
                 actionButton = builder.setContentView(icon, params).build();
                 actionButton.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -823,7 +865,7 @@ public class MainActivity extends AppCompatActivity implements
                     }
                 });
                 break;
-            case User.ALARM_RECEIVE: icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_action_alarm));
+            case User.ALARM_RECEIVE: icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_vector_alarm));
                 actionButton = builder.setContentView(icon, params).build();
                 actionButton.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -832,7 +874,7 @@ public class MainActivity extends AppCompatActivity implements
                     }
                 });
                 break;
-            case User.NOTE_RECEIVE: icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_action_grease_pencil));
+            case User.NOTE_RECEIVE: icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_vector_pencil));
                 actionButton = builder.setContentView(icon, params).build();
                 actionButton.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -844,7 +886,7 @@ public class MainActivity extends AppCompatActivity implements
                     }
                 });
                 break;
-            case User.REQUEST_LOCATION: icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_action_place));
+            case User.REQUEST_LOCATION: icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_vector_location));
                 actionButton = builder.setContentView(icon, params).build();
                 actionButton.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -861,7 +903,7 @@ public class MainActivity extends AppCompatActivity implements
                     }
                 });
                 break;
-            case User.CREATE_EVENT: icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_action_planner));
+            case User.CREATE_EVENT: icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_vector_event));
                 actionButton = builder.setContentView(icon, params).build();
                 final Context context = this;
                 actionButton.setOnClickListener(new View.OnClickListener() {
@@ -891,6 +933,16 @@ public class MainActivity extends AppCompatActivity implements
             SubActionButton actionButton = setIconFromPermission(activity, builder, params, user, option);
             menuBuilder.addSubActionView(actionButton);
         }
+        ImageView icon = new ImageView(activity);
+        icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_vector_more));
+        SubActionButton moreButton = builder.setContentView(icon, params).build();
+        moreButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showBoardItemMenu();
+            }
+        });
+        menuBuilder.addSubActionView(moreButton);
 
         menuBuilder.setStateChangeListener(new FloatingActionMenu.MenuStateChangeListener() {
             @Override
@@ -945,6 +997,35 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onDismiss(DialogInterface dialog) {
                 broadcastLocationBottomSheet = null;
+            }
+        });
+    }
+
+    private void showBoardItemMenu() {
+        if (broadcastLocationBottomSheet != null) {
+            broadcastLocationBottomSheet.dismiss();
+            broadcastLocationBottomSheet = null;
+
+            if (broadcastLocationSheetLayout.getParent() != null) {
+                ((ViewGroup)broadcastLocationSheetLayout.getParent()).removeView(broadcastLocationSheetLayout);
+            }
+        }
+
+        if (boardItemActionSheetLayout.getParent() != null) {
+            ((ViewGroup)boardItemActionSheetLayout.getParent()).removeView(boardItemActionSheetLayout);
+        }
+
+        boardItemBottomSheet = new BottomSheetDialog(this);
+        boardItemBottomSheet.setContentView(boardItemActionSheetLayout);
+        BottomSheetBehavior behavior = BottomSheetBehavior.from((View) boardItemActionSheetLayout.getParent());
+        behavior.setPeekHeight(550);
+
+        boardItemBottomSheet.show();
+
+        boardItemBottomSheet.setOnDismissListener(new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(DialogInterface dialog) {
+                boardItemBottomSheet = null;
             }
         });
     }

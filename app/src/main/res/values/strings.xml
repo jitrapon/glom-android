@@ -217,4 +217,16 @@
 
     <!-- Action mode -->
     <string name="title_action_mode_board_items">%d selected</string>
+
+    <!-- Board Item Actions -->
+    <string name="action_image">Image</string>
+    <string name="action_video">Video</string>
+    <string name="action_audio">Voice</string>
+    <string name="action_event">Event</string>
+    <string name="action_alarm">Alarm</string>
+    <string name="action_note">Note</string>
+    <string name="action_draw">Draw</string>
+    <string name="action_todo">To Do</string>
+    <string name="action_location">Send Location</string>
+    <string name="action_link">Link</string>
 </resources>

@@ -39,8 +39,8 @@
     <dimen name="avatar_menu_radius_large">120dp</dimen>
     <dimen name="avatar_menu_radius_small">30dp</dimen>
     <dimen name="avatar_menu_radius_medium">72dp</dimen>
-    <dimen name="blue_sub_action_button_size">58dp</dimen>
-    <dimen name="blue_sub_action_button_content_margin">16dp</dimen>
+    <dimen name="light_sub_action_button_size">68dp</dimen>
+    <dimen name="light_sub_action_button_content_margin">16dp</dimen>
 
     <dimen name="marker_avatar_width">35dp</dimen>
     <dimen name="marker_avatar_height">35dp</dimen>
@@ -72,4 +72,11 @@
     <dimen name="content_inset">16dp</dimen>
 
     <dimen name="notification_text_size">15sp</dimen>
+
+    <dimen name="bottom_sheet_margin_top">16dp</dimen>
+    <dimen name="bottom_sheet_margin_bottom">24dp</dimen>
+    <dimen name="bottom_sheet_margin_side">24dp</dimen>
+    <dimen name="bottom_sheet_vertical_space">16dp</dimen>
+    <dimen name="bottom_sheet_icon_size">48dp</dimen>
+    <dimen name="bottom_sheet_label_size">16dp</dimen>
 </resources>
