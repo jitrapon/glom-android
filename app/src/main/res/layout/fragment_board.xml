@@ -11,11 +11,25 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <android.support.v7.widget.RecyclerView
-            android:id="@+id/circle_board_view"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scrollbars="vertical"/>
+            android:layout_height="match_parent">
+
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/board_recycler_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scrollbars="vertical"/>
+
+            <ImageView
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="80dp"
+                android:id="@+id/board_empty_view"
+                android:layout_width="match_parent"
+                android:layout_height="240dp"
+                android:src="@drawable/empty_board_page"/>
+
+        </FrameLayout>
 
     </android.support.v4.widget.SwipeRefreshLayout>
 

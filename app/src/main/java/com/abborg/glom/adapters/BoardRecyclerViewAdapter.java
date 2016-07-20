@@ -325,10 +325,10 @@ public class BoardRecyclerViewAdapter
         notifyDataSetChanged();
     }
 
-    public void update(List<BoardItem> events) {
+    public void update(List<BoardItem> items) {
         // update from specific list of items
-        if (events != null) {
-            items = events;
+        if (items != null) {
+            this.items = items;
             notifyDataSetChanged();
         }
         else {

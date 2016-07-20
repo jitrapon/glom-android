@@ -317,6 +317,8 @@ public class MainActivity extends AppCompatActivity implements
         viewPager = (ViewPager) findViewById(R.id.viewpager);
         fab = (FloatingActionButton) findViewById(R.id.fab);
         overlayLayout = (RelativeLayout) findViewById(R.id.overlayLayout);
+        boardItemActionSheetLayout = getLayoutInflater().inflate(R.layout.bottom_sheet_board_items, null);
+        broadcastLocationSheetLayout = getLayoutInflater().inflate(R.layout.bottom_sheet_broadcast_location, null);
 
         setSupportActionBar(toolbar);
 
@@ -367,7 +369,7 @@ public class MainActivity extends AppCompatActivity implements
                 BoardItemAction.LOCATION,
                 BoardItemAction.TODO
         );
-        boardItemActionSheetLayout = getLayoutInflater().inflate(R.layout.bottom_sheet_board_items, null);
+
         BoardItemIconAdapter iconAdapter = new BoardItemIconAdapter(this, boardItemActions, this);
         RecyclerView recyclerView = (RecyclerView) boardItemActionSheetLayout.findViewById(R.id.board_item_actions_recyclerview);
         if (recyclerView != null) {
@@ -378,7 +380,6 @@ public class MainActivity extends AppCompatActivity implements
             recyclerView.addItemDecoration(new BottomSheetItemDecoration(3, 16, false));
         }
 
-        broadcastLocationSheetLayout = getLayoutInflater().inflate(R.layout.bottom_sheet_broadcast_location, null);
         broadcastLocationToggle = (SwitchCompat) broadcastLocationSheetLayout.findViewById(R.id.toggleBroadcastLocationSwitch);
         broadcastLocationToggle.setChecked(appState.getActiveCircle().isUserBroadcastingLocation());
 
@@ -699,7 +700,7 @@ public class MainActivity extends AppCompatActivity implements
                         handler.sendEmptyMessage(Const.MSG_SERVER_DISCONNECTED);
                     }
                     else {
-                        if (!firstLaunch) {
+                        if (!firstLaunch && appState.getConnectionStatus() != ApplicationState.ConnectivityStatus.CONNECTED) {
                             appState.setConnectivityStatus(ApplicationState.ConnectivityStatus.CONNECTING);
                             handler.sendEmptyMessage(Const.MSG_SERVER_CONNECTING);
                         }
@@ -1354,12 +1355,12 @@ public class MainActivity extends AppCompatActivity implements
             case Const.MSG_ITEM_DELETED_SUCCESS: {
                 BoardItem item = msg.obj == null ? null : (BoardItem) msg.obj;
                 if (item != null) {
+                    appState.getActiveCircle().removeItem(item);
                     if (boardItemChangeListeners != null) {
                         for (BoardItemChangeListener listener : boardItemChangeListeners) {
                             listener.onItemDeleted(item.getId());
                         }
                     }
-                    appState.getActiveCircle().removeItem(item);
 
                     Snackbar.make(mainCoordinatorLayout, getResources().getQuantityString(R.plurals.notification_delete_item, 1, 1),
                             Snackbar.LENGTH_LONG)

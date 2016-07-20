@@ -15,6 +15,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 
 import com.abborg.glom.ApplicationState;
 import com.abborg.glom.Const;
@@ -47,14 +48,8 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
     /* The swipe refresh layout */
     private SwipeRefreshLayout refreshView;
 
-    /* The view to be used for listing event cards */
-    private RecyclerView recyclerView;
-
     /* Adapter to the recycler view */
     private BoardRecyclerViewAdapter adapter;
-
-    /* Layout manager for the view */
-    private RecyclerView.LayoutManager layoutManager;
 
     /* Main activity's data updater */
     private DataProvider dataProvider;
@@ -62,6 +57,7 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
     /* The list of items in this circle */
     private List<BoardItem> items;
 
+    private ImageView emptyView;
     private boolean firstView;
 
     private MainActivity activity;
@@ -70,11 +66,11 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
 
     private boolean isActionModeEnabled;
 
-    private static final int ITEM_APPEARANCE_ANIM_TIME = 650;
-    private static final long ITEM_ADD_ANIM_TIME = 100;
-    private static final long ITEM_REMOVE_ANIM_TIME = 100;
-    private static final long ITEM_MOVE_ANIM_TIME = 100;
-    private static final long ITEM_CHANGE_ANIM_TIME = 100;
+//    private static final int ITEM_APPEARANCE_ANIM_TIME = 650;
+//    private static final long ITEM_ADD_ANIM_TIME = 100;
+//    private static final long ITEM_REMOVE_ANIM_TIME = 100;
+//    private static final long ITEM_MOVE_ANIM_TIME = 100;
+//    private static final long ITEM_CHANGE_ANIM_TIME = 100;
 
     /**********************************************************
      * View Initializations
@@ -113,11 +109,12 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View root = inflater.inflate(R.layout.fragment_board, container, false);
+
         refreshView = (SwipeRefreshLayout) root.findViewById(R.id.board_refresh_layout);
         refreshView.setOnRefreshListener(this);
-        recyclerView = (RecyclerView) root.findViewById(R.id.circle_board_view);
+        RecyclerView recyclerView = (RecyclerView) root.findViewById(R.id.board_recycler_view);
         recyclerView.setHasFixedSize(true);
-        layoutManager = new LinearLayoutManager(getContext());
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
         recyclerView.setLayoutManager(layoutManager);
 
         // set up adapter and its appearance animation
@@ -129,6 +126,10 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
 //        recyclerView.getItemAnimator().setRemoveDuration(ITEM_REMOVE_ANIM_TIME);
 //        recyclerView.getItemAnimator().setMoveDuration(ITEM_MOVE_ANIM_TIME);
 //        recyclerView.getItemAnimator().setChangeDuration(ITEM_CHANGE_ANIM_TIME);
+
+        // set up empty board icon
+        emptyView = (ImageView) root.findViewById(R.id.board_empty_view);
+        showOrHideEmptyIcon();
 
         return root;
     }
@@ -167,6 +168,10 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
             isFragmentVisible = false;
             Log.i(TAG, "EventItem is now INVISIBLE to user");
         }
+    }
+
+    private void showOrHideEmptyIcon() {
+        emptyView.setVisibility(items != null && items.size() > 0 ? View.GONE: View.VISIBLE);
     }
 
     /**********************************************************
@@ -252,6 +257,8 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
             if (refreshView.isRefreshing())
                 refreshView.setRefreshing(false);
         }
+
+        showOrHideEmptyIcon();
     }
 
     @Override
@@ -276,6 +283,8 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
             if (refreshView.isRefreshing())
                 refreshView.setRefreshing(false);
         }
+
+        showOrHideEmptyIcon();
     }
 
     /**********************************************************
@@ -295,6 +304,8 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
                 if (refreshView.isRefreshing()) refreshView.setRefreshing(false);
             }
         }
+
+        showOrHideEmptyIcon();
     }
 
     public List<String> getSelectedItemsId() {

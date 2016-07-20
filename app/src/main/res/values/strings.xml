@@ -215,6 +215,9 @@
     <string name="menu_item_clear_drawing">Clear</string>
     <string name="notification_saving_bitmap">Saving this drawing locally…</string>
 
+    <!--Board -->
+    <string name="label_empty_board">No items in this board\nAdd something to share!</string>
+
     <!-- Action mode -->
     <string name="title_action_mode_board_items">%d selected</string>
 
