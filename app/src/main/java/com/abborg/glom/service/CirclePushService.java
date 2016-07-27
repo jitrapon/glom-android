@@ -1,5 +1,6 @@
 package com.abborg.glom.service;
 
+import android.Manifest;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -32,6 +33,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+
+import pub.devrel.easypermissions.EasyPermissions;
 
 /**
  * This service handles sending background push message to the server
@@ -129,31 +132,37 @@ public class CirclePushService extends Service implements LocationListener,
      * @param interval The interval in milliseconds to poll for location updates, specify 0 to make a single request
      */
     private void getUserLocation(boolean lastLocation, long interval) {
-        if (lastLocation) {
-            userLocation = LocationServices.FusedLocationApi.getLastLocation(apiClient);
-            if (userLocation == null) {
-                Log.i(TAG, "Requesting new user location with interval of " + interval);
-                if (interval > 0) locationRequest.setInterval(interval);
-                LocationServices.FusedLocationApi.requestLocationUpdates(apiClient, locationRequest, this);
-            }
-            else {
-                Log.i(TAG, "User last location is intact");
+        try {
+            String[] perms = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
+            if (EasyPermissions.hasPermissions(this, perms)) {
+                if (lastLocation) {
+                    userLocation = LocationServices.FusedLocationApi.getLastLocation(apiClient);
+                    if (userLocation == null) {
+                        Log.i(TAG, "Requesting new user location with interval of " + interval);
+                        if (interval > 0) locationRequest.setInterval(interval);
+                        LocationServices.FusedLocationApi.requestLocationUpdates(apiClient, locationRequest, this);
+                    } else {
+                        Log.i(TAG, "User last location is intact");
 
-                // broadcast to MainActivity
-                Intent intent = new Intent(getResources().getString(R.string.ACTION_USER_LOCATION_UPDATE));
-                intent.putExtra(getResources().getString(R.string.EXTRA_USER_LOCATION_UPDATE), userLocation);
-                LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+                        // broadcast to MainActivity
+                        Intent intent = new Intent(getResources().getString(R.string.ACTION_USER_LOCATION_UPDATE));
+                        intent.putExtra(getResources().getString(R.string.EXTRA_USER_LOCATION_UPDATE), userLocation);
+                        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
 
-                // loop through list of circles and send updates to them
-                for (String circleId : circles) {
-                    sendLocationUpdateRequest(circleId, userLocation);
+                        // loop through list of circles and send updates to them
+                        for (String circleId : circles) {
+                            sendLocationUpdateRequest(circleId, userLocation);
+                        }
+                    }
+                } else {
+                    Log.i(TAG, "Requesting new user location with interval of " + interval);
+                    if (interval > 0) locationRequest.setInterval(interval);
+                    LocationServices.FusedLocationApi.requestLocationUpdates(apiClient, locationRequest, this);
                 }
             }
         }
-        else {
-            Log.i(TAG, "Requesting new user location with interval of " + interval);
-            if (interval > 0) locationRequest.setInterval(interval);
-            LocationServices.FusedLocationApi.requestLocationUpdates(apiClient, locationRequest, this);
+        catch (SecurityException ex) {
+            Log.e(TAG, ex.getMessage());
         }
     }
 

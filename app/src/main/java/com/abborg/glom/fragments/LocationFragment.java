@@ -1,6 +1,7 @@
 package com.abborg.glom.fragments;
 
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -10,6 +11,7 @@ import android.graphics.Typeface;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
@@ -67,12 +69,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import pub.devrel.easypermissions.AfterPermissionGranted;
+import pub.devrel.easypermissions.EasyPermissions;
+
 /**
  * A simple {@link Fragment} subclass.
  */
 public class LocationFragment extends SupportMapFragment implements OnMapReadyCallback, BroadcastLocationListener,
         BoardItemChangeListener {
-    
+
     /* Might be null if Google Play services APK is not available. */
     private GoogleMap googleMap;
 
@@ -118,6 +123,22 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
     /* Ratio of broadcasting-location circle to the visible map */
     private static final float CIRCLE_TO_MAP_RATIO = 0.6f;
 
+    /* Location permission */
+    private static final int PERMISSION_LOCATION = 0x1;
+
+    /*******************************************************************
+     * PERMISSION CALLBACK
+     *******************************************************************/
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
+    }
+
+    /*******************************************************************
+     * FRAGMENT LIFECYCLE
+     *******************************************************************/
 
     public LocationFragment() {
         // Required empty public constructor
@@ -174,30 +195,11 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         return mapView;
     }
 
-    private void setUpClusterer() {
-
-    }
-
     @Override
     public void onResume() {
         super.onResume();
 
-        Log.d("MyMap", "onResume");
-        setUpMapIfNeeded();
-    }
-
-    private void setUpMapIfNeeded() {
-        if (googleMap == null) {
-            Log.d("MyMap", "setUpMapIfNeeded");
-            getMapAsync(this);
-        }
-    }
-
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-        Log.d("MyMap", "onMapReady");
-        this.googleMap = googleMap;
-        setUpMap();
+        initMap();
     }
 
     @Override
@@ -218,11 +220,20 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         }
     }
 
-    /**
-     * Called when the map is ready after initialization
-     */
-    private void setUpMap() {
-        googleMap.setMyLocationEnabled(false);
+    /*******************************************************************
+     * MAP INITIALIZATIONS
+     *******************************************************************/
+
+    private void initMap() {
+        if (googleMap == null) {
+            getMapAsync(this);
+        }
+    }
+
+    @Override
+    public void onMapReady(GoogleMap map) {
+        googleMap = map;
+
         googleMap.getUiSettings().setMyLocationButtonEnabled(false);
         googleMap.setBuildingsEnabled(true);
         googleMap.setIndoorEnabled(true);
@@ -297,8 +308,33 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
             }
         });
 
+        // set user location to be displayed on the map
+        setUserLocationDisplayed();
+
         update(true, true);
     }
+
+    @AfterPermissionGranted(PERMISSION_LOCATION)
+    private void setUserLocationDisplayed() {
+        try {
+            if (googleMap != null) {
+                String[] perms = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
+                if (EasyPermissions.hasPermissions(getActivity(), perms)) {
+                    googleMap.setMyLocationEnabled(true);
+                } else {
+                    EasyPermissions.requestPermissions(this, getString(R.string.permission_location_rationale),
+                            PERMISSION_LOCATION, perms);
+                }
+            }
+        }
+        catch (SecurityException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
+    }
+
+    /*******************************************************************
+     * BOARD ITEM CALLBACKS
+     *******************************************************************/
 
     @Override
     public void onItemAdded(String id) {
@@ -373,6 +409,30 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         }
     }
 
+    /*******************************************************************
+     * LOCATION BROADCAST CALLBACKS
+     *******************************************************************/
+
+    /**
+     * Called when the UI is to be updated when broadcasting location is enabled
+     */
+    @Override
+    public void onBroadcastLocationEnabled(long duration) {
+        Log.d(TAG, "Broadcast location is enabled");
+    }
+
+    /**
+     * Called when the UI is to be updated when broadcasting location is disabled
+     */
+    @Override
+    public void onBroadcastLocationDisabled() {
+        Log.d(TAG, "Broadcast location is disabled");
+    }
+
+    /*******************************************************************
+     * MAP METHOD HELPERS
+     *******************************************************************/
+
     private void addMarker(EventItem event) {
         if (event.getLocation() != null || event.getPlace() != null) {
             MarkerOptions options = new MarkerOptions()
@@ -402,22 +462,6 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         else {
             Log.d(TAG, "Marker for event " + event.getName() + " NOT added because a place or a coordinate has not been set");
         }
-    }
-
-    /**
-     * Called when the UI is to be updated when broadcasting location is enabled
-     */
-    @Override
-    public void onBroadcastLocationEnabled(long duration) {
-        Log.d(TAG, "Broadcast location is enabled");
-    }
-
-    /**
-     * Called when the UI is to be updated when broadcasting location is disabled
-     */
-    @Override
-    public void onBroadcastLocationDisabled() {
-        Log.d(TAG, "Broadcast location is disabled");
     }
 
     /**
@@ -718,74 +762,82 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         return bitmap;
     }
 
+    @AfterPermissionGranted(PERMISSION_LOCATION)
     private void setMarkerSnippet(final Marker marker) {
-        // TODO marker snippet shows options of time-since-last-update, status message, nearby-place, time-to-destination (ongoing events)
-        // show nearby-place for this user
-        if (true) {
-            if (userMarkers.get(appState.getActiveUser().getId()).getId().equals(marker.getId())) {
-                GoogleApiClient apiClient = ApplicationState.getInstance().getGoogleApiClient();
-                if (apiClient != null && apiClient.isConnected()) {
-                    PendingResult<PlaceLikelihoodBuffer> placeResult = Places.PlaceDetectionApi.getCurrentPlace(apiClient, null);
-                    placeResult.setResultCallback(new ResultCallback<PlaceLikelihoodBuffer>() {
+        try {
+            String[] perms = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
+            if (EasyPermissions.hasPermissions(getActivity(), perms)) {
+                // TODO marker snippet shows options of time-since-last-update, status message, nearby-place, time-to-destination (ongoing events)
+                // show nearby-place for this user
+                if (true) {
+                    if (userMarkers.get(appState.getActiveUser().getId()).getId().equals(marker.getId())) {
+                        GoogleApiClient apiClient = ApplicationState.getInstance().getGoogleApiClient();
+                        if (apiClient != null && apiClient.isConnected()) {
+                            PendingResult<PlaceLikelihoodBuffer> placeResult = Places.PlaceDetectionApi.getCurrentPlace(apiClient, null);
+                            placeResult.setResultCallback(new ResultCallback<PlaceLikelihoodBuffer>() {
 
-                        @Override
-                        public void onResult(PlaceLikelihoodBuffer places) {
-                            if (!places.getStatus().isSuccess()) {
-                                Log.e(TAG, "Update user marker place did not complete. Error: " + places.getStatus().toString());
-                                places.release();
-                                return;
-                            }
+                                @Override
+                                public void onResult(PlaceLikelihoodBuffer places) {
+                                    if (!places.getStatus().isSuccess()) {
+                                        Log.e(TAG, "Update user marker place did not complete. Error: " + places.getStatus().toString());
+                                        places.release();
+                                        return;
+                                    }
 
-                            // display the first place in the list
-                            final Place place = places.get(0).getPlace();
-                            marker.setSnippet(place.getName() + "");
+                                    // display the first place in the list
+                                    final Place place = places.get(0).getPlace();
+                                    marker.setSnippet(place.getName() + "");
 
-                            Log.d(TAG, "User place marker query succeeded for " + place.getName());
-
-                            places.release();
+                                    places.release();
+                                }
+                            });
                         }
-                    });
+                    } else {
+                        marker.setSnippet(marker.getPosition().latitude + ", " + marker.getPosition().longitude);
+                    }
+                }
+
+                // show user status
+                //TODO
+                else if (false) {
+                    // find the user
+                    User markerUser = null;
+                    for (User user : appState.getActiveCircle().getUsers()) {
+                        if (userMarkers.get(user.getId()).getId().equals(marker.getId()))
+                            markerUser = user;
+                    }
+
+                    if (markerUser != null) {
+                        marker.setSnippet("What's up?");
+                    }
+                }
+
+                // show user's distance to destination
+                //TODO
+                else if (true) {
+
+                }
+
+                // show user's time to destination
+                //TODO
+                else if (true) {
+
+                }
+
+                // show time since last update
+                else {
+
                 }
             }
             else {
-                marker.setSnippet(marker.getPosition().latitude + ", " + marker.getPosition().longitude);
+                EasyPermissions.requestPermissions(this, getString(R.string.permission_location_rationale),
+                        PERMISSION_LOCATION, perms);
             }
         }
-
-        // show user status
-        //TODO
-        else if (false) {
-            // find the user
-            User markerUser = null;
-            for (User user : appState.getActiveCircle().getUsers()) {
-                if (userMarkers.get(user.getId()).getId().equals(marker.getId()))
-                   markerUser = user;
-            }
-
-            if (markerUser != null) {
-                marker.setSnippet("What's up?");
-            }
-        }
-
-        // show user's distance to destination
-        //TODO
-        else if (true) {
-
-        }
-
-        // show user's time to destination
-        //TODO
-        else if (true) {
-
-        }
-
-        // show time since last update
-        else {
-
+        catch (SecurityException ex) {
+            Log.e(TAG, ex.getMessage());
         }
     }
-
-
 
     /**
      * Updates the markers position with the user info. Call this when map has already been set up

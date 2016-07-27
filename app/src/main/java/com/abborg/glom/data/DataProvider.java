@@ -35,6 +35,7 @@ import com.abborg.glom.model.DrawItem;
 import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FeedAction;
 import com.abborg.glom.model.FileItem;
+import com.abborg.glom.model.LinkItem;
 import com.abborg.glom.model.Movie;
 import com.abborg.glom.model.User;
 import com.abborg.glom.model.WatchableFeed;
@@ -111,8 +112,6 @@ public class DataProvider {
 
     /* The app version code (not the name) used on the last start of the app */
     private static final String LAST_APP_VERSION = "last_app_version";
-
-    private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
 
     /*************************************************
      * INITIALIZATION OPERATIONS
@@ -860,105 +859,115 @@ public class DataProvider {
 
                                                     switch (type) {
                                                         case BoardItem.TYPE_EVENT: {
-                                                            String name = info.getString(Const.JSON_SERVER_EVENT_NAME);
+                                                            String name = parseJsonString(info.getString(Const.JSON_SERVER_EVENT_NAME));
                                                             long start = info.optLong(Const.JSON_SERVER_EVENT_START_TIME);
                                                             long end = info.optLong(Const.JSON_SERVER_EVENT_END_TIME);
-                                                            String placeId = info.getString(Const.JSON_SERVER_EVENT_PLACE_ID);
+                                                            String placeId = parseJsonString(info.getString(Const.JSON_SERVER_EVENT_PLACE_ID));
                                                             JSONObject locationJson = info.getJSONObject(Const.JSON_SERVER_LOCATION);
                                                             double lat = locationJson.optDouble(Const.JSON_SERVER_LOCATION_LAT, -1);
                                                             double lng = locationJson.optDouble(Const.JSON_SERVER_LOCATION_LONG, -1);
-                                                            String note = info.getString(Const.JSON_SERVER_EVENT_NOTE);
+                                                            String note = parseJsonString(info.getString(Const.JSON_SERVER_EVENT_NOTE));
 
-                                                            name = name.equals("null") ? null : name;
                                                             DateTime startTime = null;
                                                             DateTime endTime = null;
                                                             if (start != 0L)
                                                                 startTime = new DateTime(start);
                                                             if (end != 0L)
                                                                 endTime = new DateTime(end);
-                                                            placeId = placeId.equals("null") ? null : placeId;
                                                             Location location = null;
                                                             if (lat != -1 && lng != -1) {
                                                                 location = new Location("");
                                                                 location.setLatitude(lat);
                                                                 location.setLongitude(lng);
                                                             }
-                                                            note = note.equals("null") ? null : note;
 
                                                             EventItem event = null;
-                                                            if (items != null) {
-                                                                for (BoardItem item : items) {
-                                                                    if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_EVENT) {
-                                                                        event = (EventItem) item;
-                                                                    }
+                                                            for (BoardItem item : items) {
+                                                                if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_EVENT) {
+                                                                    event = (EventItem) item;
                                                                 }
-                                                                if (event == null) {
-                                                                    DateTime createdTime = createdMillis == null ? null : new DateTime(createdMillis);
-                                                                    createEvent(circle, createdTime, id, name, startTime, endTime, placeId, location,
-                                                                            note);
-                                                                }
-                                                                else if (event.getSyncStatus() != BoardItem.NO_SYNC) {
-                                                                    DateTime updatedTime = updatedMillis == null ? null : new DateTime(updatedMillis);
-                                                                    updateEvent(circle, updatedTime, id, name, startTime, endTime,
-                                                                            placeId, location, note);
-                                                                    event.setDirty(false);
-                                                                }
+                                                            }
+                                                            if (event == null) {
+                                                                DateTime createdTime = new DateTime(createdMillis);
+                                                                createEvent(circle, createdTime, id, name, startTime, endTime, placeId, location,
+                                                                        note);
+                                                            }
+                                                            else if (event.getSyncStatus() != BoardItem.NO_SYNC) {
+                                                                DateTime updatedTime = new DateTime(updatedMillis);
+                                                                updateEvent(circle, updatedTime, id, name, startTime, endTime,
+                                                                        placeId, location, note);
+                                                                event.setDirty(false);
                                                             }
                                                             break;
                                                         }
 
                                                         case BoardItem.TYPE_FILE: {
-                                                            String name = info.getString(Const.JSON_SERVER_FILE_NAME);
+                                                            String name = parseJsonString(info.getString(Const.JSON_SERVER_FILE_NAME));
                                                             long size = info.getLong(Const.JSON_SERVER_FILE_SIZE);
-                                                            String mimetype = info.getString(Const.JSON_SERVER_FILE_MIMETYPE);
-                                                            String note = info.getString(Const.JSON_SERVER_FILE_NOTE);
+                                                            String mimetype = parseJsonString(info.getString(Const.JSON_SERVER_FILE_MIMETYPE));
+                                                            String note = parseJsonString(info.getString(Const.JSON_SERVER_FILE_NOTE));
                                                             int provider = info.getInt(Const.JSON_SERVER_FILE_PROVIDER);
 
-                                                            name = name.equals("null") ? null : name;
-                                                            note = note.equals("null") ? null : note;
-
                                                             FileItem file = null;
-                                                            if (items != null) {
-                                                                for (BoardItem item : items) {
-                                                                    if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_FILE) {
-                                                                        file = (FileItem) item;
-                                                                    }
+                                                            for (BoardItem item : items) {
+                                                                if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_FILE) {
+                                                                    file = (FileItem) item;
                                                                 }
-                                                                if (file == null) {
-                                                                    DateTime createdTime = createdMillis == null ? null : new DateTime(createdMillis);
-                                                                    createFile(circle, createdTime, id, name, size, mimetype, note, provider);
-                                                                }
-                                                                else if (file.getSyncStatus() != BoardItem.NO_SYNC) {
-                                                                    DateTime updatedTime = updatedMillis == null ? null : new DateTime(updatedMillis);
-                                                                    updateFile(circle, updatedTime, id, name, size, mimetype, note, provider);
-                                                                    file.setDirty(false);
-                                                                }
+                                                            }
+                                                            if (file == null) {
+                                                                DateTime createdTime = new DateTime(createdMillis);
+                                                                createFile(circle, createdTime, id, name, size, mimetype, note, provider);
+                                                            }
+                                                            else if (file.getSyncStatus() != BoardItem.NO_SYNC) {
+                                                                DateTime updatedTime = new DateTime(updatedMillis);
+                                                                updateFile(circle, updatedTime, id, name, size, mimetype, note, provider);
+                                                                file.setDirty(false);
                                                             }
 
                                                             break;
                                                         }
 
                                                         case BoardItem.TYPE_DRAWING: {
-                                                            String name = info.getString(Const.JSON_SERVER_DRAWING_NAME);
-
-                                                            name = name.equals("null") || TextUtils.isEmpty(name) ? null : name;
+                                                            String name = parseJsonString(info.getString(Const.JSON_SERVER_DRAWING_NAME));
 
                                                             DrawItem drawItem = null;
-                                                            if (items != null) {
-                                                                for (BoardItem item : items) {
-                                                                    if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_DRAWING) {
-                                                                        drawItem = (DrawItem) item;
-                                                                    }
+                                                            for (BoardItem item : items) {
+                                                                if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_DRAWING) {
+                                                                    drawItem = (DrawItem) item;
                                                                 }
-                                                                if (drawItem == null) {
-                                                                    DateTime createdTime = createdMillis == null ? null : new DateTime(createdMillis);
-                                                                    createDrawing(circle, createdTime, id, name);
+                                                            }
+                                                            if (drawItem == null) {
+                                                                DateTime createdTime = new DateTime(createdMillis);
+                                                                createDrawing(circle, createdTime, id, name);
+                                                            }
+                                                            else if (drawItem.getSyncStatus() != BoardItem.NO_SYNC) {
+                                                                DateTime updatedTime = new DateTime(updatedMillis);
+                                                                //TODO
+                                                                drawItem.setDirty(false);
+                                                            }
+                                                            break;
+                                                        }
+
+                                                        case BoardItem.TYPE_LINK: {
+                                                            String url = parseJsonString(info.getString(Const.JSON_SERVER_LINK_URL));
+                                                            String description = parseJsonString(info.getString(Const.JSON_SERVER_LINK_DESCRIPTION));
+                                                            String title = parseJsonString(info.getString(Const.JSON_SERVER_LINK_TITLE));
+                                                            String thumbnail = parseJsonString(info.getString(Const.JSON_SERVER_LINK_THUMBNAIL));
+
+                                                            LinkItem linkItem = null;
+                                                            for (BoardItem item : items) {
+                                                                if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_LINK) {
+                                                                    linkItem = (LinkItem) item;
                                                                 }
-                                                                else if (drawItem.getSyncStatus() != BoardItem.NO_SYNC) {
-                                                                    DateTime updatedTime = updatedMillis == null ? null : new DateTime(updatedMillis);
-                                                                    //TODO
-                                                                    drawItem.setDirty(false);
-                                                                }
+                                                            }
+                                                            if (linkItem == null) {
+                                                                DateTime createdTime = new DateTime(createdMillis);
+                                                                createLink(circle, createdTime, id, url, thumbnail, title, description);
+                                                            }
+                                                            else if (linkItem.getSyncStatus() != BoardItem.NO_SYNC) {
+                                                                DateTime updatedTime = new DateTime(updatedMillis);
+                                                                updateLink(circle, updatedTime, id, url, thumbnail, title, description);
+                                                                linkItem.setDirty(false);
                                                             }
                                                             break;
                                                         }
@@ -1002,6 +1011,10 @@ public class DataProvider {
                 }
             );
         }
+    }
+
+    private String parseJsonString(String value) {
+        return TextUtils.isEmpty(value) || value.equals("null") ? null : value;
     }
 
     public List<BoardItem> getCircleItems(Circle circle) {
@@ -1421,8 +1434,7 @@ public class DataProvider {
                 if (item == null) return;
                 if (item.getSyncStatus() == BoardItem.NO_SYNC || item.getSyncStatus() == BoardItem.SYNC_ERROR) {
                     Log.d(TAG, "Deleting item because sync status is either none or error");
-                    final BoardItem deletedItem = item;
-                    deleteItemDB(deletedItem);
+                    deleteItemDB(item);
                 }
                 else {
                     Log.d(TAG, "Sending request to delete item " + id);
@@ -2134,6 +2146,29 @@ public class DataProvider {
                 fileTransfer.download(provider, circle, drawItem);
             }
         });
+    }
+
+    /*************************************************
+     * LINK OPERATIONS
+     *************************************************/
+    private LinkItem createLink(Circle circle, DateTime createdTime, String id, String url,
+                                String thumbnail, String title, String description) {
+        createdTime = createdTime==null ? DateTime.now() : createdTime;
+        final LinkItem link = TextUtils.isEmpty(id) ? LinkItem.createLink(circle)
+                : LinkItem.createLink(id, circle, createdTime, createdTime);
+        link.setLinkInfo(url, thumbnail, title, description);
+        link.setSyncStatus(BoardItem.SYNC_COMPLETE);
+        link.setLastAction(new FeedAction(FeedAction.CREATE_EVENT, activeUser, createdTime));
+        circle.addItem(link);
+
+//        createLinkDB(circle, createdTime, link, BoardItem.SYNC_COMPLETE);
+
+        return link;
+    }
+
+    private void updateLink(Circle circle, DateTime updatedTime, String id, String url,
+                            String thumbnail, String title, String description) {
+
     }
 
     /*************************************************

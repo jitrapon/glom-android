@@ -232,4 +232,9 @@
     <string name="action_todo">To Do</string>
     <string name="action_location">Send Location</string>
     <string name="action_link">Link</string>
+
+    <!-- Permission messages -->
+    <string name="dialog_permission_request_settings">Settings</string>
+    <string name="dialog_permission_request_cancel">Cancel</string>
+    <string name="permission_location_rationale">Our app needs location permission to locate you. Allow?</string>
 </resources>

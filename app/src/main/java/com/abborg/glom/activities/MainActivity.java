@@ -1,5 +1,6 @@
 package com.abborg.glom.activities;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
@@ -14,6 +15,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.annotation.NonNull;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.BottomSheetDialog;
 import android.support.design.widget.CoordinatorLayout;
@@ -94,6 +96,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import pub.devrel.easypermissions.AfterPermissionGranted;
+import pub.devrel.easypermissions.EasyPermissions;
+
 /**
  * This is the default entry point launching activity that contains all the tabs to display
  * information to the user
@@ -105,7 +110,8 @@ public class MainActivity extends AppCompatActivity implements
         Handler.Callback,
         AdapterView.OnItemClickListener,
         ActionMode.Callback,
-        BoardItemActionClickListener {
+        BoardItemActionClickListener,
+        EasyPermissions.PermissionCallbacks {
 
     protected static final String TAG = "MainActivity";
 
@@ -179,7 +185,6 @@ public class MainActivity extends AppCompatActivity implements
 
     private View notificationBar;
     private TextView notificationText;
-    private ImageView notificationCloseBtn;
     private boolean firstLaunch;
 
     private BottomSheetDialog boardItemBottomSheet;
@@ -192,6 +197,9 @@ public class MainActivity extends AppCompatActivity implements
     private static final boolean SHOW_TAB_TITLE = false;
     private static final int MENU_OVERLAY_ANIM_TIME = 150;
     private static final boolean START_YOUTUBE_VIDEO_LIGHTBOX = false;
+
+    // permission
+    private static final int PERMISSION_LOCATION = 0x1;
 
     /**************************************************
      * View pager adapter that controls the pages
@@ -619,6 +627,34 @@ public class MainActivity extends AppCompatActivity implements
         lCSubBuilder.setLayoutParams(subActionButtonParams);
     }
 
+    /**********************************************************
+     * PERMISSION CALLBACK
+     **********************************************************/
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
+    }
+
+    @Override
+    public void onPermissionsGranted(int requestCode, List<String> list) {
+    }
+
+    @Override
+    public void onPermissionsDenied(int requestCode, List<String> perms) {
+        if (requestCode == PERMISSION_LOCATION) {
+            EasyPermissions.checkDeniedPermissionsNeverAskAgain(
+                    this,
+                    getString(R.string.permission_location_rationale),
+                    R.string.dialog_permission_request_settings,
+                    R.string.dialog_permission_request_cancel,
+                    null,
+                    perms);
+        }
+    }
+
     /**************************************************
      * Broadcast Receivers
      **************************************************/
@@ -946,24 +982,33 @@ public class MainActivity extends AppCompatActivity implements
                 getString(R.string.intent_select_images)), Const.IMAGE_SELECTED_RESULT_CODE);
     }
 
+    @AfterPermissionGranted(PERMISSION_LOCATION)
     private void showBroadcastLocationMenuOptions() {
-        if (broadcastLocationSheetLayout.getParent() != null) {
-            ((ViewGroup)broadcastLocationSheetLayout.getParent()).removeView(broadcastLocationSheetLayout);
-        }
+        String[] perms = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
 
-        broadcastLocationBottomSheet = new BottomSheetDialog(this);
-        broadcastLocationBottomSheet.setContentView(broadcastLocationSheetLayout);
-        BottomSheetBehavior behavior = BottomSheetBehavior.from((View) broadcastLocationSheetLayout.getParent());
-        behavior.setPeekHeight(350);
-
-        broadcastLocationBottomSheet.show();
-
-        broadcastLocationBottomSheet.setOnDismissListener(new DialogInterface.OnDismissListener() {
-            @Override
-            public void onDismiss(DialogInterface dialog) {
-                broadcastLocationBottomSheet = null;
+        if (EasyPermissions.hasPermissions(this, perms)) {
+            if (broadcastLocationSheetLayout.getParent() != null) {
+                ((ViewGroup)broadcastLocationSheetLayout.getParent()).removeView(broadcastLocationSheetLayout);
             }
-        });
+
+            broadcastLocationBottomSheet = new BottomSheetDialog(this);
+            broadcastLocationBottomSheet.setContentView(broadcastLocationSheetLayout);
+            BottomSheetBehavior behavior = BottomSheetBehavior.from((View) broadcastLocationSheetLayout.getParent());
+            behavior.setPeekHeight(350);
+
+            broadcastLocationBottomSheet.show();
+
+            broadcastLocationBottomSheet.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                @Override
+                public void onDismiss(DialogInterface dialog) {
+                    broadcastLocationBottomSheet = null;
+                }
+            });
+        }
+        else {
+            EasyPermissions.requestPermissions(this, getString(R.string.permission_location_rationale),
+                    PERMISSION_LOCATION, perms);
+        }
     }
 
     private void showBoardItemMenu() {
@@ -1077,7 +1122,7 @@ public class MainActivity extends AppCompatActivity implements
                     notificationBar = ((ViewStub) view).inflate();
 
                     notificationText = (TextView) notificationBar.findViewById(R.id.notification_text);
-                    notificationCloseBtn = (ImageView) notificationBar.findViewById(R.id.notification_close_btn);
+                    ImageView notificationCloseBtn = (ImageView) notificationBar.findViewById(R.id.notification_close_btn);
 
                     notificationText.setText(text);
                     notificationText.setBackgroundColor(bgColor);
@@ -1757,6 +1802,13 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (requestCode) {
+
+            /* User has changed their permission settings */
+            case EasyPermissions.SETTINGS_REQ_CODE: {
+                // nothing yet
+
+                break;
+            }
 
             /* User has created an event */
             case Const.CREATE_EVENT_RESULT_CODE:

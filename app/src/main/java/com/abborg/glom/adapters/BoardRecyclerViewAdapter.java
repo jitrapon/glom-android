@@ -28,6 +28,7 @@ import com.abborg.glom.model.DrawItem;
 import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FeedAction;
 import com.abborg.glom.model.FileItem;
+import com.abborg.glom.model.LinkItem;
 import com.abborg.glom.utils.CircleTransform;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.signature.StringSignature;
@@ -195,10 +196,55 @@ public class BoardRecyclerViewAdapter
 
             thumbnail = (ImageView) itemView.findViewById(R.id.note_thumbnail);
 
-           card = (CardView) itemView.findViewById(R.id.card_view);
+            card = (CardView) itemView.findViewById(R.id.card_view);
         }
 
         public void bind(final DrawItem item, final BoardItemClickListener listener) {
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    listener.onItemClicked(item, getAdapterPosition());
+                }
+            });
+
+            itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    return listener.onItemLongClicked(item, getAdapterPosition());
+                }
+            });
+        }
+    }
+
+    public static class LinkHolder extends RecyclerView.ViewHolder {
+        ImageView posterAvatar;
+        TextView posterName;
+        TextView postTime;
+        ImageView syncStatus;
+
+        TextView url;
+        ImageView thumbnail;
+        TextView title;
+        TextView description;
+
+        CardView card;
+
+        public LinkHolder(View itemView) {
+            super(itemView);
+
+            posterAvatar = (ImageView) itemView.findViewById(R.id.card_user_avatar);
+            posterName = (TextView) itemView.findViewById(R.id.card_user_name);
+            postTime = (TextView) itemView.findViewById(R.id.card_user_post_time);
+            syncStatus = (ImageView) itemView.findViewById(R.id.card_sync_status);
+
+            url = (TextView) itemView.findViewById(R.id.link_url);
+            thumbnail = (ImageView) itemView.findViewById(R.id.link_thumbnail);
+            title = (TextView) itemView.findViewById(R.id.link_title);
+            description = (TextView) itemView.findViewById(R.id.link_description);
+
+            card = (CardView) itemView.findViewById(R.id.card_view);
+        }
+
+        public void bind(final LinkItem item, final BoardItemClickListener listener) {
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
                     listener.onItemClicked(item, getAdapterPosition());
@@ -241,6 +287,10 @@ public class BoardRecyclerViewAdapter
             View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_drawing, parent, false);
             return new DrawingHolder(view);
         }
+        else if (viewType == BoardItem.TYPE_LINK) {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_link, parent, false);
+            return new LinkHolder(view);
+        }
         else return null;
     }
 
@@ -252,6 +302,8 @@ public class BoardRecyclerViewAdapter
             setFileViewHolder(position, recyclerViewHolder);
         else if (recyclerViewHolder instanceof DrawingHolder)
             setDrawingViewHolder(position, recyclerViewHolder);
+        else if (recyclerViewHolder instanceof LinkHolder)
+            setLinkViewHolder(position, recyclerViewHolder);
     }
 
     @Override
@@ -292,6 +344,14 @@ public class BoardRecyclerViewAdapter
                 long created = note.getCreatedTime() == null ? 0L : note.getCreatedTime().getMillis();
                 long updated = note.getUpdatedTime() == null ? 0L : note.getUpdatedTime().getMillis();
                 id = (name + created + updated + note.getSyncStatus()).hashCode();
+            }
+            else if (item.getType() == BoardItem.TYPE_LINK) {
+                LinkItem link = (LinkItem) item;
+                String url = TextUtils.isEmpty(link.getUrl()) ? "" : link.getUrl();
+                String title = TextUtils.isEmpty(link.getTitle()) ? "" : link.getTitle();
+                String thumbnail = TextUtils.isEmpty(link.getThumbnail()) ? "" : link.getThumbnail();
+                String description = TextUtils.isEmpty(link.getDescription()) ? "" : link.getDescription();
+                id = (link.getId() + url + title + thumbnail + description).hashCode();
             }
             return id;
         }
@@ -814,6 +874,50 @@ public class BoardRecyclerViewAdapter
                     .placeholder(R.drawable.ic_placeholder_drawing)
                     .error(R.drawable.ic_placeholder_drawing)
                     .into(holder.thumbnail);
+        }
+    }
+
+    private void setLinkViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {
+        LinkItem link = (LinkItem) items.get(position);
+        final LinkHolder holder = (LinkHolder) recyclerViewHolder;
+
+        holder.bind(link, listener);
+
+        // attach the last feed info about this post
+        attachPostInfo(link.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);
+
+        // set activation change
+        attachSelectionOverlay(position, holder.card);
+
+        // set sync status and progress bar
+        if (link.getSyncStatus() == BoardItem.SYNC_COMPLETE) {
+            holder.syncStatus.setVisibility(View.INVISIBLE);
+        }
+        else {
+            holder.syncStatus.setVisibility(View.VISIBLE);
+
+            if (link.getSyncStatus() == BoardItem.SYNC_ERROR)
+                holder.syncStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync_failed));
+            else if (link.getSyncStatus() == BoardItem.SYNC_IN_PROGRESS) {
+                holder.syncStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync));
+            }
+        }
+
+        // update the info
+        holder.url.setText(link.getUrl());
+        holder.title.setText(link.getTitle());
+        holder.description.setText(link.getDescription());
+        if (!TextUtils.isEmpty(link.getThumbnail())) {
+            holder.thumbnail.setVisibility(View.VISIBLE);
+            Glide.with(context)
+                    .load(link.getThumbnail()).centerCrop()
+                    .crossFade(1000)
+                    .placeholder(R.drawable.ic_placeholder_image)
+                    .error(R.drawable.ic_placeholder_image)
+                    .into(holder.thumbnail);
+        }
+        else {
+            holder.thumbnail.setVisibility(View.GONE);
         }
     }
 

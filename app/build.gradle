@@ -25,7 +25,7 @@ android {
         debug {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            buildConfigField "String", "SERVER_URL", "\"http://10.11.3.201:8080\""
+            buildConfigField "String", "SERVER_URL", "\"http://10.11.3.202:8080\""
             buildConfigField "String", "AWS_COGNITO_IDENTITY_POOL", "\"us-east-1:e2e96c7b-f9cd-4e94-a4c6-4345fb289c83\""
             buildConfigField "String", "AWS_S3_BUCKET", "\"betec-glom\""
         }
@@ -96,4 +96,7 @@ dependencies {
     compile "com.amazonaws:aws-android-sdk-cognito:${awsVersion}"
     compile "com.amazonaws:aws-android-sdk-s3:${awsVersion}"
     compile "com.amazonaws:aws-android-sdk-ddb:${awsVersion}"
+
+    // Android M permission request
+    compile 'pub.devrel:easypermissions:0.1.9'
 }

@@ -112,6 +112,10 @@ public class Const {
     public static final String JSON_SERVER_FILE_NOTE = "note";
     public static final String JSON_SERVER_FILE_PROVIDER = "provider";
     public static final String JSON_SERVER_DRAWING_NAME = "drawing_name";
+    public static final String JSON_SERVER_LINK_URL = "url";
+    public static final String JSON_SERVER_LINK_THUMBNAIL = "thumbnail";
+    public static final String JSON_SERVER_LINK_TITLE = "title";
+    public static final String JSON_SERVER_LINK_DESCRIPTION = "description";
 
     /**
      * HANDLER WHAT CONSTANTS

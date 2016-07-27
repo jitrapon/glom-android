@@ -71,6 +71,14 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String DRAWING_COLUMN_NAME = "name";
     public static final String DRAWING_COLUMN_PATH = "path";
 
+    // item_link table
+    public static final String TABLE_LINKS = "links";
+    public static final String LINK_COLUMN_ID = "id";
+    public static final String LINK_COLUMN_URL = "url";
+    public static final String LINK_COLUMN_THUMBNAIL = "thumbnail";
+    public static final String LINK_COLUMN_TITLE = "title";
+    public static final String LINK_COLUMN_DESCRIPTION = "description";
+
     private static final String DATABASE_CASCADE = "ON DELETE CASCADE ON UPDATE CASCADE";
 
     /* Create circle table statement */
@@ -143,6 +151,16 @@ public class DBHelper extends SQLiteOpenHelper {
             "FOREIGN KEY (" + DRAWING_COLUMN_ID + ") REFERENCES " + TABLE_CIRCLE_ITEMS + "(" + CIRCLEITEM_COLUMN_ITEMID + ") " + DATABASE_CASCADE +
             ");";
 
+    /* Create item_links_table statement */
+    private static final String DATABASE_CREATE_LINKS_TABLE = "CREATE TABLE " + TABLE_LINKS + " (" +
+            LINK_COLUMN_ID + " TEXT, " +
+            LINK_COLUMN_URL + " TEXT, " +
+            LINK_COLUMN_THUMBNAIL + " TEXT, " +
+            LINK_COLUMN_TITLE + " TEXT, " +
+            LINK_COLUMN_DESCRIPTION + " TEXT, " +
+            "FOREIGN KEY (" + LINK_COLUMN_ID + ") REFERENCES " + TABLE_CIRCLE_ITEMS + "(" + CIRCLEITEM_COLUMN_ITEMID + ") " + DATABASE_CASCADE +
+            ");";
+
     public DBHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
@@ -160,6 +178,7 @@ public class DBHelper extends SQLiteOpenHelper {
             database.execSQL(DATABASE_CREATE_EVENTS_TABLE);
             database.execSQL(DATABASE_CREATE_FILES_TABLE);
             database.execSQL(DATABASE_CREATE_DRAWINGS_TABLE);
+            database.execSQL(DATABASE_CREATE_LINKS_TABLE);
 
             database.setTransactionSuccessful();
         }
