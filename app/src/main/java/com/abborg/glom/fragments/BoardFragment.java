@@ -30,6 +30,7 @@ import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.DrawItem;
 import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FileItem;
+import com.abborg.glom.model.LinkItem;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -171,7 +172,9 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
     }
 
     private void showOrHideEmptyIcon() {
-        emptyView.setVisibility(items != null && items.size() > 0 ? View.GONE: View.VISIBLE);
+        if (emptyView != null) {
+            emptyView.setVisibility(items != null && items.size() > 0 ? View.GONE: View.VISIBLE);
+        }
     }
 
     /**********************************************************
@@ -184,30 +187,35 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
             if (selected != null) {
                 if (selected instanceof EventItem) {
                     EventItem event = (EventItem) selected;
-                    Log.d(TAG, "EventItem (" + event.getName() + ") selected");
                     Intent intent = new Intent(activity, EventActivity.class);
                     intent.putExtra(getResources().getString(R.string.EXTRA_EVENT_ID), event.getId());
                     intent.setAction(getResources().getString(R.string.ACTION_UPDATE_EVENT));
                     appState.setKeepGoogleApiClientAlive(true);
                     getActivity().startActivityForResult(intent, Const.UPDATE_EVENT_RESULT_CODE);
-                } else if (selected instanceof FileItem) {
+                }
+                else if (selected instanceof FileItem) {
                     FileItem item = (FileItem) selected;
-                    Log.d(TAG, "FileItem (" + item.getName() + ") selected");
 
                     // if file does not exist, download, otherwise view it
                     if (item.getLocalCache() == null || !item.getLocalCache().exists()) {
                         if (handler != null)
                             handler.sendMessage(handler.obtainMessage(Const.MSG_DOWNLOAD_ITEM, item));
-                    } else {
+                    }
+                    else {
                         Intent intent = new Intent(Intent.ACTION_VIEW);
                         intent.setDataAndType(Uri.fromFile(item.getLocalCache()), item.getMimetype());
                         getActivity().startActivity(Intent.createChooser(intent, getString(R.string.card_select_app_to_launch)));
                     }
-                } else if (selected instanceof DrawItem) {
+                }
+                else if (selected instanceof DrawItem) {
                     DrawItem item = (DrawItem) selected;
-                    Log.d(TAG, "DrawItem (" + item.getId() + ") selected");
                     if (handler != null)
                         handler.sendMessage(handler.obtainMessage(Const.MSG_DOWNLOAD_DRAWING, item));
+                }
+                else if (selected instanceof LinkItem) {
+                    LinkItem item = (LinkItem) selected;
+                    if (handler != null)
+                        handler.sendMessage(handler.obtainMessage(Const.MSG_OPEN_LINK, item.getUrl()));
                 }
             }
         }
@@ -222,7 +230,6 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
 
     @Override
     public boolean onItemLongClicked(BoardItem item, int position) {
-        Log.d(TAG, "Long clicked item " + item.getId());
 
         // if this is the first long press, mark this item as selected
         if (!isActionModeEnabled) {

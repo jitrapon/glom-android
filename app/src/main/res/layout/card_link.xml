@@ -111,7 +111,8 @@
                     android:paddingEnd="2dp"
                     android:paddingTop="@dimen/card_primary_text_padding_top"
                     android:paddingBottom="@dimen/card_primary_text_padding_bottom"
-                    android:textSize="@dimen/card_primary_text_size"
+                    android:textSize="@dimen/card_supporting_text_size"
+                    android:textStyle="bold"
                     android:textColor="@color/cardPrimaryText"
                     android:text="@string/empty_placeholder"
                     android:maxLines="2"
@@ -146,7 +147,7 @@
                     android:paddingBottom="@dimen/card_primary_text_padding_bottom"
                     android:text="@string/empty_placeholder"
                     android:textColor="@color/textColorSecondary"
-                    android:maxLines="3"
+                    android:maxLines="4"
                     android:ellipsize="end" />
 
             </RelativeLayout>

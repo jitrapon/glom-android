@@ -41,6 +41,7 @@ public class Const {
     public static final int DRAW_RESULT_CODE = 703;
     public static final int PLACE_AUTOCOMPLETE_REQUEST_CODE = 704;
     public static final int PLACE_PICKER_REQUEST_CODE = 705;
+    public static final int OPEN_LINK_RESULT_CODE = 706;
 
     /************************
      * API
@@ -159,6 +160,7 @@ public class Const {
     public static final int MSG_SERVER_DISCONNECTED = 5038;
     public static final int MSG_SERVER_CONNECTING = 5039;
     public static final int MSG_SERVER_CONNECTED = 5040;
+    public static final int MSG_OPEN_LINK = 5041;
 
     /************************
      * Mimetypes

@@ -643,7 +643,11 @@ public class EventActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        if (id == R.id.action_event_done) {
+        if (id == android.R.id.home) {
+            finishWithResult(null);
+            return true;
+        }
+        else if (id == R.id.action_event_done) {
 
             // verify that the event name is provided
             // verify that datetime is input correctly

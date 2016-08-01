@@ -762,7 +762,6 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         return bitmap;
     }
 
-    @AfterPermissionGranted(PERMISSION_LOCATION)
     private void setMarkerSnippet(final Marker marker) {
         try {
             String[] perms = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};

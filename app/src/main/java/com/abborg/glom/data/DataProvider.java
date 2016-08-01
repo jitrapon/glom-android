@@ -2166,9 +2166,27 @@ public class DataProvider {
         return link;
     }
 
-    private void updateLink(Circle circle, DateTime updatedTime, String id, String url,
+    private LinkItem updateLink(Circle circle, DateTime updatedTime, String id, String url,
                             String thumbnail, String title, String description) {
+        List<BoardItem> items = circle.getItems();
+        LinkItem link = null;
+        for (BoardItem item : items) {
+            if (item.getId().equals(id) && item instanceof LinkItem) {
+                link = (LinkItem) item;
+                break;
+            }
+        }
 
+        if (link != null) {
+            updatedTime = updatedTime==null? DateTime.now() : updatedTime;
+            link.setLastAction(new FeedAction(FeedAction.UPDATE_EVENT, activeUser, updatedTime));
+            link.setLinkInfo(url, thumbnail, title, description);
+            link.setSyncStatus(BoardItem.SYNC_COMPLETE);
+
+//            updateLinkDB(updatedTime, link, BoardItem.SYNC_COMPLETE);
+        }
+
+        return link;
     }
 
     /*************************************************

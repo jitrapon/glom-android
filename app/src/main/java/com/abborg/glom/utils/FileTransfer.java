@@ -95,11 +95,13 @@ public class FileTransfer {
 
                         @Override
                         public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
-                            int progress = (int) (bytesCurrent/bytesTotal * 100);
-                            Log.d(TAG, "Amazon S3 upload id " + id + ", uploading at progress " + progress);
-                            if (handler != null)
-                                handler.sendMessage(handler.obtainMessage(
-                                        Const.MSG_DRAWING_POST_IN_PROGRESS, BoardItem.SYNC_IN_PROGRESS, progress, item));
+                            if (bytesTotal != 0) {
+                                int progress = (int) (bytesCurrent / bytesTotal * 100);
+                                Log.d(TAG, "Amazon S3 upload id " + id + ", uploading at progress " + progress);
+                                if (handler != null)
+                                    handler.sendMessage(handler.obtainMessage(
+                                            Const.MSG_DRAWING_POST_IN_PROGRESS, BoardItem.SYNC_IN_PROGRESS, progress, item));
+                            }
                         }
 
                         @Override

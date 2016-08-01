@@ -18,6 +18,7 @@
         <item name="colorAccent">@color/colorPrimaryDark</item>
     </style>
 
+    <!-- Floating action button -->
     <style name="FabStyle">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
@@ -36,6 +37,14 @@
 
     <style name="Theme.NoBackground" parent="AppMaterialTheme">
         <item name="android:windowBackground">@null</item>
+    </style>
+
+    <!-- Toolbar Small Title -->
+    <style name="Toolbar.TitleText" parent="TextAppearance.Widget.AppCompat.Toolbar.Title">
+        <item name="android:textSize">@dimen/toolbar_title_text_size</item>
+    </style>
+    <style name="Toolbar.SubtitleText" parent="TextAppearance.Widget.AppCompat.Toolbar.Subtitle">
+        <item name="android:textSize">@dimen/toolbar_subtitle_text_size</item>
     </style>
 
 </resources>

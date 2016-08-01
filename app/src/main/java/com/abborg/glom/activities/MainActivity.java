@@ -4,11 +4,15 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.database.SQLException;
+import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Build;
@@ -16,6 +20,11 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.NonNull;
+import android.support.customtabs.CustomTabsCallback;
+import android.support.customtabs.CustomTabsClient;
+import android.support.customtabs.CustomTabsIntent;
+import android.support.customtabs.CustomTabsServiceConnection;
+import android.support.customtabs.CustomTabsSession;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.BottomSheetDialog;
 import android.support.design.widget.CoordinatorLayout;
@@ -160,6 +169,11 @@ public class MainActivity extends AppCompatActivity implements
      */
     private List<DiscoverItemChangeListener> discoverItemChangeListeners;
 
+    /**
+     * Custom tab browser client to connect
+     */
+    private CustomTabsClient browserServiceClient;
+
     // UI elements
     private TabLayout tabLayout;
     private int[] tabIcons = {
@@ -199,7 +213,9 @@ public class MainActivity extends AppCompatActivity implements
     private static final boolean START_YOUTUBE_VIDEO_LIGHTBOX = false;
 
     // permission
-    private static final int PERMISSION_LOCATION = 0x1;
+    private static final int PERMISSION_LOCATION = 1;
+    private static final int PERMISSION_READ_STORAGE = 2;
+    private static final int PERMISSION_WRITE_STORAGE = 3;
 
     /**************************************************
      * View pager adapter that controls the pages
@@ -644,15 +660,27 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onPermissionsDenied(int requestCode, List<String> perms) {
+        String rationale;
         if (requestCode == PERMISSION_LOCATION) {
-            EasyPermissions.checkDeniedPermissionsNeverAskAgain(
-                    this,
-                    getString(R.string.permission_location_rationale),
-                    R.string.dialog_permission_request_settings,
-                    R.string.dialog_permission_request_cancel,
-                    null,
-                    perms);
+            rationale = getString(R.string.permission_location_rationale);
         }
+        else if (requestCode == PERMISSION_READ_STORAGE) {
+            rationale = getString(R.string.permission_read_external_storage_rationale);
+        }
+        else if (requestCode == PERMISSION_WRITE_STORAGE) {
+            rationale = getString(R.string.permission_write_external_storage_rationale);
+        }
+        else {
+            rationale = getString(R.string.permission_generic_rationale);
+        }
+
+        EasyPermissions.checkDeniedPermissionsNeverAskAgain(
+                this,
+                rationale,
+                R.string.dialog_permission_request_settings,
+                R.string.dialog_permission_request_cancel,
+                null,
+                perms);
     }
 
     /**************************************************
@@ -708,7 +736,7 @@ public class MainActivity extends AppCompatActivity implements
                         }
                     }
 
-                    if (map.isFragmentVisible && circleBroadcastList.contains(circleId)) {
+                    if (circleBroadcastList.contains(circleId)) {
                         if (currentUser != null) {
                             map.updateUserMarkers(Arrays.asList(currentUser));
                         }
@@ -875,38 +903,38 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void handleBoardItemAction(User user, BoardItemAction action) {
+        hideRadialMenuOptions(false);
+
         switch(action) {
             case IMAGE: {
-                openFileBrowser("image/*");
-                hideRadialMenuOptions(false);
+                openImageBrowser();
                 break;
             }
             case DRAW: {
-                Intent intent = new Intent(this, DrawActivity.class);
-                intent.setAction(getResources().getString(R.string.ACTION_CREATE_DRAWING));
-                startActivityForResult(intent, Const.DRAW_RESULT_CODE);
-                hideRadialMenuOptions(false);
+                startDrawActivity();
                 break;
             }
             case LOCATION: {
                 if (user.getId().equals(appState.getActiveUser().getId())) {
-                    //TODO broadcast location dialog setting interval and duration of updates
-                    hideRadialMenuOptions(false);
                     showBroadcastLocationMenuOptions();
-                } else {
-                    hideRadialMenuOptions(false);
+                }
+                else {
                     Toast.makeText(getApplicationContext(), "Location request sent to " + user.getName(), Toast.LENGTH_SHORT).show();
                 }
                 break;
             }
             case EVENT: {
-                hideRadialMenuOptions(false);
                 Intent intent = new Intent(this, EventActivity.class);
                 intent.setAction(getResources().getString(R.string.ACTION_CREATE_EVENT));
 
                 // make sure to not disconnect Google Api just yet
                 appState.setKeepGoogleApiClientAlive(true);
                 startActivityForResult(intent, Const.CREATE_EVENT_RESULT_CODE);
+                break;
+            }
+            case LINK: {
+                String url = "http://stackoverflow.com/questions/32533069/how-to-change-a-title-color-in-chrome-custom-tabs";
+                launchUrl(url);
                 break;
             }
             case NOTE:
@@ -972,16 +1000,41 @@ public class MainActivity extends AppCompatActivity implements
                 .build();
     }
 
-    private void openFileBrowser(String fileType) {
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT)
-                .setType(fileType);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+    @AfterPermissionGranted(PERMISSION_WRITE_STORAGE)
+    private void startDrawActivity() {
+        String perm = Manifest.permission.WRITE_EXTERNAL_STORAGE;
+
+        if (EasyPermissions.hasPermissions(this, perm)) {
+            Intent intent = new Intent(this, DrawActivity.class);
+            intent.setAction(getResources().getString(R.string.ACTION_CREATE_DRAWING));
+            startActivityForResult(intent, Const.DRAW_RESULT_CODE);
         }
-        startActivityForResult(Intent.createChooser(intent,
-                getString(R.string.intent_select_images)), Const.IMAGE_SELECTED_RESULT_CODE);
+        else {
+            EasyPermissions.requestPermissions(this, getString(R.string.permission_write_external_storage_rationale),
+                    PERMISSION_WRITE_STORAGE, perm);
+        }
     }
 
+    @AfterPermissionGranted(PERMISSION_READ_STORAGE)
+    private void openImageBrowser() {
+        String perm = Manifest.permission.READ_EXTERNAL_STORAGE;
+
+        if (EasyPermissions.hasPermissions(this, perm)) {
+            Intent intent = new Intent(Intent.ACTION_GET_CONTENT)
+                    .setType("image/*");
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+            }
+            startActivityForResult(Intent.createChooser(intent,
+                    getString(R.string.intent_select_images)), Const.IMAGE_SELECTED_RESULT_CODE);
+        }
+        else {
+            EasyPermissions.requestPermissions(this, getString(R.string.permission_read_external_storage_rationale),
+                    PERMISSION_READ_STORAGE, perm);
+        }
+    }
+
+    //TODO broadcast location dialog setting interval and duration of updates
     @AfterPermissionGranted(PERMISSION_LOCATION)
     private void showBroadcastLocationMenuOptions() {
         String[] perms = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
@@ -1009,6 +1062,83 @@ public class MainActivity extends AppCompatActivity implements
             EasyPermissions.requestPermissions(this, getString(R.string.permission_location_rationale),
                     PERMISSION_LOCATION, perms);
         }
+    }
+
+    /**
+     *  launch the default application that the user has chosen for links (e.g. Youtube app for Youtube links)
+        otherwise, for other url, launch the built-in browser */
+    private void launchUrl(String url) {
+        try {
+            final Uri uri = Uri.parse(url);
+
+            // figure out which activity (in the list of installed third-party applications) can handle
+            // this intent. If the activity is not that of a browser's, use the default app to launch.
+            // Otherwise, use the Chrome custom tabs service for in-app browsing experience.
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setData(uri);
+            PackageManager packageManager = getPackageManager();
+            List<ResolveInfo> matchedActivities = packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
+            if (matchedActivities.size() > 0) {
+                boolean isBrowserIntent = false;
+                for (ResolveInfo activity : matchedActivities) {
+                    if (activity.activityInfo.packageName.contains("sbrowser") ||
+                            activity.activityInfo.packageName.contains("chrome")) {
+                        isBrowserIntent = true;
+                        break;
+                    }
+                }
+                if (isBrowserIntent) {
+                    if (browserServiceClient == null) {
+                        boolean serviceAvailable = CustomTabsClient.bindCustomTabsService(this, getString(R.string.chrome_package_name),
+                                new CustomTabsServiceConnection() {
+
+                                    @Override
+                                    public void onServiceDisconnected(ComponentName name) {
+                                        browserServiceClient = null;
+                                    }
+
+                                    @Override
+                                    public void onCustomTabsServiceConnected(ComponentName componentName,
+                                                                             CustomTabsClient customTabsClient) {
+                                        browserServiceClient = customTabsClient;
+                                        launchBrowserSession(uri);
+                                    }
+                                });
+                        if (!serviceAvailable) {
+                            startActivity(intent);
+                        }
+                    }
+                    else {
+                        launchBrowserSession(uri);
+                    }
+                }
+                else {
+                    startActivity(intent);
+                }
+            }
+        }
+        catch (Exception ex) {
+            Log.e(TAG, ex.getMessage());
+        }
+    }
+
+    private void launchBrowserSession(Uri uri) {
+        CustomTabsSession session = browserServiceClient.newSession(new CustomTabsCallback() {
+
+            @Override
+            public void onNavigationEvent(int navigationEvent, Bundle extras) {
+                super.onNavigationEvent(navigationEvent, extras);
+            }
+        });
+        CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder(session)
+                .setToolbarColor(ContextCompat.getColor(this, R.color.colorAccent))
+                .setSecondaryToolbarColor(ContextCompat.getColor(this, R.color.colorPrimaryDark))
+                .setCloseButtonIcon(BitmapFactory.decodeResource(getResources(), R.drawable.ic_action_close))
+                .enableUrlBarHiding()
+                .addDefaultShareMenuItem()
+                .setShowTitle(true);
+        CustomTabsIntent launchIntent = builder.build();
+        launchIntent.launchUrl(this, uri);
     }
 
     private void showBoardItemMenu() {
@@ -1734,6 +1864,14 @@ public class MainActivity extends AppCompatActivity implements
                             String.format(getResources().getString(R.string.notification_download_item_failed), name),
                             Toast.LENGTH_LONG).show();
                 }
+
+                break;
+            }
+
+            /* Opening a link */
+            case Const.MSG_OPEN_LINK: {
+                String url = (String) msg.obj;
+                launchUrl(url);
 
                 break;
             }

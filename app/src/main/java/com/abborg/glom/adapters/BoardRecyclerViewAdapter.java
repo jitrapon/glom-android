@@ -904,7 +904,7 @@ public class BoardRecyclerViewAdapter
         }
 
         // update the info
-        holder.url.setText(link.getUrl());
+        holder.url.setText(trimUrl(link.getUrl()));
         holder.title.setText(link.getTitle());
         holder.description.setText(link.getDescription());
         if (!TextUtils.isEmpty(link.getThumbnail())) {
@@ -919,6 +919,12 @@ public class BoardRecyclerViewAdapter
         else {
             holder.thumbnail.setVisibility(View.GONE);
         }
+    }
+
+    private String trimUrl(String url) {
+        if (TextUtils.isEmpty(url)) return null;
+
+        return Uri.parse(url).getHost();
     }
 
     private void launchGoogleMapsNavigation(double lat, double lng) {

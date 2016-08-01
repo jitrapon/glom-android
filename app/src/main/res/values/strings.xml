@@ -10,8 +10,10 @@
     <string name="menu_item_search">Search</string>
     <string name="menu_item_chat">Chat</string>
     <string name="menu_item_settings">Settings</string>
+    <string name="loading">Loading…</string>
 
     <!-- Error messages -->
+    <string name="error_generic">Error</string>
     <string name="error_network_timeout">The request has timed out, please try again later</string>
     <string name="error_no_connection">Could not connect to our server, please try again later</string>
     <string name="error_auth_failure">Failed to authenticate, please try again</string>
@@ -21,47 +23,49 @@
 
     <!-- INTENT EXTRA KEYS -->
     <string name="gcm_senderId">1098468135284</string>
-    <string name="ACTION_OPEN_DRAWER">com.abborg.glom.action.DRAWER_OPEN</string>
-    <string name="ACTION_CLOSE_DRAWER">com.abborg.glom.action.DRAWER_CLOSE</string>
-    <string name="ACTION_RECEIVE_LOCATION">com.abborg.glom.action.LOCATION_RECEIVE</string>
-    <string name="EXTRA_RECEIVE_LOCATION_USERS">com.abborg.glom.extra.LOCATION_RECEIVE_USERS</string>
-    <string name="EXTRA_RECEIVE_LOCATION_CIRCLE_ID">com.abborg.glom.extra.LOCATION_RECEIVE_CIRCLEID</string>
-    <string name="EXTRA_CURRENT_USER">com.abborg.glom.extra.CURRENT_USER</string>
-    <string name="ACTION_CIRCLE_ENABLE_LOCATION_BROADCAST">com.abborg.glom.action.CIRCLE_ENABLE_LOCATION_BROADCAST</string>
-    <string name="ACTION_CIRCLE_DISABLE_LOCATION_BROADCAST">com.abborg.glom.action.CIRCLE_DISABLE_LOCATION_BROADCAST</string>
-    <string name="EXTRA_BROADCAST_LOCATION_USER_ID">com.abborg.glom.extra.BROADCAST_LOCATION_USERID</string>
-    <string name="EXTRA_BROADCAST_LOCATION_CIRCLE_ID">com.abborg.glom.extra.BROADCAST_LOCATION_CIRCLEID</string>
-    <string name="ACTION_USER_LOCATION_UPDATE">com.abborg.glom.action.USER_LOCATION_UPDATE</string>
-    <string name="EXTRA_USER_LOCATION_UPDATE">com.abborg.glom.extra.USER_LOCATION_UPDATE</string>
-    <string name="EXTRA_CIRCLES_LOCATION_UPDATE">com.abborg.glom.extra.CIRCLES_LOCATION_UPDATE</string>
-    <string name="EXTRA_SEND_TOKEN_USER_ID">com.abborg.glom.extra.SEND_TOKEN_USERID</string>
-    <string name="EXTRA_BROADCAST_LOCATION_DURATION">com.abborg.glom.extra.BROADCAST_LOCATION_DURATION</string>
-    <string name="ACTION_CREATE_EVENT">com.abborg.glom.action.CREATE_EVENT</string>
-    <string name="ACTION_UPDATE_EVENT">com.abborg.glom.action.UPDATE_EVENT</string>
-    <string name="EXTRA_EVENT_ID">com.abborg.glom.extra.EVENT_ID</string>
-    <string name="EXTRA_EVENT_NAME">com.abborg.glom.extra.EVENT_NAME</string>
-    <string name="EXTRA_EVENT_START_TIME">com.abborg.glom.extra.EVENT_START_TIME</string>
-    <string name="EXTRA_EVENT_END_TIME">com.abborg.glom.extra.EVENT_END_TIME</string>
-    <string name="EXTRA_EVENT_PLACE_ID">com.abborg.glom.extra.EVENT_PLACE_ID</string>
-    <string name="EXTRA_EVENT_LOCATION">com.abborg.glom.extra.EVENT_LOCATION</string>
-    <string name="EXTRA_EVENT_NOTE">com.abborg.glom.extra.EVENT_NOTE</string>
-    <string name="EXTRA_ITEM_CREATE_TIME">com.abborg.glom.extra.ITEM_CREATE_TIME</string>
-    <string name="ACTION_NEW_MESSAGE">com.abborg.glom.action.NEW_MESSAGE</string>
-    <string name="EXTRA_MESSAGE_SENDER">com.abborg.glom.extra.MESSAGE_SENDER</string>
-    <string name="EXTRA_MESSAGE_ID">com.abborg.glom.extra.MESSAGE_ID</string>
-    <string name="EXTRA_MESSAGE_CONTENT">com.abborg.glom.extra.MESSAGE_CONTENT</string>
-    <string name="EXTRA_MESSAGE_CIRCLE_ID">com.abborg.glom.extra.MESSAGE_CIRCLEID</string>
-    <string name="EXTRA_MESSAGE_TYPE">com.abborg.glom.extra.MESSAGE_TYPE</string>
-    <string name="ACTION_SERVER_ACK_MESSAGE">com.abborg.glom.action.ACK_MESSAGE</string>
-    <string name="ACTION_CREATE_DRAWING">com.abborg.glom.action.CREATE_DRAWING</string>
-    <string name="ACTION_JOIN_DRAWING">com.abborg.glom.action.JOIN_DRAWING</string>
-    <string name="EXTRA_DRAWING_ID">com.abborg.glom.extra.DRAWING_ID</string>
-    <string name="EXTRA_DRAWING_NAME">com.abborg.glom.extra.DRAWING_NAME</string>
-    <string name="EXTRA_DRAWING_FILE">com.abborg.glom.extra.DRAWING_FILE</string>
-    <string name="EXTRA_DRAWING_TIME">com.abborg.glom.extra.DRAWING_TIME</string>
-    <string name="EXTRA_DRAWING_MODE">com.abborg.glom.extra.DRAWING_MODE</string>
-    <string name="EXTRA_DRAWING_PATH">com.abborg.glom.extra.DRAWING_PATH</string>
+    <string name="ACTION_OPEN_DRAWER">action.DRAWER_OPEN</string>
+    <string name="ACTION_CLOSE_DRAWER">action.DRAWER_CLOSE</string>
+    <string name="ACTION_RECEIVE_LOCATION">action.LOCATION_RECEIVE</string>
+    <string name="EXTRA_RECEIVE_LOCATION_USERS">extra.LOCATION_RECEIVE_USERS</string>
+    <string name="EXTRA_RECEIVE_LOCATION_CIRCLE_ID">extra.LOCATION_RECEIVE_CIRCLEID</string>
+    <string name="EXTRA_CURRENT_USER">extra.CURRENT_USER</string>
+    <string name="ACTION_CIRCLE_ENABLE_LOCATION_BROADCAST">action.CIRCLE_ENABLE_LOCATION_BROADCAST</string>
+    <string name="ACTION_CIRCLE_DISABLE_LOCATION_BROADCAST">action.CIRCLE_DISABLE_LOCATION_BROADCAST</string>
+    <string name="EXTRA_BROADCAST_LOCATION_USER_ID">extra.BROADCAST_LOCATION_USERID</string>
+    <string name="EXTRA_BROADCAST_LOCATION_CIRCLE_ID">extra.BROADCAST_LOCATION_CIRCLEID</string>
+    <string name="ACTION_USER_LOCATION_UPDATE">action.USER_LOCATION_UPDATE</string>
+    <string name="EXTRA_USER_LOCATION_UPDATE">extra.USER_LOCATION_UPDATE</string>
+    <string name="EXTRA_CIRCLES_LOCATION_UPDATE">extra.CIRCLES_LOCATION_UPDATE</string>
+    <string name="EXTRA_SEND_TOKEN_USER_ID">extra.SEND_TOKEN_USERID</string>
+    <string name="EXTRA_BROADCAST_LOCATION_DURATION">extra.BROADCAST_LOCATION_DURATION</string>
+    <string name="ACTION_CREATE_EVENT">action.CREATE_EVENT</string>
+    <string name="ACTION_UPDATE_EVENT">action.UPDATE_EVENT</string>
+    <string name="EXTRA_EVENT_ID">extra.EVENT_ID</string>
+    <string name="EXTRA_EVENT_NAME">extra.EVENT_NAME</string>
+    <string name="EXTRA_EVENT_START_TIME">extra.EVENT_START_TIME</string>
+    <string name="EXTRA_EVENT_END_TIME">extra.EVENT_END_TIME</string>
+    <string name="EXTRA_EVENT_PLACE_ID">extra.EVENT_PLACE_ID</string>
+    <string name="EXTRA_EVENT_LOCATION">extra.EVENT_LOCATION</string>
+    <string name="EXTRA_EVENT_NOTE">extra.EVENT_NOTE</string>
+    <string name="EXTRA_ITEM_CREATE_TIME">extra.ITEM_CREATE_TIME</string>
+    <string name="ACTION_NEW_MESSAGE">action.NEW_MESSAGE</string>
+    <string name="EXTRA_MESSAGE_SENDER">extra.MESSAGE_SENDER</string>
+    <string name="EXTRA_MESSAGE_ID">extra.MESSAGE_ID</string>
+    <string name="EXTRA_MESSAGE_CONTENT">extra.MESSAGE_CONTENT</string>
+    <string name="EXTRA_MESSAGE_CIRCLE_ID">extra.MESSAGE_CIRCLEID</string>
+    <string name="EXTRA_MESSAGE_TYPE">extra.MESSAGE_TYPE</string>
+    <string name="ACTION_SERVER_ACK_MESSAGE">action.ACK_MESSAGE</string>
+    <string name="ACTION_CREATE_DRAWING">action.CREATE_DRAWING</string>
+    <string name="ACTION_JOIN_DRAWING">action.JOIN_DRAWING</string>
+    <string name="EXTRA_DRAWING_ID">extra.DRAWING_ID</string>
+    <string name="EXTRA_DRAWING_NAME">extra.DRAWING_NAME</string>
+    <string name="EXTRA_DRAWING_FILE">extra.DRAWING_FILE</string>
+    <string name="EXTRA_DRAWING_TIME">extra.DRAWING_TIME</string>
+    <string name="EXTRA_DRAWING_MODE">extra.DRAWING_MODE</string>
+    <string name="EXTRA_DRAWING_PATH">extra.DRAWING_PATH</string>
     <string name="ACTION_CONNECTIVITY_STATE_CHANGE">android.net.conn.CONNECTIVITY_CHANGE</string>
+    <string name="EXTRA_LINK_URL">extra.LINK_URL</string>
+    <string name="EXTRA_LINK_TITLE">extra.LINK_TITLE</string>
 
     <!-- Profile activity strings -->
     <string name="profile_activity_label">My Profile</string>
@@ -179,6 +183,9 @@
     <string name="menu_item_undo">Undo</string>
     <string name="menu_item_try_again">Try Again</string>
 
+    <!-- In-app browser -->
+    <string name="chrome_package_name">com.android.chrome</string>
+
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="title_activity_create_event">CreateEventActivity</string>
@@ -236,5 +243,8 @@
     <!-- Permission messages -->
     <string name="dialog_permission_request_settings">Settings</string>
     <string name="dialog_permission_request_cancel">Cancel</string>
+    <string name="permission_generic_rationale">Our app needs the permission to perform the operation. Allow?</string>
+    <string name="permission_write_external_storage_rationale">Our app needs access to external storage to save files. Allow?</string>
+    <string name="permission_read_external_storage_rationale">Our app needs access to external storage to upload files. Allow?</string>
     <string name="permission_location_rationale">Our app needs location permission to locate you. Allow?</string>
 </resources>
