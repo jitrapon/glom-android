@@ -439,6 +439,19 @@ public class DataProvider {
         return circle;
     }
 
+    public void getAsyncCircleById(final String id) {
+        run(new Runnable() {
+
+            @Override
+            public void run() {
+                Circle circle = getCircleById(id);
+                if (handler != null) {
+                    handler.sendMessage(handler.obtainMessage(Const.MSG_GET_CIRCLE, circle));
+                }
+            }
+        });
+    }
+
     /*************************************************
      * USER OPERATIONS
      *************************************************/

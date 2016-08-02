@@ -81,7 +81,6 @@ import com.abborg.glom.interfaces.BroadcastLocationListener;
 import com.abborg.glom.interfaces.DiscoverItemChangeListener;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
-import com.abborg.glom.model.CircleInfo;
 import com.abborg.glom.model.CloudProvider;
 import com.abborg.glom.model.DiscoverItem;
 import com.abborg.glom.model.DrawItem;
@@ -1280,8 +1279,6 @@ public class MainActivity extends AppCompatActivity implements
      * Forces updates of all fragments and UI. Use only if selecting a new circle to display.
      */
     private void updateView(Circle circle) {
-        appState.setActiveCircle(circle);
-
         if (getSupportActionBar() != null) getSupportActionBar().setTitle(circle.getTitle() + " (" + circle.getUsers().size() + ")");
 
         // update broadcast location sheet
@@ -1324,6 +1321,20 @@ public class MainActivity extends AppCompatActivity implements
                 }
 
                 break;
+
+            /* Get Circle */
+            case Const.MSG_GET_CIRCLE: {
+                Circle circle = (Circle) msg.obj;
+
+                if (circle != null) {
+                    Log.d(TAG, "Done retrieving circle info with id: " + circle.getId() + ", name: " + circle.getTitle()
+                            + ", " + circle.getUsers().size() + " users, " + circle.getItems().size() + " items");
+                    appState.setActiveCircle(circle);
+                    updateView(circle);
+                }
+
+                break;
+            }
 
             /* Show toast message */
             case Const.MSG_SHOW_TOAST: {
@@ -1922,16 +1933,7 @@ public class MainActivity extends AppCompatActivity implements
      **********************************************************/
     @Override
     public void onDrawerItemSelected(View view, int position) {
-        List<CircleInfo> circles = appState.getAllCircleInfo();
-        CircleInfo c = circles.get(position);
-        Circle selected = dataProvider.getCircleById(c.id);
-
-        if (selected != null) {
-            //TODO save date to SQLITE for this circle
-
-            // update the view
-            updateView(selected);
-        }
+        dataProvider.getAsyncCircleById(appState.getAllCircleInfo().get(position).id);
     }
 
     /**********************************************************

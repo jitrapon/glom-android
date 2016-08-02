@@ -161,6 +161,7 @@ public class Const {
     public static final int MSG_SERVER_CONNECTING = 5039;
     public static final int MSG_SERVER_CONNECTED = 5040;
     public static final int MSG_OPEN_LINK = 5041;
+    public static final int MSG_GET_CIRCLE = 5042;
 
     /************************
      * Mimetypes
