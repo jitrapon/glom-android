@@ -39,6 +39,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.ActionMode;
 import android.support.v7.widget.GridLayoutManager;
@@ -57,6 +58,7 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -100,6 +102,8 @@ import org.joda.time.DateTime;
 import org.joda.time.Duration;
 
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -172,6 +176,9 @@ public class MainActivity extends AppCompatActivity implements
      * Custom tab browser client to connect
      */
     private CustomTabsClient browserServiceClient;
+    private CustomTabsServiceConnection browserServiceConnection;
+    private boolean browserServiceIsBound;
+    private boolean willLaunchBrowser;
 
     // UI elements
     private TabLayout tabLayout;
@@ -299,6 +306,8 @@ public class MainActivity extends AppCompatActivity implements
                 Log.e(TAG, ex.getMessage());
             }
         }
+
+        willLaunchBrowser = false;
     }
 
     @Override
@@ -314,6 +323,13 @@ public class MainActivity extends AppCompatActivity implements
         if (dataProvider != null) {
             dataProvider.cancelAllNetworkRequests();
             dataProvider.close();
+        }
+
+        // unbind services
+        if (!willLaunchBrowser && browserServiceIsBound && browserServiceConnection != null) {
+            Log.d(TAG, "Unbinding browser service connection");
+            unbindService(browserServiceConnection);
+            browserServiceIsBound = false;
         }
 
         super.onStop();
@@ -932,8 +948,7 @@ public class MainActivity extends AppCompatActivity implements
                 break;
             }
             case LINK: {
-                String url = "http://stackoverflow.com/questions/32533069/how-to-change-a-title-color-in-chrome-custom-tabs";
-                launchUrl(url);
+                showLinkDialog();
                 break;
             }
             case NOTE:
@@ -942,6 +957,57 @@ public class MainActivity extends AppCompatActivity implements
             case VIDEO:
             default:  Toast.makeText(getApplicationContext(), "Operation is not yet supported, coming soon!", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void showLinkDialog() {
+        View contentView = getLayoutInflater().inflate(R.layout.dialog_save_link, null);
+        final EditText urlField = ((EditText) contentView.findViewById(R.id.input_link_url));
+
+        new AlertDialog.Builder(this, R.style.AlertDialogTheme)
+                .setTitle(R.string.dialog_new_link_title)
+                .setView(contentView)
+                .setPositiveButton(R.string.dialog_new_link_ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        try {
+                            validateUrl(urlField.getText().toString());
+                        }
+                        catch (Exception ex) {
+                            Log.e(TAG, ex.getMessage());
+                        }
+                    }
+                })
+                .setNeutralButton(R.string.dialog_new_link_open_link, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        try {
+                            String url = validateUrl(urlField.getText().toString());
+                            launchUrl(url);
+                        }
+                        catch (Exception ex) {
+                            Log.e(TAG, ex.getMessage());
+                        }
+                    }
+                })
+                .setNegativeButton(R.string.dialog_new_link_cancel, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                })
+                .setCancelable(false)
+                .show();
+    }
+
+    private String validateUrl(String urlString) throws MalformedURLException {
+        if (!TextUtils.isEmpty(urlString)) {
+            urlString = urlString.trim();
+            if (!urlString.toLowerCase().matches("^\\w+://.*")) {
+                urlString = "http://" + urlString;
+            }
+            return new URL(urlString).toString();
+        }
+        return null;
     }
 
     private FloatingActionMenu setupAvatarOptionMenu(final Activity activity, SubActionButton.Builder builder,
@@ -1088,23 +1154,28 @@ public class MainActivity extends AppCompatActivity implements
                 }
                 if (isBrowserIntent) {
                     if (browserServiceClient == null) {
+                        browserServiceConnection = new CustomTabsServiceConnection() {
+
+                            @Override
+                            public void onServiceDisconnected(ComponentName name) {
+                                browserServiceClient = null;
+                            }
+
+                            @Override
+                            public void onCustomTabsServiceConnected(ComponentName componentName,
+                                                                     CustomTabsClient customTabsClient) {
+                                browserServiceClient = customTabsClient;
+                                launchBrowserSession(uri);
+                            }
+                        };
                         boolean serviceAvailable = CustomTabsClient.bindCustomTabsService(this, getString(R.string.chrome_package_name),
-                                new CustomTabsServiceConnection() {
-
-                                    @Override
-                                    public void onServiceDisconnected(ComponentName name) {
-                                        browserServiceClient = null;
-                                    }
-
-                                    @Override
-                                    public void onCustomTabsServiceConnected(ComponentName componentName,
-                                                                             CustomTabsClient customTabsClient) {
-                                        browserServiceClient = customTabsClient;
-                                        launchBrowserSession(uri);
-                                    }
-                                });
+                                browserServiceConnection);
                         if (!serviceAvailable) {
+                            browserServiceIsBound = false;
                             startActivity(intent);
+                        }
+                        else {
+                            browserServiceIsBound = true;
                         }
                     }
                     else {
@@ -1122,6 +1193,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void launchBrowserSession(Uri uri) {
+        willLaunchBrowser = true;
         CustomTabsSession session = browserServiceClient.newSession(new CustomTabsCallback() {
 
             @Override
