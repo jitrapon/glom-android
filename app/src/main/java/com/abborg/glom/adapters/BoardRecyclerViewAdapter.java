@@ -1,7 +1,6 @@
 package com.abborg.glom.adapters;
 
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.support.v4.content.ContextCompat;
@@ -17,6 +16,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.abborg.glom.ApplicationState;
@@ -49,7 +49,6 @@ import org.joda.time.format.DateTimeFormatter;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Handles the view logic to display items in a RecyclerView. The adapter can support
@@ -73,7 +72,7 @@ public class BoardRecyclerViewAdapter
      **************************************************/
 
     public static class EventHolder extends RecyclerView.ViewHolder {
-        Button actionButton1;
+        Button getDirectionsButton;
 
         ImageView posterAvatar;
         TextView posterName;
@@ -91,7 +90,7 @@ public class BoardRecyclerViewAdapter
         public EventHolder(View itemView) {
             super(itemView);
 
-            actionButton1 = (Button) itemView.findViewById(R.id.card_action_1);
+            getDirectionsButton = (Button) itemView.findViewById(R.id.action_get_directions);
 
             posterAvatar = (ImageView) itemView.findViewById(R.id.card_user_avatar);
             posterName = (TextView) itemView.findViewById(R.id.card_user_name);
@@ -124,8 +123,7 @@ public class BoardRecyclerViewAdapter
     }
 
     public static class FileHolder extends RecyclerView.ViewHolder {
-        Button actionButton1;
-        Button actionButton2;
+        Button viewButton;
 
         ImageView posterAvatar;
         TextView posterName;
@@ -143,8 +141,7 @@ public class BoardRecyclerViewAdapter
         public FileHolder(View itemView) {
             super(itemView);
 
-            actionButton1 = (Button) itemView.findViewById(R.id.card_action_1);
-            actionButton2 = (Button) itemView.findViewById(R.id.card_action_2);
+            viewButton = (Button) itemView.findViewById(R.id.action_view_file);
 
             posterAvatar = (ImageView) itemView.findViewById(R.id.card_user_avatar);
             posterName = (TextView) itemView.findViewById(R.id.card_user_name);
@@ -181,6 +178,7 @@ public class BoardRecyclerViewAdapter
         TextView posterName;
         TextView postTime;
         ImageView syncStatus;
+        ProgressBar progressBar;
 
         ImageView thumbnail;
 
@@ -193,6 +191,7 @@ public class BoardRecyclerViewAdapter
             posterName = (TextView) itemView.findViewById(R.id.card_user_name);
             postTime = (TextView) itemView.findViewById(R.id.card_user_post_time);
             syncStatus = (ImageView) itemView.findViewById(R.id.card_sync_status);
+            progressBar = (ProgressBar) itemView.findViewById(R.id.file_progress);
 
             thumbnail = (ImageView) itemView.findViewById(R.id.note_thumbnail);
 
@@ -216,6 +215,9 @@ public class BoardRecyclerViewAdapter
     }
 
     public static class LinkHolder extends RecyclerView.ViewHolder {
+        Button editButton;
+        Button copyButton;
+
         ImageView posterAvatar;
         TextView posterName;
         TextView postTime;
@@ -227,6 +229,8 @@ public class BoardRecyclerViewAdapter
         TextView description;
 
         CardView card;
+
+        RelativeLayout thumbnailLayout;
 
         public LinkHolder(View itemView) {
             super(itemView);
@@ -242,6 +246,11 @@ public class BoardRecyclerViewAdapter
             description = (TextView) itemView.findViewById(R.id.link_description);
 
             card = (CardView) itemView.findViewById(R.id.card_view);
+
+            thumbnailLayout = (RelativeLayout) itemView.findViewById(R.id.link_thumbnail_layout);
+
+            editButton = (Button) itemView.findViewById(R.id.action_edit_link);
+            copyButton = (Button) itemView.findViewById(R.id.action_copy_link);
         }
 
         public void bind(final LinkItem item, final BoardItemClickListener listener) {
@@ -409,15 +418,15 @@ public class BoardRecyclerViewAdapter
 
                 // set update text
                 switch(feedAction.type) {
-                    case FeedAction.CREATE_EVENT:
+                    case FeedAction.CREATE:
                         posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
                                 context.getResources().getString(R.string.card_post_info)));
                         break;
-                    case FeedAction.CANCEL_EVENT:
+                    case FeedAction.CANCELED:
                         posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
                                 context.getResources().getString(R.string.card_cancel_info)));
                         break;
-                    case FeedAction.UPDATE_EVENT:
+                    case FeedAction.EDITED:
                         posterName.setText(Html.fromHtml("<b>" + feedAction.user.getName() + "</b> " +
                                 context.getResources().getString(R.string.card_edit_info)));
                         break;
@@ -459,6 +468,48 @@ public class BoardRecyclerViewAdapter
                 Color.WHITE);
     }
 
+    private void attachSyncStatus(BoardItem item, ImageView syncIcon) {
+        if (item.getSyncStatus() == BoardItem.SYNC_COMPLETE)
+            syncIcon.setVisibility(View.INVISIBLE);
+        else {
+            syncIcon.setVisibility(View.VISIBLE);
+
+            if (item.getSyncStatus() == BoardItem.SYNC_ERROR)
+                syncIcon.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync_failed));
+            else if (item.getSyncStatus() == BoardItem.SYNC_IN_PROGRESS)
+                syncIcon.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync));
+            else if (item.getSyncStatus() == BoardItem.NO_SYNC)
+                syncIcon.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync_off));
+        }
+    }
+
+    private void attachSyncStatusWithProgress(BoardItem item, ImageView syncIcon, ProgressBar progressBar) {
+        if (item.getSyncStatus() == BoardItem.SYNC_COMPLETE) {
+            syncIcon.setVisibility(View.INVISIBLE);
+            progressBar.setVisibility(View.GONE);
+        }
+        else {
+            syncIcon.setVisibility(View.VISIBLE);
+            progressBar.setVisibility(View.VISIBLE);
+
+            if (item.getSyncStatus() == BoardItem.SYNC_ERROR)
+                syncIcon.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync_failed));
+            else if (item.getSyncStatus() == BoardItem.SYNC_IN_PROGRESS) {
+                syncIcon.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync));
+                if (item.getProgress() > 0) {
+                    progressBar.setIndeterminate(false);
+                    progressBar.setProgress(item.getProgress());
+                }
+                else {
+                    progressBar.setIndeterminate(true);
+                }
+            }
+            else if (item.getSyncStatus() == BoardItem.NO_SYNC) {
+                syncIcon.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync_off));
+            }
+        }
+    }
+
     private void setFileViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {
         FileItem file = (FileItem) items.get(position);
         final String id = file.getId();
@@ -474,9 +525,8 @@ public class BoardRecyclerViewAdapter
 
         // set action buttons
         if (file.getLocalCache() == null || !file.getLocalCache().exists()) {
-            holder.actionButton1.setText(context.getResources().getString(R.string.card_action_download));
-            holder.actionButton2.setText(context.getResources().getString(R.string.card_action_share));
-            holder.actionButton1.setOnClickListener(new View.OnClickListener() {
+            holder.viewButton.setText(context.getResources().getString(R.string.card_action_download));
+            holder.viewButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     holder.itemView.performClick();
@@ -484,9 +534,8 @@ public class BoardRecyclerViewAdapter
             });
         }
         else {
-            holder.actionButton1.setText(context.getResources().getString(R.string.card_action_view));
-            holder.actionButton2.setText(context.getResources().getString(R.string.card_action_share));
-            holder.actionButton1.setOnClickListener(new View.OnClickListener() {
+            holder.viewButton.setText(context.getResources().getString(R.string.card_action_view));
+            holder.viewButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     holder.itemView.performClick();
@@ -495,27 +544,7 @@ public class BoardRecyclerViewAdapter
         }
 
         // set sync status and progress bar
-        if (file.getSyncStatus() == BoardItem.SYNC_COMPLETE) {
-            holder.syncStatus.setVisibility(View.INVISIBLE);
-            holder.progressBar.setVisibility(View.GONE);
-        }
-        else {
-            holder.syncStatus.setVisibility(View.VISIBLE);
-            holder.progressBar.setVisibility(View.VISIBLE);
-
-            if (file.getSyncStatus() == BoardItem.SYNC_ERROR)
-                holder.syncStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync_failed));
-            else if (file.getSyncStatus() == BoardItem.SYNC_IN_PROGRESS) {
-                holder.syncStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync));
-                if (file.getProgress() > 0) {
-                    holder.progressBar.setIndeterminate(false);
-                    holder.progressBar.setProgress(file.getProgress());
-                }
-                else {
-                    holder.progressBar.setIndeterminate(true);
-                }
-            }
-        }
+        attachSyncStatusWithProgress(file, holder.syncStatus, holder.progressBar);
 
         // update file info and thumbnail
         String name = !TextUtils.isEmpty(file.getName()) ? file.getName()
@@ -558,7 +587,7 @@ public class BoardRecyclerViewAdapter
     }
 
     private void setEventViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {
-        EventItem event = (EventItem) items.get(position);
+        final EventItem event = (EventItem) items.get(position);
         final String id = event.getId();
         EventHolder holder = (EventHolder) recyclerViewHolder;
 
@@ -573,67 +602,21 @@ public class BoardRecyclerViewAdapter
         // if the hosts contains the user, set action and text accordingly (Edit, Share)
         // if the hosts doesn't contain the user, set action to (Attend, Miss)
         if (event.getPlace() != null || event.getLocation() != null) {
-            holder.actionButton1.setVisibility(View.VISIBLE);
-            holder.actionButton1.setText(context.getResources().getString(R.string.card_action_get_directions));
-
-            final String placeId = event.getPlace();
-            if (!TextUtils.isEmpty(placeId)) {
-                holder.actionButton1.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        GoogleApiClient apiClient = ApplicationState.getInstance().getGoogleApiClient();
-                        if (apiClient != null && apiClient.isConnected()) {
-                            PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(apiClient, placeId);
-                            placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {
-
-                                @Override
-                                public void onResult(PlaceBuffer places) {
-                                    if (!places.getStatus().isSuccess()) {
-                                        Log.e(TAG, "Place query did not complete. Error: " + places.getStatus().toString());
-                                        places.release();
-                                        return;
-                                    }
-
-                                    final Place place = places.get(0);
-                                    Log.d(TAG, "Place query succeeded for " + place.getName());
-                                    double lat = place.getLatLng().latitude;
-                                    double lng = place.getLatLng().longitude;
-                                    places.release();
-
-                                    launchGoogleMapsNavigation(lat, lng);
-                                }
-                            });
-                        }
-                    }
-                });
-            }
-            else if (event.getLocation() != null) {
-                final double lat = event.getLocation().getLatitude();
-                final double lng = event.getLocation().getLongitude();
-
-                holder.actionButton1.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        launchGoogleMapsNavigation(lat, lng);
-                    }
-                });
-            }
+            holder.getDirectionsButton.setVisibility(View.VISIBLE);
+            holder.getDirectionsButton.setText(context.getResources().getString(R.string.card_action_get_directions));
+            holder.getDirectionsButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (listener != null) listener.onActionButtonClicked(event, R.id.action_get_directions);
+                }
+            });
         }
         else {
-            holder.actionButton1.setVisibility(View.GONE);
+            holder.getDirectionsButton.setVisibility(View.GONE);
         }
 
         // set sync status
-        if (event.getSyncStatus() == BoardItem.SYNC_COMPLETE)
-            holder.syncStatus.setVisibility(View.INVISIBLE);
-        else {
-            holder.syncStatus.setVisibility(View.VISIBLE);
-
-            if (event.getSyncStatus() == BoardItem.SYNC_ERROR)
-                holder.syncStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync_failed));
-            else if (event.getSyncStatus() == BoardItem.SYNC_IN_PROGRESS)
-                holder.syncStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync));
-        }
+        attachSyncStatus(event, holder.syncStatus);
 
         // update event info
         // always show time if available
@@ -851,18 +834,7 @@ public class BoardRecyclerViewAdapter
         attachSelectionOverlay(position, holder.card);
 
         // set sync status and progress bar
-        if (drawing.getSyncStatus() == BoardItem.SYNC_COMPLETE) {
-            holder.syncStatus.setVisibility(View.INVISIBLE);
-        }
-        else {
-            holder.syncStatus.setVisibility(View.VISIBLE);
-
-            if (drawing.getSyncStatus() == BoardItem.SYNC_ERROR)
-                holder.syncStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync_failed));
-            else if (drawing.getSyncStatus() == BoardItem.SYNC_IN_PROGRESS) {
-                holder.syncStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync));
-            }
-        }
+        attachSyncStatusWithProgress(drawing, holder.syncStatus, holder.progressBar);
 
         // update drawing thumbnail
         File file = drawing.getLocalCache();
@@ -878,7 +850,7 @@ public class BoardRecyclerViewAdapter
     }
 
     private void setLinkViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {
-        LinkItem link = (LinkItem) items.get(position);
+        final LinkItem link = (LinkItem) items.get(position);
         final LinkHolder holder = (LinkHolder) recyclerViewHolder;
 
         holder.bind(link, listener);
@@ -890,25 +862,31 @@ public class BoardRecyclerViewAdapter
         attachSelectionOverlay(position, holder.card);
 
         // set sync status and progress bar
-        if (link.getSyncStatus() == BoardItem.SYNC_COMPLETE) {
-            holder.syncStatus.setVisibility(View.INVISIBLE);
-        }
-        else {
-            holder.syncStatus.setVisibility(View.VISIBLE);
-
-            if (link.getSyncStatus() == BoardItem.SYNC_ERROR)
-                holder.syncStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync_failed));
-            else if (link.getSyncStatus() == BoardItem.SYNC_IN_PROGRESS) {
-                holder.syncStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_sync));
-            }
-        }
+        attachSyncStatus(link, holder.syncStatus);
 
         // update the info
         holder.url.setText(trimUrl(link.getUrl()));
-        holder.title.setText(link.getTitle());
-        holder.description.setText(link.getDescription());
-        if (!TextUtils.isEmpty(link.getThumbnail())) {
-            holder.thumbnail.setVisibility(View.VISIBLE);
+        if (TextUtils.isEmpty(link.getTitle()) || link.getTitle().equals("null")) {
+            holder.title.setVisibility(View.GONE);
+            holder.title.setText(null);
+        }
+        else {
+            holder.title.setVisibility(View.VISIBLE);
+            holder.title.setText(link.getTitle());
+        }
+        if (TextUtils.isEmpty(link.getDescription()) || link.getDescription().equals("null")) {
+            holder.description.setVisibility(View.GONE);
+            holder.description.setText(null);
+        }
+        else {
+            holder.description.setVisibility(View.VISIBLE);
+            holder.description.setText(link.getDescription());
+        }
+        if (TextUtils.isEmpty(link.getThumbnail()) || link.getThumbnail().equals("null")) {
+            holder.thumbnailLayout.setVisibility(View.GONE);
+        }
+        else {
+            holder.thumbnailLayout.setVisibility(View.VISIBLE);
             Glide.with(context)
                     .load(link.getThumbnail()).centerCrop()
                     .crossFade(1000)
@@ -916,23 +894,27 @@ public class BoardRecyclerViewAdapter
                     .error(R.drawable.ic_placeholder_image)
                     .into(holder.thumbnail);
         }
-        else {
-            holder.thumbnail.setVisibility(View.GONE);
-        }
+
+        // set up the action button
+        holder.editButton.setText(context.getString(R.string.card_action_edit_link));
+        holder.editButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (listener != null) listener.onActionButtonClicked(link, R.id.action_edit_link);
+            }
+        });
+        holder.copyButton.setText(context.getString(R.string.card_action_copy_link));
+        holder.copyButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (listener != null) listener.onActionButtonClicked(link, R.id.action_copy_link);
+            }
+        });
     }
 
     private String trimUrl(String url) {
         if (TextUtils.isEmpty(url)) return null;
-
         return Uri.parse(url).getHost();
-    }
-
-    private void launchGoogleMapsNavigation(double lat, double lng) {
-        Uri gmmIntentUri = Uri.parse(
-                String.format(Locale.ENGLISH, "google.navigation:q=%1f,%2f", lat, lng));
-        Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
-        mapIntent.setPackage("com.google.android.apps.maps");
-        context.startActivity(mapIntent);
     }
 
     /**************************************************************

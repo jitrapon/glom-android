@@ -3,15 +3,13 @@ package com.abborg.glom.model;
 import org.joda.time.DateTime;
 
 /**
- * Created by Boat on 14/10/58.
+ * Created by Jitrapon
  */
 public class FeedAction {
 
-    public static final int CREATE_EVENT = 0;
-
-    public static final int CANCEL_EVENT = 1;
-
-    public static final int UPDATE_EVENT = 2;
+    public static final int CREATE = 0;
+    public static final int CANCELED = 1;
+    public static final int EDITED = 2;
 
     public int type;
 

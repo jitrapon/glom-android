@@ -139,6 +139,7 @@
     <string name="notification_download_item_failed">Failed to downloaded %s</string>
     <string name="notification_retrieve_file_failed">Unable to retrieve this file, please try another file</string>
     <string name="notification_load_drawing_failed">Failed to load drawing</string>
+    <string name="notification_copy_link">Link URL copied to clipboard</string>
 
     <!-- Broadcast location options -->
     <string name="bottom_sheet_broadcast_location_toggle">Broadcast my location</string>
@@ -174,11 +175,17 @@
     <string name="duration_started_prefix">Started</string>
     <string name="error_google_play_services_error">Error accessing Google Play Services, make sure you have the latest update</string>
     <string name="hint_note">Note</string>
+
+    <!-- Link -->
     <string name="dialog_new_link_title">New Link</string>
+    <string name="dialog_edit_link_title">Edit Link</string>
     <string name="dialog_new_link_placeholder">Enter or paste the URL here</string>
     <string name="dialog_new_link_ok">Save</string>
     <string name="dialog_new_link_open_link">Open</string>
     <string name="dialog_new_link_cancel">Cancel</string>
+    <string name="warning_no_url">No URL provided!</string>
+    <string name="card_action_copy_link">Copy URL</string>
+    <string name="card_action_edit_link">Edit</string>
 
     <!-- Global menu items -->
     <string name="menu_item_delete">Delete</string>

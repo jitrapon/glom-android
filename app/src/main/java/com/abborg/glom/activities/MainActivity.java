@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -88,6 +89,7 @@ import com.abborg.glom.model.DiscoverItem;
 import com.abborg.glom.model.DrawItem;
 import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FileItem;
+import com.abborg.glom.model.LinkItem;
 import com.abborg.glom.model.User;
 import com.abborg.glom.service.CirclePushService;
 import com.abborg.glom.service.RegistrationIntentService;
@@ -948,7 +950,7 @@ public class MainActivity extends AppCompatActivity implements
                 break;
             }
             case LINK: {
-                showLinkDialog();
+                showLinkDialog(null);
                 break;
             }
             case NOTE:
@@ -959,44 +961,76 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    private void showLinkDialog() {
+    private void copyToClipboard(String text) {
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        ClipData clip = ClipData.newPlainText(text, text);
+        clipboard.setPrimaryClip(clip);
+    }
+
+    private void showLinkDialog(final LinkItem link) {
         View contentView = getLayoutInflater().inflate(R.layout.dialog_save_link, null);
         final EditText urlField = ((EditText) contentView.findViewById(R.id.input_link_url));
+        final boolean shouldCreateNewLink = link == null;
+        if (!shouldCreateNewLink) {
+            urlField.setText(link.getUrl());
+        }
 
-        new AlertDialog.Builder(this, R.style.AlertDialogTheme)
-                .setTitle(R.string.dialog_new_link_title)
+        final AlertDialog dialog = new AlertDialog.Builder(this, R.style.AlertDialogTheme)
+                .setTitle(shouldCreateNewLink ? R.string.dialog_new_link_title : R.string.dialog_edit_link_title)
                 .setView(contentView)
-                .setPositiveButton(R.string.dialog_new_link_ok, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        try {
-                            validateUrl(urlField.getText().toString());
-                        }
-                        catch (Exception ex) {
-                            Log.e(TAG, ex.getMessage());
-                        }
-                    }
-                })
-                .setNeutralButton(R.string.dialog_new_link_open_link, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        try {
-                            String url = validateUrl(urlField.getText().toString());
-                            launchUrl(url);
-                        }
-                        catch (Exception ex) {
-                            Log.e(TAG, ex.getMessage());
-                        }
-                    }
-                })
+                .setPositiveButton(R.string.dialog_new_link_ok, null)
+                .setNeutralButton(R.string.dialog_new_link_open_link, null)
                 .setNegativeButton(R.string.dialog_new_link_cancel, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.dismiss();
                     }
                 })
-                .setCancelable(false)
-                .show();
+                .setCancelable(true)
+                .create();
+        dialog.show();
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                try {
+                    String url = validateUrl(urlField.getText().toString());
+                    if (url == null) {
+                        urlField.setError(getString(R.string.warning_no_url));
+                    }
+                    else {
+                        if (shouldCreateNewLink) {
+                            dataProvider.createLinkAsync(appState.getActiveCircle(), DateTime.now(), url, true);
+                        }
+                        else {
+                            dataProvider.updateLinkAsync(appState.getActiveCircle(), DateTime.now(), link.getId(), url, true);
+                        }
+                        dialog.dismiss();
+                    }
+                }
+                catch (Exception ex) {
+                    Log.e(TAG, ex.getMessage());
+                }
+            }
+        });
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                try {
+                    String url = validateUrl(urlField.getText().toString());
+                    if (url == null) {
+                        urlField.setError(getString(R.string.warning_no_url));
+                    }
+                    else {
+                        launchUrl(url);
+                    }
+                }
+                catch (Exception ex) {
+                    Log.e(TAG, ex.getMessage());
+                }
+            }
+        });
     }
 
     private String validateUrl(String urlString) throws MalformedURLException {
@@ -1831,9 +1865,11 @@ public class MainActivity extends AppCompatActivity implements
             case Const.MSG_DRAWING_POST_IN_PROGRESS: {
                 DrawItem item = msg.obj == null ? null : (DrawItem) msg.obj;
                 int status = msg.arg1;
+                int progress = msg.arg2;
 
                 if (item != null) {
                     item.setSyncStatus(status);
+                    item.setProgress(progress);
                     if (boardItemChangeListeners != null) {
                         for (BoardItemChangeListener listener : boardItemChangeListeners) {
                             listener.onItemModified(item.getId());
@@ -1958,6 +1994,128 @@ public class MainActivity extends AppCompatActivity implements
 
                 break;
             }
+
+            /* Creating a link */
+            case Const.MSG_LINK_CREATED: {
+                final LinkItem item = msg.obj == null ? null : (LinkItem) msg.obj;
+
+                if (item != null) {
+                    appState.getActiveCircle().addItem(item);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemAdded(item.getId());
+                        }
+                    }
+                }
+
+                break;
+            }
+
+            /* Synced creating link successfully */
+            case Const.MSG_LINK_CREATED_SUCCESS: {
+                LinkItem item = msg.obj == null ? null : (LinkItem) msg.obj;
+                int status = msg.arg1;
+
+                if (item != null) {
+                    item.setSyncStatus(status);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
+
+                Toast.makeText(getApplicationContext(), getResources().getString(R.string.notification_created_item_success),
+                        Toast.LENGTH_LONG).show();
+
+                break;
+            }
+
+            /* Editing a link */
+            case Const.MSG_EDIT_LINK: {
+                final LinkItem item = msg.obj == null ? null : (LinkItem) msg.obj;
+
+                if (item != null) {
+                    showLinkDialog(item);
+                }
+
+                break;
+            }
+
+            /* Link edited */
+            case Const.MSG_LINK_UPDATED: {
+                final LinkItem item = msg.obj == null ? null : (LinkItem) msg.obj;
+
+                if (item != null) {
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
+
+                break;
+            }
+
+            /* Link update sync success */
+            case Const.MSG_LINK_UPDATED_SUCCESS: {
+                LinkItem item = msg.obj == null ? null : (LinkItem) msg.obj;
+                int status = msg.arg1;
+
+                if (item != null) {
+                    item.setSyncStatus(status);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
+
+                Toast.makeText(getApplicationContext(), getResources().getString(R.string.notification_updated_item_success),
+                        Toast.LENGTH_LONG).show();
+
+                break;
+            }
+
+            /* Request: update link failed to sync with server */
+            case Const.MSG_LINK_UPDATED_FAILED: {
+                final LinkItem item = msg.obj == null ? null : (LinkItem) msg.obj;
+                int status = msg.arg1;
+
+                if (item != null) {
+                    item.setSyncStatus(status);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
+
+                Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_updated_item_failed),
+                        Snackbar.LENGTH_LONG)
+                        .setAction(getResources().getString(R.string.menu_item_try_again), new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                if (item != null) {
+                                    dataProvider.requestUpdateLink(appState.getActiveCircle(), item);
+                                }
+                            }
+                        })
+                        .show();
+                break;
+            }
+
+            /* Copy a link */
+            case Const.MSG_COPY_LINK: {
+                final LinkItem item = msg.obj == null ? null : (LinkItem) msg.obj;
+
+                if (item != null) {
+                    copyToClipboard(item.getUrl());
+                    Toast.makeText(getApplicationContext(), getString(R.string.notification_copy_link), Toast.LENGTH_SHORT).show();
+                }
+
+                break;
+            }
         }
 
         return false;
@@ -2005,7 +2163,7 @@ public class MainActivity extends AppCompatActivity implements
      **********************************************************/
     @Override
     public void onDrawerItemSelected(View view, int position) {
-        dataProvider.getAsyncCircleById(appState.getAllCircleInfo().get(position).id);
+        dataProvider.getCircleByIdAsync(appState.getAllCircleInfo().get(position).id);
     }
 
     /**********************************************************

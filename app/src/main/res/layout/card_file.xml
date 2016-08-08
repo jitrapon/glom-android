@@ -78,9 +78,10 @@
                 android:background="@color/lineDivider"/>
 
             <ProgressBar
+                style="?android:attr/progressBarStyleHorizontal"
                 android:id="@+id/file_progress"
                 android:layout_width="match_parent"
-                android:layout_height="3dp" />
+                android:layout_height="2dp" />
 
         </FrameLayout>
 
@@ -152,7 +153,7 @@
                     android:layout_alignParentStart="true">
 
                     <Button
-                        android:id="@+id/card_action_1"
+                        android:id="@+id/action_view_file"
                         android:focusable="false"
                         android:focusableInTouchMode="false"
                         android:layout_width="wrap_content"
@@ -160,19 +161,7 @@
                         android:padding="@dimen/card_action_padding"
                         android:background="?android:attr/selectableItemBackground"
                         android:textColor="@color/actionButtonColor"
-                        android:text="ACTION 1"/>
-
-                    <Button
-                        android:id="@+id/card_action_2"
-                        android:focusable="false"
-                        android:focusableInTouchMode="false"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:padding="@dimen/card_action_padding"
-                        android:background="?android:attr/selectableItemBackground"
-                        android:layout_toRightOf="@+id/card_action_1"
-                        android:textColor="@color/actionButtonColor"
-                        android:text="ACTION 2"/>
+                        android:text="@string/card_action_view"/>
 
                 </RelativeLayout>
 

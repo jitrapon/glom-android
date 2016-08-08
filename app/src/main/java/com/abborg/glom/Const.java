@@ -117,9 +117,11 @@ public class Const {
     public static final String JSON_SERVER_LINK_THUMBNAIL = "thumbnail";
     public static final String JSON_SERVER_LINK_TITLE = "title";
     public static final String JSON_SERVER_LINK_DESCRIPTION = "description";
+    public static final String JSON_SERVER_LINK_MAX_FETCH_PAGES = "max_fetch_pages";
+    public static final String JSON_SERVER_LINK_MAX_LINK_DEPTH = "max_link_depth";
 
     /**
-     * HANDLER WHAT CONSTANTS
+     * HANDLER MESSAGE ID
      */
     public static final int MSG_GET_USERS = 5000;
     public static final int MSG_ITEM_TO_DELETE = 5001;
@@ -162,6 +164,14 @@ public class Const {
     public static final int MSG_SERVER_CONNECTED = 5040;
     public static final int MSG_OPEN_LINK = 5041;
     public static final int MSG_GET_CIRCLE = 5042;
+    public static final int MSG_LINK_CREATED = 5043;
+    public static final int MSG_EDIT_LINK = 5044;
+    public static final int MSG_COPY_LINK = 5055;
+    public static final int MSG_LINK_UPDATED = 5056;
+    public static final int MSG_LINK_CREATED_SUCCESS = 5057;
+    public static final int MSG_LINK_CREATED_FAILED = 5058;
+    public static final int MSG_LINK_UPDATED_SUCCESS = 5059;
+    public static final int MSG_LINK_UPDATED_FAILED = 5060;
 
     /************************
      * Mimetypes

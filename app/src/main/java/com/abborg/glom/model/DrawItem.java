@@ -5,7 +5,7 @@ import org.joda.time.DateTime;
 import java.io.File;
 
 /**
- * Created by jitrapon on 23/5/16.
+ * Created by jitrapon
  */
 public class DrawItem extends BoardItem {
 

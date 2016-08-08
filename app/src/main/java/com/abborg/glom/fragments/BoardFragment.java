@@ -7,10 +7,13 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.IdRes;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -31,9 +34,16 @@ import com.abborg.glom.model.DrawItem;
 import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FileItem;
 import com.abborg.glom.model.LinkItem;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.location.places.Place;
+import com.google.android.gms.location.places.PlaceBuffer;
+import com.google.android.gms.location.places.Places;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -147,7 +157,7 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
             // send request to server to get board items
             //TODO delay by some timer for request
             if (dataProvider != null) {
-                if (!firstView) {
+                if (!firstView && appState.getConnectionStatus() == ApplicationState.ConnectivityStatus.CONNECTED) {
                     if (refreshView != null) {
                         if (handler != null) {
                             handler.post(new Runnable() {
@@ -239,6 +249,75 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
             adapter.toggleSelection(position);
         }
         return true;
+    }
+
+    @Override
+    public void onActionButtonClicked(BoardItem item, @IdRes int button) {
+        if (!isActionModeEnabled) {
+            switch (button) {
+                case R.id.action_get_directions: {
+                    if (item instanceof EventItem) {
+                        EventItem event = (EventItem) item;
+                        final String placeId = event.getPlace();
+                        if (!TextUtils.isEmpty(placeId)) {
+                            GoogleApiClient apiClient = ApplicationState.getInstance().getGoogleApiClient();
+                            if (apiClient != null && apiClient.isConnected()) {
+                                PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(apiClient, placeId);
+                                placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {
+
+                                    @Override
+                                    public void onResult(@NonNull PlaceBuffer places) {
+                                        if (!places.getStatus().isSuccess()) {
+                                            Log.e(TAG, "Place query did not complete. Error: " + places.getStatus().toString());
+                                            places.release();
+                                            return;
+                                        }
+
+                                        final Place place = places.get(0);
+                                        Log.d(TAG, "Place query succeeded for " + place.getName());
+                                        double lat = place.getLatLng().latitude;
+                                        double lng = place.getLatLng().longitude;
+                                        places.release();
+
+                                        launchGoogleMapsNavigation(lat, lng);
+                                    }
+                                });
+                            }
+                        }
+                        else if (event.getLocation() != null) {
+                            launchGoogleMapsNavigation(event.getLocation().getLatitude(), event.getLocation().getLongitude());
+                        }
+                    }
+
+                    break;
+                }
+                case R.id.action_edit_link: {
+                    LinkItem link = (LinkItem) item;
+                    if (handler != null) {
+                        handler.sendMessage(handler.obtainMessage(Const.MSG_EDIT_LINK, link));
+                    }
+
+                    break;
+                }
+                case R.id.action_copy_link: {
+                    LinkItem link = (LinkItem) item;
+                    if (handler != null) {
+                        handler.sendMessage(handler.obtainMessage(Const.MSG_COPY_LINK, link));
+                    }
+
+                    break;
+                }
+                default: break;
+            }
+        }
+    }
+
+    private void launchGoogleMapsNavigation(double lat, double lng) {
+        Uri gmmIntentUri = Uri.parse(
+                String.format(Locale.ENGLISH, "google.navigation:q=%1f,%2f", lat, lng));
+        Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+        mapIntent.setPackage("com.google.android.apps.maps");
+        startActivity(mapIntent);
     }
 
     /**********************************************************

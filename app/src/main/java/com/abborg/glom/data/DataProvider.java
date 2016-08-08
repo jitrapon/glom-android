@@ -439,7 +439,7 @@ public class DataProvider {
         return circle;
     }
 
-    public void getAsyncCircleById(final String id) {
+    public void getCircleByIdAsync(final String id) {
         run(new Runnable() {
 
             @Override
@@ -1048,8 +1048,8 @@ public class DataProvider {
         cursor.moveToFirst();
         while (!cursor.isAfterLast()) {
             EventItem event = serializeEvent(cursor, circle);
-            int action = event.getUpdatedTime().equals(event.getCreatedTime()) ? FeedAction.CREATE_EVENT :
-                    FeedAction.UPDATE_EVENT;
+            int action = event.getUpdatedTime().equals(event.getCreatedTime()) ? FeedAction.CREATE :
+                    FeedAction.EDITED;
             event.setLastAction(new FeedAction(action, activeUser, event.getUpdatedTime()));
             items.add(event);
             cursor.moveToNext();
@@ -1085,6 +1085,22 @@ public class DataProvider {
         cursor.moveToFirst();
         while (!cursor.isAfterLast()) {
             DrawItem item = serializeDrawing(cursor, circle);
+            items.add(item);
+            cursor.moveToNext();
+        }
+        cursor.close();
+
+        query = "SELECT * FROM " + DBHelper.TABLE_CIRCLE_ITEMS + " " +
+                "JOIN " + DBHelper.TABLE_LINKS + " ON " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_ITEMID + "=" + DBHelper.TABLE_LINKS + "." + DBHelper.LINK_COLUMN_ID + " " +
+                "AND " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_CIRCLEID + "='" + circle.getId() + "' " +
+                "AND " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_TYPE + "=" + BoardItem.TYPE_LINK + " " +
+                "ORDER BY " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME + " ASC";
+        cursor = database.rawQuery(query, null);
+        result = DatabaseUtils.dumpCursorToString(cursor);
+        Log.d(TAG, "Found links: " + result);
+        cursor.moveToFirst();
+        while (!cursor.isAfterLast()) {
+            LinkItem item = serializeLink(cursor, circle);
             items.add(item);
             cursor.moveToNext();
         }
@@ -1129,7 +1145,7 @@ public class DataProvider {
         final EventItem event = TextUtils.isEmpty(id) ? EventItem.createEvent(circle, createdTime, createdTime)
                 : EventItem.createEvent(id, circle, createdTime, createdTime);
         event.setEventInfo(name, startTime, endTime, placeId, location, note);
-        event.setLastAction(new FeedAction(FeedAction.CREATE_EVENT, activeUser, createdTime));
+        event.setLastAction(new FeedAction(FeedAction.CREATE, activeUser, createdTime));
 
         run(new Runnable() {
             @Override
@@ -1201,7 +1217,7 @@ public class DataProvider {
                 : EventItem.createEvent(id, circle, createdTime, createdTime);
         event.setEventInfo(name, startTime, endTime, placeId, location, note);
         event.setSyncStatus(BoardItem.SYNC_COMPLETE);
-        event.setLastAction(new FeedAction(FeedAction.CREATE_EVENT, activeUser, createdTime));
+        event.setLastAction(new FeedAction(FeedAction.CREATE, activeUser, createdTime));
         circle.addItem(event);
 
         createEventDB(circle, createdTime, event, BoardItem.SYNC_COMPLETE);
@@ -1281,7 +1297,7 @@ public class DataProvider {
 
         if (e != null) {
             final EventItem event = e;
-            event.setLastAction(new FeedAction(FeedAction.UPDATE_EVENT, activeUser, updatedTime));
+            event.setLastAction(new FeedAction(FeedAction.EDITED, activeUser, updatedTime));
             event.setName(name);
             event.setStartTime(startTime);
             event.setEndTime(endTime);
@@ -1317,7 +1333,7 @@ public class DataProvider {
 
         if (event != null) {
             updatedTime = updatedTime==null? DateTime.now() : updatedTime;
-            event.setLastAction(new FeedAction(FeedAction.UPDATE_EVENT, activeUser, updatedTime));
+            event.setLastAction(new FeedAction(FeedAction.EDITED, activeUser, updatedTime));
             event.setName(name);
             event.setStartTime(startTime);
             event.setEndTime(endTime);
@@ -1480,6 +1496,10 @@ public class DataProvider {
             else if (item.getType() == BoardItem.TYPE_DRAWING) {
                 rows = database.delete(DBHelper.TABLE_DRAWINGS, DBHelper.DRAWING_COLUMN_ID + "='" + id + "'", null);
                 Log.d(TAG, "Deleted drawing id " + id + " from drawing table, affected " + rows + " row(s)");
+            }
+            else if (item.getType() == BoardItem.TYPE_LINK) {
+                rows = database.delete(DBHelper.TABLE_LINKS, DBHelper.LINK_COLUMN_ID + "='" + id + "'", null);
+                Log.d(TAG, "Deleted link id " + id + " from link table, affected " + rows + " row(s)");
             }
 
             if (handler != null) {
@@ -2164,6 +2184,114 @@ public class DataProvider {
     /*************************************************
      * LINK OPERATIONS
      *************************************************/
+
+    public void createLinkAsync(final Circle circle, final DateTime createdTime, String url, final boolean sync) {
+        final LinkItem link = LinkItem.createLink(circle);
+        link.setLinkInfo(url, null, null, null);
+        link.setSyncStatus(sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
+        link.setLastAction(new FeedAction(FeedAction.CREATE, activeUser, createdTime));
+
+        run(new Runnable() {
+            @Override
+            public void run() {
+                createLinkDB(circle, createdTime, link, sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
+
+                // this 1000 ms delayed is set due to recyclerview animation bug where it needs some time
+                // for animation to work
+                if (handler != null && sync)
+                    handler.sendMessageDelayed(handler.obtainMessage(Const.MSG_LINK_CREATED, link), 1000);
+
+                // whether or not to sync with the server
+                if (sync) requestCreateLink(circle, link);
+            }
+        });
+    }
+
+    private void requestCreateLink(final Circle circle, final LinkItem link) {
+        if (link != null) {
+            try {
+                JSONObject body = new JSONObject();
+                body.put(Const.JSON_SERVER_ITEM_ID, link.getId());
+                body.put(Const.JSON_SERVER_ITEM_TYPE, BoardItem.TYPE_LINK);
+                body.put(Const.JSON_SERVER_TIME, link.getCreatedTime().getMillis());
+                JSONObject info = new JSONObject();
+                info.put(Const.JSON_SERVER_LINK_URL, link.getUrl());
+                info.put(Const.JSON_SERVER_LINK_MAX_FETCH_PAGES, link.getMaxFetchPages());
+                info.put(Const.JSON_SERVER_LINK_MAX_LINK_DEPTH, link.getMaxLinkDepth());
+                body.put(Const.JSON_SERVER_INFO, info);
+
+                RequestHandler.getInstance(context).post("Create LinkItem", String.format(Const.API_BOARD, circle.getId()), body,
+                        new ResponseListener() {
+                            @Override
+                            public void onSuccess(JSONObject response) {
+                                setSyncStatus(link, Const.MSG_LINK_CREATED_SUCCESS, BoardItem.SYNC_COMPLETE);
+                                handleNetworkSuccess();
+                            }
+
+                            @Override
+                            public void onError(VolleyError error) {
+                                setSyncStatus(link, Const.MSG_LINK_CREATED_FAILED, BoardItem.SYNC_ERROR);
+                                handleNetworkError(error);
+                            }
+                        });
+            }
+            catch (Exception ex) {
+                ex.printStackTrace();
+                setSyncStatus(link, Const.MSG_LINK_CREATED_FAILED, BoardItem.SYNC_ERROR);
+            }
+        }
+    }
+
+    private void createLinkDB(final Circle circle, DateTime createdTime, LinkItem link, int syncStatus) {
+        if (!database.isOpen()) open();
+        database.beginTransaction();
+
+        try {
+            ContentValues values = new ContentValues();
+            values.put(DBHelper.CIRCLEITEM_COLUMN_CIRCLEID, circle.getId());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_ITEMID, link.getId());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_TYPE, link.getType());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_SYNC, syncStatus);
+            values.put(DBHelper.CIRCLEITEM_COLUMN_CREATED_TIME, createdTime.getMillis());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME, createdTime.getMillis());
+            long insertId = database.insert(DBHelper.TABLE_CIRCLE_ITEMS, null, values);
+            Log.d(TAG, "[" + insertId + "] Inserted new item to circle (" + circle.getId() + ") with id = " + link.getId());
+
+            values.clear();
+            values.put(DBHelper.LINK_COLUMN_ID, link.getId());
+            values.put(DBHelper.LINK_COLUMN_URL, link.getUrl());
+            values.put(DBHelper.LINK_COLUMN_TITLE, link.getTitle());
+            values.put(DBHelper.LINK_COLUMN_DESCRIPTION, link.getDescription());
+            values.put(DBHelper.LINK_COLUMN_THUMBNAIL, link.getThumbnail());
+            insertId = database.insert(DBHelper.TABLE_LINKS, null, values);
+            Log.d(TAG, "[" + insertId + "] Inserted new link successfully");
+
+            database.setTransactionSuccessful();
+        }
+        catch (SQLException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
+        finally {
+            database.endTransaction();
+        }
+    }
+
+    private LinkItem serializeLink(Cursor cursor, Circle circle) {
+        int syncStatus = cursor.getInt(cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_SYNC));
+        DateTime created = new DateTime(cursor.getLong(cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_CREATED_TIME)));
+        DateTime updated = new DateTime(cursor.getLong(cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME)));
+        String id = cursor.getString(cursor.getColumnIndex(DBHelper.LINK_COLUMN_ID));
+        String url = cursor.getString(cursor.getColumnIndex(DBHelper.LINK_COLUMN_URL));
+        String title = cursor.getString(cursor.getColumnIndex(DBHelper.LINK_COLUMN_TITLE));
+        String description = cursor.getString(cursor.getColumnIndex(DBHelper.LINK_COLUMN_DESCRIPTION));
+        String thumbnail = cursor.getString(cursor.getColumnIndex(DBHelper.LINK_COLUMN_THUMBNAIL));
+
+        LinkItem item = LinkItem.createLink(id, circle, created, updated);
+        item.setLinkInfo(url, thumbnail, title, description);
+        item.setSyncStatus(syncStatus);
+        return item;
+    }
+
     private LinkItem createLink(Circle circle, DateTime createdTime, String id, String url,
                                 String thumbnail, String title, String description) {
         createdTime = createdTime==null ? DateTime.now() : createdTime;
@@ -2171,12 +2299,103 @@ public class DataProvider {
                 : LinkItem.createLink(id, circle, createdTime, createdTime);
         link.setLinkInfo(url, thumbnail, title, description);
         link.setSyncStatus(BoardItem.SYNC_COMPLETE);
-        link.setLastAction(new FeedAction(FeedAction.CREATE_EVENT, activeUser, createdTime));
+        link.setLastAction(new FeedAction(FeedAction.CREATE, activeUser, createdTime));
         circle.addItem(link);
 
-//        createLinkDB(circle, createdTime, link, BoardItem.SYNC_COMPLETE);
+        createLinkDB(circle, createdTime, link, BoardItem.SYNC_COMPLETE);
 
         return link;
+    }
+
+    public void updateLinkAsync(final Circle circle, final DateTime updatedTime, String id, String url, final boolean sync) {
+        List<BoardItem> items = circle.getItems();
+        LinkItem e = null;
+        for (BoardItem item : items) {
+            if (item.getId().equals(id) && item instanceof LinkItem) {
+                e = (LinkItem) item;
+                break;
+            }
+        }
+
+        if (e != null) {
+            final LinkItem link = e;
+            link.setLastAction(new FeedAction(FeedAction.EDITED, activeUser, updatedTime));
+            link.setLinkInfo(url, null, null, null);
+
+            run(new Runnable() {
+                @Override
+                public void run() {
+                    updateLinkDB(updatedTime, link, sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
+
+                    if (handler != null)
+                        handler.sendMessage(handler.obtainMessage(Const.MSG_LINK_UPDATED, link));
+
+                    // whether or not to sync this update with the server
+                    if (sync) requestUpdateLink(circle, link);
+                }
+            });
+        }
+    }
+
+    private void updateLinkDB(DateTime updatedTime, LinkItem link, int syncStatus) {
+        if (!database.isOpen()) open();
+        database.beginTransaction();
+
+        try {
+            ContentValues values = new ContentValues();
+            values.put(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME, updatedTime.getMillis());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_SYNC, syncStatus);
+            int rows = database.update(DBHelper.TABLE_CIRCLE_ITEMS, values, DBHelper.CIRCLEITEM_COLUMN_ITEMID + "='" +
+                    link.getId() + "'", null);
+            Log.d(TAG, "Updated item with id " + link.getId() + " with status " + syncStatus + ", " + rows + " row(s) affected");
+            values.clear();
+
+            values.put(DBHelper.LINK_COLUMN_URL, link.getUrl());
+            values.put(DBHelper.LINK_COLUMN_TITLE, link.getTitle());
+            values.put(DBHelper.LINK_COLUMN_DESCRIPTION, link.getDescription());
+            values.put(DBHelper.LINK_COLUMN_THUMBNAIL, link.getThumbnail());
+            rows = database.update(DBHelper.TABLE_LINKS, values,
+                    DBHelper.LINK_COLUMN_ID + "='" + link.getId() + "'", null);
+            Log.d(TAG, "Updated link id: " + link.getId() + ", url: " + link.getUrl() + ", " + rows + " row(s) affected");
+
+            database.setTransactionSuccessful();
+        }
+        catch (SQLException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
+        finally {
+            database.endTransaction();
+        }
+    }
+
+    public void requestUpdateLink(Circle circle, final LinkItem link) {
+        if (link != null) {
+            try {
+                JSONObject body = new JSONObject();
+                body.put(Const.JSON_SERVER_LINK_URL, link.getUrl());
+                body.put(Const.JSON_SERVER_LINK_MAX_FETCH_PAGES, link.getMaxFetchPages());
+                body.put(Const.JSON_SERVER_LINK_MAX_LINK_DEPTH, link.getMaxLinkDepth());
+
+                RequestHandler.getInstance(context).post("Update LinkItem", String.format(Const.API_BOARD_ITEM, circle.getId(), link.getId()), body,
+                        new ResponseListener() {
+                            @Override
+                            public void onSuccess(JSONObject response) {
+                                setSyncStatus(link, Const.MSG_LINK_UPDATED_SUCCESS, BoardItem.SYNC_COMPLETE);
+                                handleNetworkSuccess();
+                            }
+
+                            @Override
+                            public void onError(VolleyError error) {
+                                setSyncStatus(link, Const.MSG_LINK_UPDATED_FAILED, BoardItem.SYNC_ERROR);
+                                handleNetworkError(error);
+                            }
+                        });
+            }
+            catch (Exception ex) {
+                ex.printStackTrace();
+                setSyncStatus(link, Const.MSG_LINK_UPDATED_FAILED, BoardItem.SYNC_ERROR);
+            }
+        }
     }
 
     private LinkItem updateLink(Circle circle, DateTime updatedTime, String id, String url,
@@ -2192,11 +2411,11 @@ public class DataProvider {
 
         if (link != null) {
             updatedTime = updatedTime==null? DateTime.now() : updatedTime;
-            link.setLastAction(new FeedAction(FeedAction.UPDATE_EVENT, activeUser, updatedTime));
+            link.setLastAction(new FeedAction(FeedAction.EDITED, activeUser, updatedTime));
             link.setLinkInfo(url, thumbnail, title, description);
             link.setSyncStatus(BoardItem.SYNC_COMPLETE);
 
-//            updateLinkDB(updatedTime, link, BoardItem.SYNC_COMPLETE);
+            updateLinkDB(updatedTime, link, BoardItem.SYNC_COMPLETE);
         }
 
         return link;

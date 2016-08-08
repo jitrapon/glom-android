@@ -106,7 +106,7 @@ public class DiscoverFragment extends Fragment implements SwipeRefreshLayout.OnR
             isFragmentVisible = true;
 
             if (dataProvider != null) {
-                if (!firstView) {
+                if (!firstView && appState.getConnectionStatus() == ApplicationState.ConnectivityStatus.CONNECTED) {
                     if (refreshView != null) {
                         if (handler != null) {
                             handler.post(new Runnable() {

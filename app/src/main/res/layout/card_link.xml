@@ -82,6 +82,7 @@
             android:baselineAligned="false">
 
             <RelativeLayout
+                android:id="@+id/link_thumbnail_layout"
                 android:layout_weight="0.3"
                 android:layout_width="0dp"
                 android:layout_height="match_parent">
@@ -153,6 +154,36 @@
             </RelativeLayout>
 
         </LinearLayout>
+
+        <RelativeLayout
+            android:id="@+id/card_actions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <Button
+                android:id="@+id/action_edit_link"
+                android:focusable="false"
+                android:focusableInTouchMode="false"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/card_action_padding"
+                android:background="?android:attr/selectableItemBackground"
+                android:textColor="@color/actionButtonColor"
+                android:text="@string/card_action_edit_link"/>
+
+            <Button
+                android:id="@+id/action_copy_link"
+                android:focusable="false"
+                android:focusableInTouchMode="false"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/card_action_padding"
+                android:background="?android:attr/selectableItemBackground"
+                android:layout_toRightOf="@id/action_edit_link"
+                android:layout_toEndOf="@id/action_edit_link"
+                android:textColor="@color/actionButtonColor"
+                android:text="@string/card_action_copy_link"/>
+        </RelativeLayout>
 
     </LinearLayout>
 
