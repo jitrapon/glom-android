@@ -69,8 +69,9 @@ public class CircleFragment extends Fragment implements BroadcastLocationListene
 
         appState = ApplicationState.getInstance();
 
-        if (appState.getActiveCircle() != null)
+        if (appState != null && appState.getActiveCircle() != null) {
             users = appState.getActiveCircle().getUsers();
+        }
     }
 
     public void update() {

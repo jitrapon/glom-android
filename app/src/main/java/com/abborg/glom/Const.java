@@ -42,6 +42,7 @@ public class Const {
     public static final int PLACE_AUTOCOMPLETE_REQUEST_CODE = 704;
     public static final int PLACE_PICKER_REQUEST_CODE = 705;
     public static final int OPEN_LINK_RESULT_CODE = 706;
+    public static final int CREATE_LIST_RESULT_CODE = 707;
 
     /************************
      * API

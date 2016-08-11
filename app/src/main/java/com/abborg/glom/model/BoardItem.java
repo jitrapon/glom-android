@@ -33,6 +33,8 @@ public class BoardItem {
     public static final int TYPE_FILE = 2;
     public static final int TYPE_DRAWING = 3;
     public static final int TYPE_LINK = 4;
+    public static final int TYPE_LIST = 5;
+    public static final int TYPE_TEXT = 6;
 
     /** Board item sync status **/
     public static final int NO_SYNC = 0;            // indicates that this item is marked for no syncing with the server

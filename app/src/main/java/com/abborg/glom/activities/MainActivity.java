@@ -408,7 +408,7 @@ public class MainActivity extends AppCompatActivity implements
                 BoardItemAction.EVENT,
                 BoardItemAction.LINK,
                 BoardItemAction.LOCATION,
-                BoardItemAction.TODO
+                BoardItemAction.LIST
         );
 
         BoardItemIconAdapter iconAdapter = new BoardItemIconAdapter(this, boardItemActions, this);
@@ -954,7 +954,12 @@ public class MainActivity extends AppCompatActivity implements
                 break;
             }
             case NOTE:
-            case TODO:
+            case LIST: {
+                Intent intent = new Intent(this, ListItemActivity.class);
+                intent.setAction(getString(R.string.ACTION_CREATE_LIST));
+                startActivityForResult(intent, Const.CREATE_LIST_RESULT_CODE);
+                break;
+            }
             case ALARM:
             case VIDEO:
             default:  Toast.makeText(getApplicationContext(), "Operation is not yet supported, coming soon!", Toast.LENGTH_SHORT).show();

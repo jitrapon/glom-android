@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <ImageView
+        android:id="@+id/drag_item_button"
+        android:layout_width="@dimen/list_item_drawable_size"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_action_drag_vertical"
+        android:contentDescription="@null"
+        android:layout_marginRight="8dp"
+        android:layout_marginEnd="8dp"/>
+
+    <CheckBox
+        android:id="@+id/checkbox"
+        android:layout_toRightOf="@id/drag_item_button"
+        android:layout_toEndOf="@id/drag_item_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"/>
+
+    <ImageView
+        android:id="@+id/delete_item_button"
+        android:layout_width="@dimen/list_item_drawable_size"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:src="@drawable/ic_action_close_dark"
+        android:contentDescription="@null"/>
+
+    <EditText
+        android:id="@+id/content_text"
+        android:layout_toRightOf="@id/checkbox"
+        android:layout_toEndOf="@id/checkbox"
+        android:layout_toLeftOf="@id/delete_item_button"
+        android:layout_toStartOf="@id/delete_item_button"
+        android:layout_marginLeft="@dimen/activity_horizontal_margin"
+        android:layout_marginStart="@dimen/activity_horizontal_margin"
+        android:layout_marginRight="@dimen/activity_horizontal_margin"
+        android:layout_marginEnd="@dimen/activity_horizontal_margin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:textSize="@dimen/list_item_text_size"
+        android:singleLine="false"
+        android:background="@android:color/transparent"/>
+
+</RelativeLayout>

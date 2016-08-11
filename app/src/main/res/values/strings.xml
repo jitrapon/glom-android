@@ -66,6 +66,9 @@
     <string name="ACTION_CONNECTIVITY_STATE_CHANGE">android.net.conn.CONNECTIVITY_CHANGE</string>
     <string name="EXTRA_LINK_URL">extra.LINK_URL</string>
     <string name="EXTRA_LINK_TITLE">extra.LINK_TITLE</string>
+    <string name="ACTION_CREATE_LIST">action.NEW_LIST</string>
+    <string name="ACTION_UPDATE_LIST">action.UPDATE_LIST</string>
+    <string name="EXTRA_LIST_ID">extra.LIST_ID</string>
 
     <!-- Profile activity strings -->
     <string name="profile_activity_label">My Profile</string>
@@ -234,6 +237,12 @@
     <string name="menu_item_clear_drawing">Clear</string>
     <string name="notification_saving_bitmap">Saving this drawing locally…</string>
 
+    <!-- List -->
+    <string name="hint_list_title">Title</string>
+    <string name="title_activity_new_list_item">New List</string>
+    <string name="title_activity_edit_list_item">Edit List</string>
+    <string name="title_activity_view_list_item">View List</string>
+
     <!--Board -->
     <string name="label_empty_board">No items in this board\nAdd something to share!</string>
 
@@ -248,7 +257,7 @@
     <string name="action_alarm">Alarm</string>
     <string name="action_note">Note</string>
     <string name="action_draw">Draw</string>
-    <string name="action_todo">To Do</string>
+    <string name="action_list">List</string>
     <string name="action_location">Send Location</string>
     <string name="action_link">Link</string>
 
@@ -259,4 +268,5 @@
     <string name="permission_write_external_storage_rationale">Our app needs access to external storage to save files. Allow?</string>
     <string name="permission_read_external_storage_rationale">Our app needs access to external storage to upload files. Allow?</string>
     <string name="permission_location_rationale">Our app needs location permission to locate you. Allow?</string>
+
 </resources>
