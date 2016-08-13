@@ -7,25 +7,30 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.EditText;
 
 import com.abborg.glom.ApplicationState;
 import com.abborg.glom.R;
+import com.abborg.glom.adapters.ItemTouchHelperCallback;
 import com.abborg.glom.adapters.ListItemAdapter;
 import com.abborg.glom.data.DataProvider;
 import com.abborg.glom.interfaces.ItemStateChangedListener;
+import com.abborg.glom.interfaces.ItemTouchListener;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.CheckedItem;
 import com.abborg.glom.model.ListItem;
 import com.abborg.glom.model.TextItem;
 
+import java.util.Collections;
 import java.util.List;
 
 public class ListItemActivity extends AppCompatActivity
-        implements ItemStateChangedListener {
+        implements ItemStateChangedListener, ItemTouchListener {
 
     public static final String TAG = "ListItemActivity";
 
@@ -40,6 +45,14 @@ public class ListItemActivity extends AppCompatActivity
 
     private Mode mode;
     private ListItem listItem;
+
+    public EditText getTitleText() {
+        return titleText;
+    }
+
+    public void setTitleText(EditText titleText) {
+        this.titleText = titleText;
+    }
 
     private enum Mode {
         CREATE,
@@ -82,6 +95,11 @@ public class ListItemActivity extends AppCompatActivity
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         listItemView.setLayoutManager(layoutManager);
         listItemView.setAdapter(adapter);
+
+        ItemTouchHelper.Callback callback = new ItemTouchHelperCallback(this);
+        ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
+        touchHelper.attachToRecyclerView(listItemView);
+        adapter.setItemTouchHelper(touchHelper);
     }
 
     @Override
@@ -112,11 +130,25 @@ public class ListItemActivity extends AppCompatActivity
         }
 
         else if (id == R.id.action_list_done) {
-
+            debugPrint(listItem);
             return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void debugPrint(ListItem listItem) {
+        List<CheckedItem> items = listItem.getItems();
+        if (items.size() == 0) Log.d(TAG, "No items in this list");
+        else {
+            int count = 1;
+            Log.d(TAG, "Item contains:");
+            for (CheckedItem item : items) {
+                Log.d(TAG, "\n" + count + ". " + "[" + item.getState()
+                        + "] " + ((TextItem)item.getItem()).getText());
+                count++;
+            }
+        }
     }
 
     private void loadData(Intent intent) {
@@ -202,8 +234,38 @@ public class ListItemActivity extends AppCompatActivity
 
     @Override
     public void onItemWillRemove(int index, CheckedItem item) {
-        Log.d(TAG, "Will remove item at index " + index);
-//        listItem.getItems().remove(index);
-//        adapter.notifyItemRemoved(index);
+        listItem.getItems().remove(index);
+
+        adapter.notifyItemRemoved(index);
+        View view = listItemView.getChildAt(Math.max(0, index-1));
+        if (view != null) {
+            view.requestFocus();
+        }
+    }
+
+    @Override
+    public void onItemMoved(int fromPosition, int toPosition) {
+        if (fromPosition < toPosition) {
+            for (int i = fromPosition; i < toPosition; i++) {
+                Collections.swap(listItem.getItems(), i, i + 1);
+            }
+        } else {
+            for (int i = fromPosition; i > toPosition; i--) {
+                Collections.swap(listItem.getItems(), i, i - 1);
+            }
+        }
+
+        adapter.notifyItemMoved(fromPosition, toPosition);
+    }
+
+    @Override
+    public void onItemDismissed(int position) {
+        listItem.getItems().remove(position);
+
+        adapter.notifyItemRemoved(position);
+        View view = listItemView.getChildAt(Math.max(0, position-1));
+        if (view != null) {
+            view.requestFocus();
+        }
     }
 }

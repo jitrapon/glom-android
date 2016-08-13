@@ -1,11 +1,16 @@
 package com.abborg.glom.adapters;
 
 import android.content.Context;
+import android.support.v4.view.MotionEventCompat;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
@@ -25,18 +30,21 @@ import java.util.List;
 /**
  * Created by jitrapon
  */
-public class ListItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements TextWatcher {
+public class ListItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
+        implements TextWatcher {
 
     private static final String TAG = "ListItemAdapter";
 
     private Context context;
 
     private ItemStateChangedListener listener;
+    private ItemTouchHelper touchHelper;
     private List<CheckedItem> items;
 
     private int focusedItemIndex = 0;
     private CheckedItem focusedItem;
     private EditText focusedEditText;
+    private boolean safeToRemove = false;
 
     /**************************************************
      * VIEW HOLDERS
@@ -76,6 +84,22 @@ public class ListItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 }
             });
 
+            content.setOnKeyListener(new View.OnKeyListener() {
+                @Override
+                public boolean onKey(View v, int keyCode, KeyEvent event) {
+                    if (keyCode == KeyEvent.KEYCODE_DEL && TextUtils.isEmpty(content.getText())) {
+                        if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                            safeToRemove = true;
+                        }
+                        else if (event.getAction() == KeyEvent.ACTION_UP && safeToRemove) {
+                            listener.onItemWillRemove(focusedItemIndex, focusedItem);
+                        }
+                        return true;
+                    }
+                    return false;
+                }
+            });
+
             checkbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -103,6 +127,10 @@ public class ListItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         this.listener = listener;
     }
 
+    public void setItemTouchHelper(ItemTouchHelper helper) {
+        touchHelper = helper;
+    }
+
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_list, parent, false);
@@ -114,8 +142,9 @@ public class ListItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         CheckedItem checkedItem = items.get(position);
         int state = checkedItem.getState();
         BoardItem item = checkedItem.getItem();
-        ListItemHolder viewHolder = (ListItemHolder) holder;
+        final ListItemHolder viewHolder = (ListItemHolder) holder;
         viewHolder.setItem(checkedItem);
+
         if (position == focusedItemIndex) {
             if (!viewHolder.content.hasFocus()) viewHolder.content.requestFocus();
         }
@@ -126,7 +155,15 @@ public class ListItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             viewHolder.content.setText(((TextItem)item).getText());
             viewHolder.content.addTextChangedListener(this);
         }
-        viewHolder.deleteButton.setVisibility(View.INVISIBLE);
+
+        viewHolder.dragButton.setOnTouchListener(new View.OnTouchListener() {
+            public boolean onTouch(View v, MotionEvent event) {
+                if (MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_DOWN) {
+                    touchHelper.startDrag(viewHolder);
+                }
+                return false;
+            }
+        });
     }
 
     @Override
@@ -150,13 +187,11 @@ public class ListItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
     @Override
     public void afterTextChanged(Editable s) {
-        Log.d(TAG, s.toString());
-        Log.d(TAG, "EditText: " + focusedEditText + ", item: " + focusedItem + ", index: " + focusedItemIndex);
         if (focusedEditText != null & focusedItem != null && focusedItemIndex != -1) {
             String text = s.toString();
             String nextLine = null;
+            if (!TextUtils.isEmpty(text)) safeToRemove = false;
             if (text.contains("\n")) {
-                Log.d(TAG, "Contains newline");
                 String tokens[] = text.split("\n");
                 if (tokens.length == 2) {
                     text = tokens[0];
