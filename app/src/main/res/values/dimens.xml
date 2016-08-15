@@ -86,7 +86,10 @@
     <dimen name="dialog_edit_text_vertical_margin">20dp</dimen>
     <dimen name="dialog_edit_text_horizontal_margin">24dp</dimen>
 
+    <dimen name="list_item_height">40dp</dimen>
     <dimen name="list_item_title_text_size">24sp</dimen>
     <dimen name="list_item_drawable_size">24dp</dimen>
     <dimen name="list_item_text_size">18sp</dimen>
+    <dimen name="list_item_simple_checkbox_size">20dp</dimen>
+    <dimen name="list_item_simple_text_size">14sp</dimen>
 </resources>

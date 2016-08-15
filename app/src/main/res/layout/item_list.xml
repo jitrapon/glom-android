@@ -2,7 +2,8 @@
 <RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:background="@android:color/white">
 
     <ImageView
         android:id="@+id/drag_item_button"
@@ -11,7 +12,8 @@
         android:src="@drawable/ic_action_drag_vertical"
         android:contentDescription="@null"
         android:layout_marginRight="8dp"
-        android:layout_marginEnd="8dp"/>
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="4dp"/>
 
     <CheckBox
         android:id="@+id/checkbox"
@@ -19,7 +21,8 @@
         android:layout_toEndOf="@id/drag_item_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"/>
+        android:layout_gravity="center"
+        android:layout_marginTop="4dp"/>
 
     <ImageView
         android:id="@+id/delete_item_button"
@@ -28,7 +31,8 @@
         android:layout_alignParentEnd="true"
         android:layout_alignParentRight="true"
         android:src="@drawable/ic_action_close_dark"
-        android:contentDescription="@null"/>
+        android:contentDescription="@null"
+        android:layout_marginTop="4dp"/>
 
     <EditText
         android:id="@+id/content_text"
@@ -42,9 +46,8 @@
         android:layout_marginEnd="@dimen/activity_horizontal_margin"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
+        android:minHeight="@dimen/list_item_height"
         android:textSize="@dimen/list_item_text_size"
-        android:singleLine="false"
-        android:background="@android:color/transparent"/>
+        android:background="@android:color/transparent" />
 
 </RelativeLayout>

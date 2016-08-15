@@ -105,7 +105,7 @@
                 android:value="com.abborg.glom.activities.MainActivity" />
         </activity>
         <activity android:name=".activities.ListItemActivity"
-            android:configChanges="orientation|screenSize"/>
+            android:configChanges="orientation|screenSize" />
     </application>
 
 </manifest>

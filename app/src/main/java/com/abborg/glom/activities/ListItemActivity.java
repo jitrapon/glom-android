@@ -25,6 +25,9 @@ import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.CheckedItem;
 import com.abborg.glom.model.ListItem;
 import com.abborg.glom.model.TextItem;
+import com.abborg.glom.utils.VerticalSpaceItemDecoration;
+
+import org.joda.time.DateTime;
 
 import java.util.Collections;
 import java.util.List;
@@ -42,17 +45,10 @@ public class ListItemActivity extends AppCompatActivity
     private EditText titleText;
     private RecyclerView listItemView;
     private ListItemAdapter adapter;
+    private static final int ITEMS_VERTICAL_SPACE = 0;
 
     private Mode mode;
     private ListItem listItem;
-
-    public EditText getTitleText() {
-        return titleText;
-    }
-
-    public void setTitleText(EditText titleText) {
-        this.titleText = titleText;
-    }
 
     private enum Mode {
         CREATE,
@@ -96,6 +92,10 @@ public class ListItemActivity extends AppCompatActivity
         listItemView.setLayoutManager(layoutManager);
         listItemView.setAdapter(adapter);
 
+        // add spacing decorator to the recyclerview
+        listItemView.addItemDecoration(new VerticalSpaceItemDecoration(ITEMS_VERTICAL_SPACE));
+
+        // add swipe and drag capabilities to the recyclerview
         ItemTouchHelper.Callback callback = new ItemTouchHelperCallback(this);
         ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
         touchHelper.attachToRecyclerView(listItemView);
@@ -130,25 +130,19 @@ public class ListItemActivity extends AppCompatActivity
         }
 
         else if (id == R.id.action_list_done) {
-            debugPrint(listItem);
+            if (mode == Mode.CREATE) {
+                dataProvider.createListAsync(ApplicationState.getInstance().getActiveCircle(),
+                        DateTime.now(), listItem.getItems(), true);
+                finishWithResult(null);
+            }
+            else if (mode == Mode.UPDATE) {
+                finishWithResult(null);
+            }
+
             return true;
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    private void debugPrint(ListItem listItem) {
-        List<CheckedItem> items = listItem.getItems();
-        if (items.size() == 0) Log.d(TAG, "No items in this list");
-        else {
-            int count = 1;
-            Log.d(TAG, "Item contains:");
-            for (CheckedItem item : items) {
-                Log.d(TAG, "\n" + count + ". " + "[" + item.getState()
-                        + "] " + ((TextItem)item.getItem()).getText());
-                count++;
-            }
-        }
     }
 
     private void loadData(Intent intent) {
@@ -223,23 +217,33 @@ public class ListItemActivity extends AppCompatActivity
 
     @Override
     public void onItemWillAdd(int index, CheckedItem item, String text) {
-        int addIndex = index + 1;
-        TextItem textItem = TextItem.createText(ApplicationState.getInstance().getActiveCircle());
-        textItem.setText(text);
-        listItem.getItems().add(addIndex, new CheckedItem(ListItem.STATE_DEFAULT, textItem));
+        try {
+            int addIndex = index + 1;
+            TextItem textItem = TextItem.createText(ApplicationState.getInstance().getActiveCircle());
+            textItem.setText(text);
+            listItem.getItems().add(addIndex, new CheckedItem(ListItem.STATE_DEFAULT, textItem));
 
-        adapter.notifyItemInserted(addIndex);
-        adapter.setFocusOnItem(addIndex);
+            adapter.notifyItemInserted(addIndex);
+            adapter.setFocusOnItem(addIndex);
+        }
+        catch (Exception ex) {
+            Log.e(TAG, ex.getMessage());
+        }
     }
 
     @Override
     public void onItemWillRemove(int index, CheckedItem item) {
-        listItem.getItems().remove(index);
+        try {
+            listItem.getItems().remove(index);
 
-        adapter.notifyItemRemoved(index);
-        View view = listItemView.getChildAt(Math.max(0, index-1));
-        if (view != null) {
-            view.requestFocus();
+            adapter.notifyItemRemoved(index);
+            View view = listItemView.getChildAt(Math.max(0, index - 1));
+            if (view != null) {
+                view.requestFocus();
+            }
+        }
+        catch (Exception ex) {
+            Log.e(TAG, ex.getMessage());
         }
     }
 

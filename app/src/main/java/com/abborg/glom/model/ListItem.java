@@ -20,6 +20,8 @@ public class ListItem extends BoardItem {
 
     private static final String TAG = "ListItem";
 
+    private String title;
+
     /* Contains list of mapping between item states and items */
     private List<CheckedItem> items;
 
@@ -41,6 +43,14 @@ public class ListItem extends BoardItem {
         createdTime = DateTime.now();
         updatedTime = DateTime.now();
         items = new ArrayList<>();
+    }
+
+    public void setTitle(String title) { this.title = title; }
+
+    public String getTitle() { return title; }
+
+    public void setItems(List<CheckedItem> items) {
+        this.items = items;
     }
 
     public void addItem(BoardItem item) {

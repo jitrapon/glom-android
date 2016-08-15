@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingStart="@dimen/event_card_event_info_padding"
+    android:paddingLeft="@dimen/event_card_event_info_padding"
+    android:paddingRight="@dimen/event_card_event_info_padding"
+    android:paddingEnd="@dimen/event_card_event_info_padding">
+
+    <CheckBox
+        android:id="@+id/checkbox"
+        android:layout_width="@dimen/list_item_simple_checkbox_size"
+        android:layout_height="@dimen/list_item_simple_checkbox_size"
+        android:button="@null"
+        android:background="?android:attr/listChoiceIndicatorMultiple"/>
+
+    <TextView
+        android:id="@+id/item_text"
+        android:layout_marginLeft="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="This is a sample item"
+        android:textColor="@color/cardPrimaryText"
+        android:textSize="@dimen/list_item_simple_text_size"/>
+
+</LinearLayout>

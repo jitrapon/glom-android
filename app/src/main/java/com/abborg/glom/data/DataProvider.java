@@ -27,6 +27,7 @@ import com.abborg.glom.interfaces.FileDownloadListener;
 import com.abborg.glom.interfaces.ResponseListener;
 import com.abborg.glom.model.BaseChatMessage;
 import com.abborg.glom.model.BoardItem;
+import com.abborg.glom.model.CheckedItem;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CircleInfo;
 import com.abborg.glom.model.CloudProvider;
@@ -36,6 +37,7 @@ import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FeedAction;
 import com.abborg.glom.model.FileItem;
 import com.abborg.glom.model.LinkItem;
+import com.abborg.glom.model.ListItem;
 import com.abborg.glom.model.Movie;
 import com.abborg.glom.model.User;
 import com.abborg.glom.model.WatchableFeed;
@@ -2419,6 +2421,32 @@ public class DataProvider {
         }
 
         return link;
+    }
+
+    /*************************************************
+     * LIST ITEM
+     *************************************************/
+
+    public void createListAsync(final Circle circle, final DateTime createdTime, List<CheckedItem> items, final boolean sync) {
+        final ListItem list = ListItem.createList(circle);
+        list.setItems(items);
+        list.setSyncStatus(sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
+        list.setLastAction(new FeedAction(FeedAction.CREATE, activeUser, createdTime));
+
+        run(new Runnable() {
+            @Override
+            public void run() {
+//                createListDB(circle, createdTime, list, sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
+
+                // this 1000 ms delayed is set due to recyclerview animation bug where it needs some time
+                // for animation to work
+                if (handler != null && sync)
+                    handler.sendMessageDelayed(handler.obtainMessage(Const.MSG_LIST_CREATED, list), 1000);
+
+                // whether or not to sync with the server
+//                if (sync) requestCreateList(circle, list);
+            }
+        });
     }
 
     /*************************************************

@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.CardView;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Html;
 import android.text.TextUtils;
@@ -29,7 +30,9 @@ import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FeedAction;
 import com.abborg.glom.model.FileItem;
 import com.abborg.glom.model.LinkItem;
+import com.abborg.glom.model.ListItem;
 import com.abborg.glom.utils.CircleTransform;
+import com.abborg.glom.views.InterceptTouchCardView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.signature.StringSignature;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -54,10 +57,10 @@ import java.util.List;
  * Handles the view logic to display items in a RecyclerView. The adapter can support
  * showing items in two layouts: the traditional linear layout and in a staggered grid.
  */
-public class BoardRecyclerViewAdapter
+public class BoardItemAdapter
         extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements MultiSelectionListener {
 
-    private static String TAG = "BoardRecyclerViewAdapter";
+    private static String TAG = "BoardItemAdapter";
 
     private Context context;
 
@@ -269,11 +272,51 @@ public class BoardRecyclerViewAdapter
         }
     }
 
+    public static class ListHolder extends RecyclerView.ViewHolder {
+
+        ImageView posterAvatar;
+        TextView posterName;
+        TextView postTime;
+        ImageView syncStatus;
+
+        InterceptTouchCardView card;
+
+        RecyclerView list;
+
+        public ListHolder(View itemView) {
+            super(itemView);
+
+            posterAvatar = (ImageView) itemView.findViewById(R.id.card_user_avatar);
+            posterName = (TextView) itemView.findViewById(R.id.card_user_name);
+            postTime = (TextView) itemView.findViewById(R.id.card_user_post_time);
+            syncStatus = (ImageView) itemView.findViewById(R.id.card_sync_status);
+
+            card = (InterceptTouchCardView) itemView.findViewById(R.id.card_view);
+
+            list = (RecyclerView) itemView.findViewById(R.id.list_items);
+        }
+
+        public void bind(final ListItem item, final BoardItemClickListener listener) {
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    listener.onItemClicked(item, getAdapterPosition());
+                }
+            });
+
+            itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    return listener.onItemLongClicked(item, getAdapterPosition());
+                }
+            });
+        }
+    }
+
     /**************************************************
      * VIEW CALLBACKS
      **************************************************/
 
-    public BoardRecyclerViewAdapter(Context ctx, List<BoardItem> models, BoardItemClickListener clickListener) {
+    public BoardItemAdapter(Context ctx, List<BoardItem> models, BoardItemClickListener clickListener) {
         context = ctx;
         items = models;
         listener = clickListener;
@@ -300,6 +343,19 @@ public class BoardRecyclerViewAdapter
             View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_link, parent, false);
             return new LinkHolder(view);
         }
+        else if (viewType == BoardItem.TYPE_LIST) {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_list, parent, false);
+            ListHolder holder = new ListHolder(view);
+
+            RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false);
+            layoutManager.setAutoMeasureEnabled(true);
+            holder.list.setLayoutManager(layoutManager);
+
+            SimpleListItemAdapter adapter = new SimpleListItemAdapter(context, null);
+            holder.list.setAdapter(adapter);
+
+            return holder;
+        }
         else return null;
     }
 
@@ -313,6 +369,8 @@ public class BoardRecyclerViewAdapter
             setDrawingViewHolder(position, recyclerViewHolder);
         else if (recyclerViewHolder instanceof LinkHolder)
             setLinkViewHolder(position, recyclerViewHolder);
+        else if (recyclerViewHolder instanceof ListHolder)
+            setListViewHolder(position, recyclerViewHolder);
     }
 
     @Override
@@ -361,6 +419,13 @@ public class BoardRecyclerViewAdapter
                 String thumbnail = TextUtils.isEmpty(link.getThumbnail()) ? "" : link.getThumbnail();
                 String description = TextUtils.isEmpty(link.getDescription()) ? "" : link.getDescription();
                 id = (link.getId() + url + title + thumbnail + description).hashCode();
+            }
+            else if (item.getType() == BoardItem.TYPE_LIST) {
+                ListItem list = (ListItem) item;
+                String title = TextUtils.isEmpty(list.getTitle()) ? "" : list.getTitle();
+                int size = list.getItems() == null ? 0 : list.getItems().size();
+                long modified = list.getUpdatedTime().getMillis();
+                id = (title + size + modified).hashCode();
             }
             return id;
         }
@@ -910,6 +975,27 @@ public class BoardRecyclerViewAdapter
                 if (listener != null) listener.onActionButtonClicked(link, R.id.action_copy_link);
             }
         });
+    }
+
+    private void setListViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {
+        final ListItem link = (ListItem) items.get(position);
+        final ListHolder holder = (ListHolder) recyclerViewHolder;
+
+        holder.bind(link, listener);
+
+        // attach the last feed info about this post
+        attachPostInfo(link.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);
+
+        // set activation change
+        attachSelectionOverlay(position, holder.card);
+
+        // set sync status and progress bar
+        attachSyncStatus(link, holder.syncStatus);
+
+        // set list items
+        SimpleListItemAdapter adapter = (SimpleListItemAdapter) holder.list.getAdapter();
+        adapter.setItems(link.getItems());
+        adapter.notifyDataSetChanged();
     }
 
     private String trimUrl(String url) {

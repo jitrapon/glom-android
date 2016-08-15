@@ -25,7 +25,7 @@ import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.activities.EventActivity;
 import com.abborg.glom.activities.MainActivity;
-import com.abborg.glom.adapters.BoardRecyclerViewAdapter;
+import com.abborg.glom.adapters.BoardItemAdapter;
 import com.abborg.glom.data.DataProvider;
 import com.abborg.glom.interfaces.BoardItemChangeListener;
 import com.abborg.glom.interfaces.BoardItemClickListener;
@@ -60,7 +60,7 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
     private SwipeRefreshLayout refreshView;
 
     /* Adapter to the recycler view */
-    private BoardRecyclerViewAdapter adapter;
+    private BoardItemAdapter adapter;
 
     /* Main activity's data updater */
     private DataProvider dataProvider;
@@ -111,7 +111,7 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         appState = ApplicationState.getInstance();
-        adapter = new BoardRecyclerViewAdapter(getContext(), getItems(), this);
+        adapter = new BoardItemAdapter(getContext(), getItems(), this);
         dataProvider = appState.getDataProvider();
     }
 

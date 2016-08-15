@@ -173,6 +173,12 @@ public class Const {
     public static final int MSG_LINK_CREATED_FAILED = 5058;
     public static final int MSG_LINK_UPDATED_SUCCESS = 5059;
     public static final int MSG_LINK_UPDATED_FAILED = 5060;
+    public static final int MSG_LIST_CREATED = 5061;
+    public static final int MSG_LIST_CREATED_SUCCESS = 5062;
+    public static final int MSG_LIST_CREATED_FAILED = 5063;
+    public static final int MSG_LIST_UPDATED = 5064;
+    public static final int MSG_LIST_UPDATED_SUCCESS = 5065;
+    public static final int MSG_LIST_UPDATED_FAILED = 5066;
 
     /************************
      * Mimetypes

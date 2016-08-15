@@ -164,6 +164,8 @@ public class ListItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 return false;
             }
         });
+
+        viewHolder.deleteButton.setVisibility(focusedItemIndex == position ? View.VISIBLE : View.INVISIBLE);
     }
 
     @Override

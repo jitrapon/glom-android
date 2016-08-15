@@ -90,6 +90,7 @@ import com.abborg.glom.model.DrawItem;
 import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FileItem;
 import com.abborg.glom.model.LinkItem;
+import com.abborg.glom.model.ListItem;
 import com.abborg.glom.model.User;
 import com.abborg.glom.service.CirclePushService;
 import com.abborg.glom.service.RegistrationIntentService;
@@ -2117,6 +2118,21 @@ public class MainActivity extends AppCompatActivity implements
                 if (item != null) {
                     copyToClipboard(item.getUrl());
                     Toast.makeText(getApplicationContext(), getString(R.string.notification_copy_link), Toast.LENGTH_SHORT).show();
+                }
+
+                break;
+            }
+
+            /* Create a list */
+            case Const.MSG_LIST_CREATED: {
+                final ListItem item = msg.obj == null ? null : (ListItem) msg.obj;
+                if (item != null) {
+                    appState.getActiveCircle().addItem(item);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemAdded(item.getId());
+                        }
+                    }
                 }
 
                 break;
