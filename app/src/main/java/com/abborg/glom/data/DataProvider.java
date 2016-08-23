@@ -476,9 +476,9 @@ public class DataProvider {
 
     public List<BoardItemAction> getFavoriteBoardItemActions() {
         return Arrays.asList(
-                BoardItemAction.IMAGE,
                 BoardItemAction.EVENT,
-                BoardItemAction.DRAW
+                BoardItemAction.DRAW,
+                BoardItemAction.LIST
         );
     }
 
@@ -986,6 +986,37 @@ public class DataProvider {
                                                             }
                                                             break;
                                                         }
+
+                                                        case BoardItem.TYPE_LIST: {
+                                                            String title = parseJsonString(info.getString(Const.JSON_SERVER_LIST_TITLE));
+
+                                                            JSONArray jsonArrayItems = info.getJSONArray(Const.JSON_SERVER_LIST_ITEMS);
+                                                            List<CheckedItem> checkedItems = new ArrayList<>();
+                                                            for (int index = 0; index < jsonArrayItems.length(); index++) {
+                                                                JSONObject jsonItem = jsonArrayItems.getJSONObject(index);
+                                                                int state = jsonItem.getInt(Const.JSON_SERVER_LISTITEM_STATE);
+                                                                String text = parseJsonString(jsonItem.getString(Const.JSON_SERVER_LISTITEM_TEXT));
+                                                                checkedItems.add(new CheckedItem(state, text));
+                                                            }
+
+                                                            ListItem listItem = null;
+                                                            for (BoardItem item : items) {
+                                                                if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_LIST) {
+                                                                    listItem = (ListItem) item;
+                                                                }
+                                                            }
+                                                            if (listItem == null) {
+                                                                DateTime createdTime = new DateTime(createdMillis);
+                                                                createList(circle, createdTime, id, title, checkedItems);
+                                                            }
+                                                            else if (listItem.getSyncStatus() != BoardItem.NO_SYNC) {
+                                                                DateTime updatedTime = new DateTime(updatedMillis);
+                                                                updateList(circle, updatedTime, id, title, checkedItems);
+                                                                listItem.setDirty(false);
+                                                            }
+
+                                                            break;
+                                                        }
                                                         default:
                                                             break;
                                                     }
@@ -1103,6 +1134,22 @@ public class DataProvider {
         cursor.moveToFirst();
         while (!cursor.isAfterLast()) {
             LinkItem item = serializeLink(cursor, circle);
+            items.add(item);
+            cursor.moveToNext();
+        }
+        cursor.close();
+
+        query = "SELECT * FROM " + DBHelper.TABLE_CIRCLE_ITEMS + " " +
+                "JOIN " + DBHelper.TABLE_LISTS + " ON " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_ITEMID + "=" + DBHelper.TABLE_LISTS + "." + DBHelper.LIST_COLUMN_ID + " " +
+                "AND " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_CIRCLEID + "='" + circle.getId() + "' " +
+                "AND " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_TYPE + "=" + BoardItem.TYPE_LIST + " " +
+                "ORDER BY " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME + " ASC";
+        cursor = database.rawQuery(query, null);
+        result = DatabaseUtils.dumpCursorToString(cursor);
+        Log.d(TAG, "Found lists: " + result);
+        cursor.moveToFirst();
+        while (!cursor.isAfterLast()) {
+            ListItem item = serializeList(cursor, circle);
             items.add(item);
             cursor.moveToNext();
         }
@@ -1463,7 +1510,8 @@ public class DataProvider {
                 }
 
                 if (item == null) return;
-                if (item.getSyncStatus() == BoardItem.NO_SYNC || item.getSyncStatus() == BoardItem.SYNC_ERROR) {
+                if (item.getSyncStatus() == BoardItem.NO_SYNC || item.getSyncStatus() == BoardItem.SYNC_ERROR
+                        || item.getSyncStatus() == BoardItem.SYNC_IN_PROGRESS) {
                     Log.d(TAG, "Deleting item because sync status is either none or error");
                     deleteItemDB(item);
                 }
@@ -1502,6 +1550,13 @@ public class DataProvider {
             else if (item.getType() == BoardItem.TYPE_LINK) {
                 rows = database.delete(DBHelper.TABLE_LINKS, DBHelper.LINK_COLUMN_ID + "='" + id + "'", null);
                 Log.d(TAG, "Deleted link id " + id + " from link table, affected " + rows + " row(s)");
+            }
+            else if (item.getType() == BoardItem.TYPE_LIST) {
+                rows = database.delete(DBHelper.TABLE_LISTS, DBHelper.LIST_COLUMN_ID + "='" + id + "'", null);
+                Log.d(TAG, "Deleted list id " + id + " from link table, affected " + rows + " row(s)");
+
+                rows = database.delete(DBHelper.TABLE_LIST_ITEMS, DBHelper.LISTITEM_COLUMN_LIST_ID + "='" + id + "'", null);
+                Log.d(TAG, "Deleted all list items under list id " + id + " from list item table, affected " + rows + " row(s)");
             }
 
             if (handler != null) {
@@ -2427,16 +2482,14 @@ public class DataProvider {
      * LIST ITEM
      *************************************************/
 
-    public void createListAsync(final Circle circle, final DateTime createdTime, List<CheckedItem> items, final boolean sync) {
-        final ListItem list = ListItem.createList(circle);
-        list.setItems(items);
+    public void createListAsync(final Circle circle, final DateTime createdTime, final ListItem list, final boolean sync) {
         list.setSyncStatus(sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
         list.setLastAction(new FeedAction(FeedAction.CREATE, activeUser, createdTime));
 
         run(new Runnable() {
             @Override
             public void run() {
-//                createListDB(circle, createdTime, list, sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
+                createListDB(circle, createdTime, list, sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
 
                 // this 1000 ms delayed is set due to recyclerview animation bug where it needs some time
                 // for animation to work
@@ -2444,9 +2497,255 @@ public class DataProvider {
                     handler.sendMessageDelayed(handler.obtainMessage(Const.MSG_LIST_CREATED, list), 1000);
 
                 // whether or not to sync with the server
-//                if (sync) requestCreateList(circle, list);
+                if (sync) requestCreateList(circle, list);
             }
         });
+    }
+
+    private void createList(Circle circle, DateTime createdTime, String id, String title, List<CheckedItem> checkedItems) {
+        createdTime = createdTime==null ? DateTime.now() : createdTime;
+        final ListItem item = TextUtils.isEmpty(id) ? ListItem.createList(circle)
+                : ListItem.createList(id, circle, createdTime, createdTime);
+        item.setSyncStatus(BoardItem.SYNC_COMPLETE);
+        item.setLastAction(new FeedAction(FeedAction.CREATE, activeUser, createdTime));
+        circle.addItem(item);
+
+        createListDB(circle, createdTime, item, BoardItem.SYNC_COMPLETE);
+    }
+
+    private void updateList(Circle circle, DateTime updatedTime, String id, String title, List<CheckedItem> checkedItems) {
+        List<BoardItem> items = circle.getItems();
+        ListItem list = null;
+        for (BoardItem item : items) {
+            if (item.getId().equals(id) && item instanceof ListItem) {
+                list = (ListItem) item;
+                break;
+            }
+        }
+
+        if (list != null) {
+            updatedTime = updatedTime==null? DateTime.now() : updatedTime;
+            list.setLastAction(new FeedAction(FeedAction.EDITED, activeUser, updatedTime));
+            list.setTitle(title);
+            list.setItems(checkedItems);
+            list.setSyncStatus(BoardItem.SYNC_COMPLETE);
+
+            updateListDB(updatedTime, list, BoardItem.SYNC_COMPLETE);
+        }
+    }
+
+    public void requestCreateList(final Circle circle, final ListItem list) {
+        if (list != null) {
+            try {
+                JSONObject body = new JSONObject();
+                body.put(Const.JSON_SERVER_ITEM_ID, list.getId());
+                body.put(Const.JSON_SERVER_ITEM_TYPE, BoardItem.TYPE_LIST);
+                body.put(Const.JSON_SERVER_TIME, list.getCreatedTime().getMillis());
+                JSONObject info = new JSONObject();
+                info.put(Const.JSON_SERVER_LIST_TITLE, list.getTitle());
+
+                JSONArray jsonArrayItems = new JSONArray();
+                for (CheckedItem checkedItem : list.getItems()) {
+                    JSONObject jsonItem = new JSONObject();
+                    jsonItem.put(Const.JSON_SERVER_LISTITEM_STATE, checkedItem.getState());
+                    jsonItem.put(Const.JSON_SERVER_LISTITEM_TEXT, checkedItem.getText());
+                    jsonArrayItems.put(jsonItem);
+                }
+                info.put(Const.JSON_SERVER_LIST_ITEMS, jsonArrayItems);
+
+                body.put(Const.JSON_SERVER_INFO, info);
+
+                RequestHandler.getInstance(context).post("Create ListItem", String.format(Const.API_BOARD, circle.getId()), body,
+                        new ResponseListener() {
+                            @Override
+                            public void onSuccess(JSONObject response) {
+                                setSyncStatus(list, Const.MSG_LIST_CREATED_SUCCESS, BoardItem.SYNC_COMPLETE);
+                                handleNetworkSuccess();
+                            }
+
+                            @Override
+                            public void onError(VolleyError error) {
+                                setSyncStatus(list, Const.MSG_LIST_CREATED_FAILED, BoardItem.SYNC_ERROR);
+                                handleNetworkError(error);
+                            }
+                        });
+            }
+            catch (Exception ex) {
+                ex.printStackTrace();
+                setSyncStatus(list, Const.MSG_LIST_CREATED_FAILED, BoardItem.SYNC_ERROR);
+            }
+        }
+    }
+
+    public void requestUpdateList(final Circle circle, final ListItem list) {
+        if (list != null) {
+            try {
+                JSONObject body = new JSONObject();
+                body.put(Const.JSON_SERVER_LIST_TITLE, list.getTitle());
+
+                JSONArray jsonArrayItems = new JSONArray();
+                for (CheckedItem item : list.getItems()) {
+                    JSONObject jsonItem = new JSONObject();
+                    jsonItem.put(Const.JSON_SERVER_LISTITEM_STATE, item.getState());
+                    jsonItem.put(Const.JSON_SERVER_LISTITEM_TEXT, item.getText());
+                    jsonArrayItems.put(jsonItem);
+                }
+                body.put(Const.JSON_SERVER_LIST_ITEMS, jsonArrayItems);
+
+                RequestHandler.getInstance(context).post("Update LinkItem", String.format(Const.API_BOARD_ITEM, circle.getId(), list.getId()), body,
+                        new ResponseListener() {
+                            @Override
+                            public void onSuccess(JSONObject response) {
+                                setSyncStatus(list, Const.MSG_LIST_UPDATED_SUCCESS, BoardItem.SYNC_COMPLETE);
+                                handleNetworkSuccess();
+                            }
+
+                            @Override
+                            public void onError(VolleyError error) {
+                                setSyncStatus(list, Const.MSG_LIST_UPDATED_FAILED, BoardItem.SYNC_ERROR);
+                                handleNetworkError(error);
+                            }
+                        });
+            }
+            catch (Exception ex) {
+                ex.printStackTrace();
+                setSyncStatus(list, Const.MSG_LIST_UPDATED_FAILED, BoardItem.SYNC_ERROR);
+            }
+        }
+    }
+
+    private void createListDB(final Circle circle, DateTime createdTime, ListItem item, int syncStatus) {
+        if (!database.isOpen()) open();
+        database.beginTransaction();
+
+        try {
+            ContentValues values = new ContentValues();
+            values.put(DBHelper.CIRCLEITEM_COLUMN_CIRCLEID, circle.getId());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_ITEMID, item.getId());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_TYPE, item.getType());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_SYNC, syncStatus);
+            values.put(DBHelper.CIRCLEITEM_COLUMN_CREATED_TIME, createdTime.getMillis());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME, createdTime.getMillis());
+            long insertId = database.insert(DBHelper.TABLE_CIRCLE_ITEMS, null, values);
+            Log.d(TAG, "[" + insertId + "] Inserted new item to circle (" + circle.getId() + ") with id = " + item.getId());
+
+            values.clear();
+            values.put(DBHelper.LIST_COLUMN_ID, item.getId());
+            values.put(DBHelper.LIST_COLUMN_TITLE, item.getTitle());
+            insertId = database.insert(DBHelper.TABLE_LISTS, null, values);
+            Log.d(TAG, "[" + insertId + "] Inserted new list with title: " + item.getTitle());
+
+            for (int i = 0; i < item.getItems().size(); i++) {
+                values.clear();
+                values.put(DBHelper.LISTITEM_COLUMN_LIST_ID, item.getId());
+                values.put(DBHelper.LISTITEM_COLUMN_STATE, item.getItem(i).getState());
+                values.put(DBHelper.LISTITEM_COLUMN_TEXT, item.getItem(i).getText());
+                values.put(DBHelper.LISTITEM_COLUMN_RANK, i);
+                insertId = database.insert(DBHelper.TABLE_LIST_ITEMS, null, values);
+                Log.d(TAG, "[" + insertId + "] Inserted new list item: " + item.getItem(i).getText());
+            }
+
+            database.setTransactionSuccessful();
+        }
+        catch (SQLException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
+        finally {
+            database.endTransaction();
+        }
+    }
+
+    private ListItem serializeList(Cursor cursor, Circle circle) {
+        int syncStatus = cursor.getInt(cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_SYNC));
+        DateTime created = new DateTime(cursor.getLong(cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_CREATED_TIME)));
+        DateTime updated = new DateTime(cursor.getLong(cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME)));
+        String id = cursor.getString(cursor.getColumnIndex(DBHelper.LIST_COLUMN_ID));
+        String title = cursor.getString(cursor.getColumnIndex(DBHelper.LIST_COLUMN_TITLE));
+
+        ListItem item = ListItem.createList(id, circle, created, updated);
+        item.setTitle(title);
+        item.setSyncStatus(syncStatus);
+
+        String query = "SELECT * FROM " + DBHelper.TABLE_LIST_ITEMS + " WHERE " +
+                DBHelper.TABLE_LIST_ITEMS + "." + DBHelper.LISTITEM_COLUMN_LIST_ID + "='" + id + "' " +
+                "ORDER BY " + DBHelper.TABLE_LIST_ITEMS + "." + DBHelper.LISTITEM_COLUMN_RANK + " ASC";
+        Cursor listItemCursor = database.rawQuery(query, null);
+        listItemCursor.moveToFirst();
+        while (!listItemCursor.isAfterLast()) {
+            CheckedItem checkedItem = serializeListItem(listItemCursor);
+            item.addItem(checkedItem);
+            listItemCursor.moveToNext();
+        }
+        listItemCursor.close();
+
+        return item;
+    }
+
+    private CheckedItem serializeListItem(Cursor cursor) {
+        Log.d(TAG, "Starting serializing item ");
+        DatabaseUtils.dumpCursorToString(cursor);
+        int state = cursor.getInt(cursor.getColumnIndex(DBHelper.LISTITEM_COLUMN_STATE));
+        String text = cursor.getString(cursor.getColumnIndex(DBHelper.LISTITEM_COLUMN_TEXT));
+
+        return new CheckedItem(state, text);
+    }
+
+    public void updateListAsync(final Circle circle, final DateTime updatedTime, final ListItem item, final boolean sync) {
+        item.setLastAction(new FeedAction(FeedAction.EDITED, activeUser, updatedTime));
+
+        run(new Runnable() {
+            @Override
+            public void run() {
+                updateListDB(updatedTime, item, sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
+
+                if (handler != null)
+                    handler.sendMessage(handler.obtainMessage(Const.MSG_LIST_UPDATED, item));
+
+                // whether or not to sync this update with the server
+                if (sync) requestUpdateList(circle, item);
+            }
+        });
+    }
+
+    private void updateListDB(DateTime updatedTime, ListItem item, int syncStatus) {
+        if (!database.isOpen()) open();
+        database.beginTransaction();
+
+        try {
+            ContentValues values = new ContentValues();
+            values.put(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME, updatedTime.getMillis());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_SYNC, syncStatus);
+            int rows = database.update(DBHelper.TABLE_CIRCLE_ITEMS, values, DBHelper.CIRCLEITEM_COLUMN_ITEMID + "='" +
+                    item.getId() + "'", null);
+            Log.d(TAG, "Updated item with id " + item.getId() + " with status " + syncStatus + ", " + rows + " row(s) affected");
+            values.clear();
+
+            values.put(DBHelper.LIST_COLUMN_TITLE, item.getTitle());
+            rows = database.update(DBHelper.TABLE_LISTS, values,
+                    DBHelper.LIST_COLUMN_ID + "='" + item.getId() + "'", null);
+            Log.d(TAG, "Updated list item with title " + item.getTitle() + ", " + rows + " row(s) affected");
+            values.clear();
+
+            database.delete(DBHelper.TABLE_LIST_ITEMS, DBHelper.LISTITEM_COLUMN_LIST_ID + "='" + item.getId() + "'", null);
+            long insertId;
+            for (int i = 0; i < item.getItems().size(); i++) {
+                values.clear();
+                values.put(DBHelper.LISTITEM_COLUMN_LIST_ID, item.getId());
+                values.put(DBHelper.LISTITEM_COLUMN_STATE, item.getItem(i).getState());
+                values.put(DBHelper.LISTITEM_COLUMN_TEXT, item.getItem(i).getText());
+                values.put(DBHelper.LISTITEM_COLUMN_RANK, i);
+                insertId = database.insert(DBHelper.TABLE_LIST_ITEMS, null, values);
+                Log.d(TAG, "[" + insertId + "] Inserted new list item: " + item.getItem(i).getText());
+            }
+
+            database.setTransactionSuccessful();
+        }
+        catch (SQLException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
+        finally {
+            database.endTransaction();
+        }
     }
 
     /*************************************************

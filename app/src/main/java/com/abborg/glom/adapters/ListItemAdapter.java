@@ -20,10 +20,8 @@ import android.widget.ImageView;
 
 import com.abborg.glom.R;
 import com.abborg.glom.interfaces.ItemStateChangedListener;
-import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.CheckedItem;
 import com.abborg.glom.model.ListItem;
-import com.abborg.glom.model.TextItem;
 
 import java.util.List;
 
@@ -87,12 +85,12 @@ public class ListItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             content.setOnKeyListener(new View.OnKeyListener() {
                 @Override
                 public boolean onKey(View v, int keyCode, KeyEvent event) {
-                    if (keyCode == KeyEvent.KEYCODE_DEL && TextUtils.isEmpty(content.getText())) {
+                    if (keyCode == KeyEvent.KEYCODE_DEL && content.getSelectionStart() == 0) {
                         if (event.getAction() == KeyEvent.ACTION_DOWN) {
                             safeToRemove = true;
                         }
                         else if (event.getAction() == KeyEvent.ACTION_UP && safeToRemove) {
-                            listener.onItemWillRemove(focusedItemIndex, focusedItem);
+                            listener.onItemWillRemove(focusedItemIndex, focusedItem, true);
                         }
                         return true;
                     }
@@ -111,7 +109,7 @@ public class ListItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             deleteButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    listener.onItemWillRemove(getAdapterPosition(), item);
+                    listener.onItemWillRemove(getAdapterPosition(), item, false);
                 }
             });
         }
@@ -141,7 +139,7 @@ public class ListItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         CheckedItem checkedItem = items.get(position);
         int state = checkedItem.getState();
-        BoardItem item = checkedItem.getItem();
+        String text = checkedItem.getText();
         final ListItemHolder viewHolder = (ListItemHolder) holder;
         viewHolder.setItem(checkedItem);
 
@@ -150,11 +148,9 @@ public class ListItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         }
 
         viewHolder.checkbox.setChecked(state == ListItem.STATE_CHECKED);
-        if (item instanceof TextItem) {
-            viewHolder.content.removeTextChangedListener(this);
-            viewHolder.content.setText(((TextItem)item).getText());
-            viewHolder.content.addTextChangedListener(this);
-        }
+        viewHolder.content.removeTextChangedListener(this);
+        viewHolder.content.setText(text);
+        viewHolder.content.addTextChangedListener(this);
 
         viewHolder.dragButton.setOnTouchListener(new View.OnTouchListener() {
             public boolean onTouch(View v, MotionEvent event) {

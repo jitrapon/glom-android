@@ -59,15 +59,16 @@
     <dimen name="card_sync_status_size">35dp</dimen>
     <dimen name="card_sync_status_margin">14dp</dimen>
     <dimen name="card_primary_text_padding_top">24dp</dimen>
-    <dimen name="event_card_event_info_padding">16dp</dimen>
+    <dimen name="card_info_padding">16dp</dimen>
     <dimen name="card_primary_text_padding_bottom">12dp</dimen>
     <dimen name="card_action_padding">8dp</dimen>
-    <dimen name="event_card_info_height">150dp</dimen>
-    <dimen name="event_card_powered_by_google_margin">18dp</dimen>
+    <dimen name="card_info_height">150dp</dimen>
+    <dimen name="card_powered_by_google_margin">18dp</dimen>
     <dimen name="fab_margin">16dp</dimen>
     <dimen name="chat_text_size_small">14sp</dimen>
     <dimen name="chat_text_size_medium">16sp</dimen>
     <dimen name="chat_text_size_large">20sp</dimen>
+    <dimen name="card_progress_bar_size">4dp</dimen>
 
     <dimen name="content_inset">16dp</dimen>
 

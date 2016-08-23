@@ -4,10 +4,10 @@
     android:orientation="horizontal"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingStart="@dimen/event_card_event_info_padding"
-    android:paddingLeft="@dimen/event_card_event_info_padding"
-    android:paddingRight="@dimen/event_card_event_info_padding"
-    android:paddingEnd="@dimen/event_card_event_info_padding">
+    android:paddingStart="@dimen/card_info_padding"
+    android:paddingLeft="@dimen/card_info_padding"
+    android:paddingRight="@dimen/card_info_padding"
+    android:paddingEnd="@dimen/card_info_padding">
 
     <CheckBox
         android:id="@+id/checkbox"

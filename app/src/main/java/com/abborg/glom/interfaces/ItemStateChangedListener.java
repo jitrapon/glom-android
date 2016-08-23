@@ -15,5 +15,5 @@ public interface ItemStateChangedListener {
 
     void onItemWillAdd(int index, CheckedItem item, String text);
 
-    void onItemWillRemove(int index, CheckedItem item);
+    void onItemWillRemove(int index, CheckedItem item, boolean shouldAppendToPreviousItem);
 }

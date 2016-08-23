@@ -25,6 +25,7 @@ import com.abborg.glom.R;
 import com.abborg.glom.interfaces.BoardItemClickListener;
 import com.abborg.glom.interfaces.MultiSelectionListener;
 import com.abborg.glom.model.BoardItem;
+import com.abborg.glom.model.CheckedItem;
 import com.abborg.glom.model.DrawItem;
 import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FeedAction;
@@ -281,6 +282,7 @@ public class BoardItemAdapter
 
         InterceptTouchCardView card;
 
+        TextView title;
         RecyclerView list;
 
         public ListHolder(View itemView) {
@@ -293,6 +295,7 @@ public class BoardItemAdapter
 
             card = (InterceptTouchCardView) itemView.findViewById(R.id.card_view);
 
+            title = (TextView) itemView.findViewById(R.id.list_title);
             list = (RecyclerView) itemView.findViewById(R.id.list_items);
         }
 
@@ -351,7 +354,7 @@ public class BoardItemAdapter
             layoutManager.setAutoMeasureEnabled(true);
             holder.list.setLayoutManager(layoutManager);
 
-            SimpleListItemAdapter adapter = new SimpleListItemAdapter(context, null);
+            SimpleListItemAdapter adapter = new SimpleListItemAdapter(context, new ArrayList<CheckedItem>());
             holder.list.setAdapter(adapter);
 
             return holder;
@@ -978,23 +981,25 @@ public class BoardItemAdapter
     }
 
     private void setListViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {
-        final ListItem link = (ListItem) items.get(position);
+        final ListItem list = (ListItem) items.get(position);
         final ListHolder holder = (ListHolder) recyclerViewHolder;
 
-        holder.bind(link, listener);
+        holder.bind(list, listener);
 
         // attach the last feed info about this post
-        attachPostInfo(link.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);
+        attachPostInfo(list.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);
 
         // set activation change
         attachSelectionOverlay(position, holder.card);
 
         // set sync status and progress bar
-        attachSyncStatus(link, holder.syncStatus);
+        attachSyncStatus(list, holder.syncStatus);
 
-        // set list items
+        // set list items and title
+        holder.title.setVisibility(TextUtils.isEmpty(list.getTitle()) ? View.GONE : View.VISIBLE);
+        holder.title.setText(list.getTitle());
         SimpleListItemAdapter adapter = (SimpleListItemAdapter) holder.list.getAdapter();
-        adapter.setItems(link.getItems());
+        adapter.setItems(list.getItems());
         adapter.notifyDataSetChanged();
     }
 

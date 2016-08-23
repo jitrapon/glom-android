@@ -81,7 +81,7 @@
                 style="?android:attr/progressBarStyleHorizontal"
                 android:id="@+id/file_progress"
                 android:layout_width="match_parent"
-                android:layout_height="2dp" />
+                android:layout_height="@dimen/card_progress_bar_size" />
 
         </FrameLayout>
 
@@ -116,8 +116,8 @@
                     android:id="@+id/file_name"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingLeft="@dimen/event_card_event_info_padding"
-                    android:paddingStart="@dimen/event_card_event_info_padding"
+                    android:paddingLeft="@dimen/card_info_padding"
+                    android:paddingStart="@dimen/card_info_padding"
                     android:paddingRight="2dp"
                     android:paddingEnd="2dp"
                     android:paddingTop="@dimen/card_primary_text_padding_top"
@@ -135,10 +135,10 @@
                     android:layout_below="@id/file_name"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingLeft="@dimen/event_card_event_info_padding"
-                    android:paddingStart="@dimen/event_card_event_info_padding"
-                    android:paddingRight="@dimen/event_card_event_info_padding"
-                    android:paddingEnd="@dimen/event_card_event_info_padding"
+                    android:paddingLeft="@dimen/card_info_padding"
+                    android:paddingStart="@dimen/card_info_padding"
+                    android:paddingRight="@dimen/card_info_padding"
+                    android:paddingEnd="@dimen/card_info_padding"
                     android:paddingBottom="@dimen/card_primary_text_padding_bottom"
                     android:text="This is where to put a brief description about this file. You know what it is. Some more long long text"
                     android:maxLines="3"

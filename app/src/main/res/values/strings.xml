@@ -92,7 +92,7 @@
     <!-- Card item -->
     <string name="card_host_name_placeholder">Undefined</string>
     <string name="card_host_post_time_placeholder">Some time ago</string>
-    <string name="card_event_name_placeholder">Untitled</string>
+    <string name="card_text_placeholder">Untitled</string>
     <string name="card_event_venue_placeholder">Undefined</string>
     <string name="card_event_note_placeholder">Event note is undefined</string>
     <string name="card_post_info">created event</string>
@@ -242,6 +242,7 @@
     <string name="title_activity_new_list_item">New List</string>
     <string name="title_activity_edit_list_item">Edit List</string>
     <string name="title_activity_view_list_item">View List</string>
+    <string name="item_new_list">New item</string>
 
     <!--Board -->
     <string name="label_empty_board">No items in this board\nAdd something to share!</string>

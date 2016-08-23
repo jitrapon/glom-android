@@ -41,8 +41,8 @@
                 android:id="@+id/movie_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingLeft="@dimen/event_card_event_info_padding"
-                android:paddingRight="@dimen/event_card_event_info_padding"
+                android:paddingLeft="@dimen/card_info_padding"
+                android:paddingRight="@dimen/card_info_padding"
                 android:paddingTop="@dimen/card_primary_text_padding_top"
                 android:paddingBottom="@dimen/card_primary_text_padding_bottom"
                 android:textSize="@dimen/card_primary_text_size"
@@ -57,9 +57,9 @@
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/movie_title"
                 android:orientation="horizontal"
-                android:paddingLeft="@dimen/event_card_event_info_padding"
-                android:paddingRight="@dimen/event_card_event_info_padding"
-                android:paddingBottom="@dimen/event_card_event_info_padding">
+                android:paddingLeft="@dimen/card_info_padding"
+                android:paddingRight="@dimen/card_info_padding"
+                android:paddingBottom="@dimen/card_info_padding">
 
                 <TextView
                     android:id="@+id/movie_release_date"
@@ -114,9 +114,9 @@
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/movie_secondary_info_first_line"
                 android:orientation="horizontal"
-                android:paddingLeft="@dimen/event_card_event_info_padding"
-                android:paddingRight="@dimen/event_card_event_info_padding"
-                android:paddingBottom="@dimen/event_card_event_info_padding"
+                android:paddingLeft="@dimen/card_info_padding"
+                android:paddingRight="@dimen/card_info_padding"
+                android:paddingBottom="@dimen/card_info_padding"
                 android:weightSum="1">
 
                 <RatingBar
@@ -147,9 +147,9 @@
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/movie_secondary_info_second_line"
                 android:orientation="horizontal"
-                android:paddingLeft="@dimen/event_card_event_info_padding"
-                android:paddingRight="@dimen/event_card_event_info_padding"
-                android:paddingBottom="@dimen/event_card_event_info_padding">
+                android:paddingLeft="@dimen/card_info_padding"
+                android:paddingRight="@dimen/card_info_padding"
+                android:paddingBottom="@dimen/card_info_padding">
 
                 <TextView
                     android:id="@+id/movie_director"

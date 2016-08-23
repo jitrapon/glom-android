@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Class to model a list (to-do) item. Each item can be another board item that
+ * Class to model a list (to-do) item. Each item is a text item that
  * holds a checked state.
  *
  * Created by jitrapon
@@ -53,10 +53,6 @@ public class ListItem extends BoardItem {
         this.items = items;
     }
 
-    public void addItem(BoardItem item) {
-        items.add(new CheckedItem(STATE_DEFAULT, item));
-    }
-
     public CheckedItem getItem(int index) {
         try {
             return items.get(index);
@@ -70,7 +66,7 @@ public class ListItem extends BoardItem {
 
     public List<CheckedItem> getItems() { return items; }
 
-    public CheckedItem deleteItem(int index) {
-        return items.remove(index);
+    public void addItem(CheckedItem item) {
+        items.add(item);
     }
 }

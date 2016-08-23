@@ -9,11 +9,10 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 
 import com.abborg.glom.R;
-import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.CheckedItem;
 import com.abborg.glom.model.ListItem;
-import com.abborg.glom.model.TextItem;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -24,6 +23,8 @@ public class SimpleListItemAdapter extends RecyclerView.Adapter<RecyclerView.Vie
     private Context context;
 
     private List<CheckedItem> items;
+
+    private static final int MAX_DISPLAYED_ITEMS = 10;
 
     public class SimpleListItemHolder extends RecyclerView.ViewHolder {
 
@@ -44,7 +45,30 @@ public class SimpleListItemAdapter extends RecyclerView.Adapter<RecyclerView.Vie
     }
 
     public void setItems(List<CheckedItem> items) {
-        this.items = items;
+        this.items.clear();
+
+        int totalDisplayedItems = Math.min(items.size(), MAX_DISPLAYED_ITEMS);
+        List<CheckedItem> uncheckedItems = new ArrayList<>();
+        List<CheckedItem> checkedItems = new ArrayList<>();
+
+        for (int i = 0; i < items.size(); i++) {
+            CheckedItem item = items.get(i);
+            if (item.getState() == ListItem.STATE_DEFAULT) {
+                uncheckedItems.add(item);
+            }
+            else if (item.getState() == ListItem.STATE_CHECKED) {
+                checkedItems.add(item);
+            }
+        }
+
+        for (int i = 0; i < totalDisplayedItems; i++) {
+            if (uncheckedItems.size() > 0) {
+                this.items.add(uncheckedItems.remove(0));
+            }
+            else if (checkedItems.size() > 0) {
+                this.items.add(checkedItems.remove(0));
+            }
+        }
     }
 
     @Override
@@ -57,13 +81,11 @@ public class SimpleListItemAdapter extends RecyclerView.Adapter<RecyclerView.Vie
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         CheckedItem checkedItem = items.get(position);
         int state = checkedItem.getState();
-        BoardItem item = checkedItem.getItem();
+        String text = checkedItem.getText();
         final SimpleListItemHolder viewHolder = (SimpleListItemHolder) holder;
 
         viewHolder.checkbox.setChecked(state == ListItem.STATE_CHECKED);
-        if (item instanceof TextItem) {
-            viewHolder.text.setText(((TextItem)item).getText());
-        }
+        viewHolder.text.setText(text);
     }
 
     @Override

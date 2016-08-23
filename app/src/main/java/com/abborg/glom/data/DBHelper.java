@@ -79,6 +79,18 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String LINK_COLUMN_TITLE = "title";
     public static final String LINK_COLUMN_DESCRIPTION = "description";
 
+    // item_list table
+    public static final String TABLE_LISTS = "lists";
+    public static final String LIST_COLUMN_ID = "id";
+    public static final String LIST_COLUMN_TITLE = "title";
+
+    // list items table
+    public static final String TABLE_LIST_ITEMS = "list_items";
+    public static final String LISTITEM_COLUMN_LIST_ID = "list_id";
+    public static final String LISTITEM_COLUMN_STATE = "state";
+    public static final String LISTITEM_COLUMN_TEXT = "text";
+    public static final String LISTITEM_COLUMN_RANK = "rank";
+
     private static final String DATABASE_CASCADE = "ON DELETE CASCADE ON UPDATE CASCADE";
 
     /* Create circle table statement */
@@ -161,13 +173,29 @@ public class DBHelper extends SQLiteOpenHelper {
             "FOREIGN KEY (" + LINK_COLUMN_ID + ") REFERENCES " + TABLE_CIRCLE_ITEMS + "(" + CIRCLEITEM_COLUMN_ITEMID + ") " + DATABASE_CASCADE +
             ");";
 
+    /* Create item_lists table statement */
+    private static final String DATABASE_CREATE_LISTS_TABLE = "CREATE TABLE " + TABLE_LISTS + " (" +
+            LIST_COLUMN_ID + " TEXT, " +
+            LIST_COLUMN_TITLE + " TEXT, " +
+            "FOREIGN KEY (" + LIST_COLUMN_ID + ") REFERENCES " + TABLE_CIRCLE_ITEMS + "(" + CIRCLEITEM_COLUMN_ITEMID + ") " + DATABASE_CASCADE +
+            ");";
+
+    /* Create list_items table statement */
+    private static final String DATABASE_CREATE_LIST_ITEMS_TABLE = "CREATE TABLE " + TABLE_LIST_ITEMS + " (" +
+            LISTITEM_COLUMN_LIST_ID + " TEXT, " +
+            LISTITEM_COLUMN_STATE + " INTEGER, " +
+            LISTITEM_COLUMN_TEXT + " TEXT, " +
+            LISTITEM_COLUMN_RANK + " INTEGER, " +
+            "FOREIGN KEY (" + LISTITEM_COLUMN_LIST_ID + ") REFERENCES " + TABLE_LISTS + "(" + LIST_COLUMN_ID + ") " + DATABASE_CASCADE +
+            ");";
+
     public DBHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
     @Override
     public void onCreate(SQLiteDatabase database) {
-        Log.d(TAG, "Creating table");
+        Log.d(TAG, "Creating tables...");
         try {
             database.beginTransaction();
 
@@ -179,6 +207,8 @@ public class DBHelper extends SQLiteOpenHelper {
             database.execSQL(DATABASE_CREATE_FILES_TABLE);
             database.execSQL(DATABASE_CREATE_DRAWINGS_TABLE);
             database.execSQL(DATABASE_CREATE_LINKS_TABLE);
+            database.execSQL(DATABASE_CREATE_LISTS_TABLE);
+            database.execSQL(DATABASE_CREATE_LIST_ITEMS_TABLE);
 
             database.setTransactionSuccessful();
         }
@@ -186,7 +216,7 @@ public class DBHelper extends SQLiteOpenHelper {
             database.endTransaction();
         }
 
-        Log.d(TAG, "Created tables succesfully");
+        Log.d(TAG, "Created tables successfully");
     }
 
     @Override

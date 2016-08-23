@@ -2137,6 +2137,110 @@ public class MainActivity extends AppCompatActivity implements
 
                 break;
             }
+
+            case Const.MSG_LIST_CREATED_SUCCESS: {
+                ListItem item = msg.obj == null ? null : (ListItem) msg.obj;
+                int status = msg.arg1;
+
+                if (item != null) {
+                    item.setSyncStatus(status);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
+
+                Toast.makeText(getApplicationContext(), getResources().getString(R.string.notification_created_item_success),
+                        Toast.LENGTH_LONG).show();
+                break;
+            }
+
+            case Const.MSG_LIST_CREATED_FAILED: {
+                final ListItem item = msg.obj == null ? null : (ListItem) msg.obj;
+                int status = msg.arg1;
+
+                if (item != null) {
+                    item.setSyncStatus(status);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
+
+                Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_created_item_failed),
+                        Snackbar.LENGTH_LONG)
+                        .setAction(getResources().getString(R.string.menu_item_try_again), new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                if (item != null) {
+                                    dataProvider.requestCreateList(appState.getActiveCircle(), item);
+                                }
+                            }
+                        })
+                        .show();
+                break;
+            }
+
+            /* Updated a list */
+            case Const.MSG_LIST_UPDATED: {
+                final ListItem item = msg.obj == null ? null : (ListItem) msg.obj;
+                if (item != null) {
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
+
+                break;
+            }
+
+            case Const.MSG_LIST_UPDATED_SUCCESS: {
+                ListItem item = msg.obj == null ? null : (ListItem) msg.obj;
+                int status = msg.arg1;
+
+                if (item != null) {
+                    item.setSyncStatus(status);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
+
+                Toast.makeText(getApplicationContext(), getResources().getString(R.string.notification_updated_item_success),
+                        Toast.LENGTH_LONG).show();
+                break;
+            }
+
+            case Const.MSG_LIST_UPDATED_FAILED: {
+                final ListItem item = msg.obj == null ? null : (ListItem) msg.obj;
+                int status = msg.arg1;
+
+                if (item != null) {
+                    item.setSyncStatus(status);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
+
+                Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_updated_item_failed),
+                        Snackbar.LENGTH_LONG)
+                        .setAction(getResources().getString(R.string.menu_item_try_again), new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                if (item != null) {
+                                    dataProvider.requestUpdateList(appState.getActiveCircle(), item);
+                                }
+                            }
+                        })
+                        .show();
+                break;
+            }
         }
 
         return false;

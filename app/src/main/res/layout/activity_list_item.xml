@@ -54,6 +54,22 @@
             android:scrollbarAlwaysDrawVerticalTrack="true"
             android:scrollbarFadeDuration="0"/>
 
+        <TextView
+            android:id="@+id/new_item"
+            android:layout_below="@id/item_list_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="@dimen/list_item_height"
+            android:textSize="@dimen/list_item_text_size"
+            android:text="@string/item_new_list"
+            android:background="@android:color/transparent"
+            android:drawableLeft="@android:drawable/ic_menu_add"
+            android:drawableStart="@android:drawable/ic_menu_add"
+            android:drawablePadding="14dp"
+            android:paddingStart="32dp"
+            android:paddingLeft="32dp"
+            android:gravity="center_vertical"/>
+
     </RelativeLayout>
 
 </RelativeLayout>

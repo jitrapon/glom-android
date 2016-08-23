@@ -5,15 +5,17 @@ package com.abborg.glom.model;
  */
 public class CheckedItem {
 
-    private BoardItem item;
+    private String text;
     private int state;
 
-    public CheckedItem(int state, BoardItem item) {
-        this.item = item;
+    public CheckedItem(int state, String text) {
+        this.text = text;
         this.state = state;
     }
 
-    public BoardItem getItem() { return item; }
+    public String getText() { return text; }
+
+    public void setText(String text) { this.text = text; }
 
     public int getState() { return state; }
 

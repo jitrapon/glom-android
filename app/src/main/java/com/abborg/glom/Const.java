@@ -120,6 +120,10 @@ public class Const {
     public static final String JSON_SERVER_LINK_DESCRIPTION = "description";
     public static final String JSON_SERVER_LINK_MAX_FETCH_PAGES = "max_fetch_pages";
     public static final String JSON_SERVER_LINK_MAX_LINK_DEPTH = "max_link_depth";
+    public static final String JSON_SERVER_LIST_TITLE = "title";
+    public static final String JSON_SERVER_LIST_ITEMS = "items";
+    public static final String JSON_SERVER_LISTITEM_STATE = "state";
+    public static final String JSON_SERVER_LISTITEM_TEXT = "text";
 
     /**
      * HANDLER MESSAGE ID

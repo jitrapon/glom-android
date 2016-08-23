@@ -81,7 +81,7 @@
                 style="?android:attr/progressBarStyleHorizontal"
                 android:id="@+id/file_progress"
                 android:layout_width="match_parent"
-                android:layout_height="2dp" />
+                android:layout_height="@dimen/card_progress_bar_size" />
 
         </FrameLayout>
 

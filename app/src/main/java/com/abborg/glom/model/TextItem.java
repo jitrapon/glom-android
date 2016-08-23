@@ -34,5 +34,9 @@ public class TextItem extends BoardItem {
         this.text = text;
     }
 
+    public void appendText(String appendText) {
+        this.text = this.text + appendText;
+    }
+
     public String getText() { return text; }
 }

@@ -8,11 +8,13 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.support.v7.widget.helper.ItemTouchHelper;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.TextView;
 
 import com.abborg.glom.ApplicationState;
 import com.abborg.glom.R;
@@ -24,7 +26,6 @@ import com.abborg.glom.interfaces.ItemTouchListener;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.CheckedItem;
 import com.abborg.glom.model.ListItem;
-import com.abborg.glom.model.TextItem;
 import com.abborg.glom.utils.VerticalSpaceItemDecoration;
 
 import org.joda.time.DateTime;
@@ -70,7 +71,7 @@ public class ListItemActivity extends AppCompatActivity
         // set up all variables
         intent = getIntent();
         if (intent == null) {
-            finishWithResult(null); // end abruptly if we don't know what MODE we're in
+            finish(); // end abruptly if we don't know what MODE we're in
         }
 
         setContentView(R.layout.activity_list_item);
@@ -83,11 +84,20 @@ public class ListItemActivity extends AppCompatActivity
 
         listItemView = (RecyclerView) findViewById(R.id.item_list_view);
         titleText = (EditText) findViewById(R.id.title_text);
+        TextView newItemText = (TextView) findViewById(R.id.new_item);
+        if (newItemText != null) {
+            newItemText.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    onItemWillAdd(listItem.getItems().size()-1, null, null);
+                }
+            });
+        }
 
         loadData(intent);
         adapter = new ListItemAdapter(this, listItem.getItems(), this);
 
-        listItemView.setHasFixedSize(true);
+        listItemView.setHasFixedSize(false);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         listItemView.setLayoutManager(layoutManager);
         listItemView.setAdapter(adapter);
@@ -125,20 +135,22 @@ public class ListItemActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == android.R.id.home) {
-            finishWithResult(null);
+            finish();
             return true;
         }
 
         else if (id == R.id.action_list_done) {
+            listItem.setTitle(String.valueOf(titleText.getText()));
+
             if (mode == Mode.CREATE) {
                 dataProvider.createListAsync(ApplicationState.getInstance().getActiveCircle(),
-                        DateTime.now(), listItem.getItems(), true);
-                finishWithResult(null);
+                        DateTime.now(), listItem, true);
             }
             else if (mode == Mode.UPDATE) {
-                finishWithResult(null);
+                dataProvider.updateListAsync(ApplicationState.getInstance().getActiveCircle(), DateTime.now(), listItem, true);
             }
 
+            finish();
             return true;
         }
 
@@ -157,18 +169,28 @@ public class ListItemActivity extends AppCompatActivity
 
             case CREATE:
                 listItem = ListItem.createList(ApplicationState.getInstance().getActiveCircle());
-                listItem.getItems().add(new CheckedItem(
-                        ListItem.STATE_DEFAULT, TextItem.createText(ApplicationState.getInstance().getActiveCircle())));
+                listItem.getItems().add(new CheckedItem(ListItem.STATE_DEFAULT, null));
                 if (getSupportActionBar() != null) {
                     getSupportActionBar().setTitle(getString(R.string.title_activity_new_list_item));
                 }
                 break;
-            case UPDATE:
+            case UPDATE: {
                 if (getSupportActionBar() != null) {
                     getSupportActionBar().setTitle(getString(R.string.title_activity_edit_list_item));
                 }
+                String id = intent.getStringExtra(getString(R.string.EXTRA_LIST_ID));
+                List<BoardItem> boardItems = ApplicationState.getInstance().getActiveCircle().getItems();
+                for (BoardItem item : boardItems) {
+                    if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_LIST) {
+                        listItem = (ListItem) item;
+                        break;
+                    }
+                }
+
+                titleText.setText(listItem.getTitle());
                 break;
-            case VIEW:
+            }
+            case VIEW: {
                 if (getSupportActionBar() != null) {
                     getSupportActionBar().setTitle(getString(R.string.title_activity_view_list_item));
                 }
@@ -180,18 +202,10 @@ public class ListItemActivity extends AppCompatActivity
                         break;
                     }
                 }
-        }
-    }
 
-    private void finishWithResult(Intent intent) {
-        if (intent != null) {
-            setResult(RESULT_OK, intent);
+                titleText.setText(listItem.getTitle());
+            }
         }
-        else {
-            setResult(RESULT_CANCELED);
-        }
-
-        finish();
     }
 
     /**********************************************************
@@ -210,18 +224,14 @@ public class ListItemActivity extends AppCompatActivity
 
     @Override
     public void onItemContentChanged(int index, CheckedItem item, String text) {
-        if (item.getItem() instanceof TextItem) {
-            ((TextItem)item.getItem()).setText(text);
-        }
+        item.setText(text);
     }
 
     @Override
     public void onItemWillAdd(int index, CheckedItem item, String text) {
         try {
             int addIndex = index + 1;
-            TextItem textItem = TextItem.createText(ApplicationState.getInstance().getActiveCircle());
-            textItem.setText(text);
-            listItem.getItems().add(addIndex, new CheckedItem(ListItem.STATE_DEFAULT, textItem));
+            listItem.getItems().add(addIndex, new CheckedItem(ListItem.STATE_DEFAULT, text));
 
             adapter.notifyItemInserted(addIndex);
             adapter.setFocusOnItem(addIndex);
@@ -232,12 +242,20 @@ public class ListItemActivity extends AppCompatActivity
     }
 
     @Override
-    public void onItemWillRemove(int index, CheckedItem item) {
+    public void onItemWillRemove(int index, CheckedItem item, boolean shouldAppendToPreviousItem) {
         try {
-            listItem.getItems().remove(index);
+            int prevIndex = Math.max(0, index - 1);
 
+            if (shouldAppendToPreviousItem) {
+                CheckedItem prevItem = listItem.getItem(prevIndex);
+                String newText = TextUtils.isEmpty(item.getText()) ? prevItem.getText() : prevItem.getText() + item.getText();
+                prevItem.setText(newText);
+                adapter.notifyItemChanged(prevIndex);
+            }
+            listItem.getItems().remove(index);
             adapter.notifyItemRemoved(index);
-            View view = listItemView.getChildAt(Math.max(0, index - 1));
+
+            View view = listItemView.getChildAt(prevIndex);
             if (view != null) {
                 view.requestFocus();
             }
