@@ -1,6 +1,8 @@
 package com.abborg.glom.adapters;
 
 import android.content.Context;
+import android.graphics.Paint;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,6 +16,8 @@ import com.abborg.glom.model.ListItem;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.abborg.glom.model.ListItem.STATE_CHECKED;
 
 /**
  * Created by jitrapon
@@ -56,7 +60,7 @@ public class SimpleListItemAdapter extends RecyclerView.Adapter<RecyclerView.Vie
             if (item.getState() == ListItem.STATE_DEFAULT) {
                 uncheckedItems.add(item);
             }
-            else if (item.getState() == ListItem.STATE_CHECKED) {
+            else if (item.getState() == STATE_CHECKED) {
                 checkedItems.add(item);
             }
         }
@@ -84,7 +88,14 @@ public class SimpleListItemAdapter extends RecyclerView.Adapter<RecyclerView.Vie
         String text = checkedItem.getText();
         final SimpleListItemHolder viewHolder = (SimpleListItemHolder) holder;
 
-        viewHolder.checkbox.setChecked(state == ListItem.STATE_CHECKED);
+
+        viewHolder.checkbox.setChecked(state == STATE_CHECKED);
+        viewHolder.text.setTextColor((state == STATE_CHECKED) ?
+                ContextCompat.getColor(context, R.color.textColorLight)
+                : ContextCompat.getColor(context, R.color.textColorDark));
+        viewHolder.text.setPaintFlags((state == STATE_CHECKED) ?
+                viewHolder.text.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG
+                : viewHolder.text.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
         viewHolder.text.setText(text);
     }
 

@@ -1,6 +1,8 @@
 package com.abborg.glom.adapters;
 
 import android.content.Context;
+import android.graphics.Paint;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
@@ -101,8 +103,16 @@ public class ListItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             checkbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    if (isChecked) listener.onItemSelected(getAdapterPosition(), item);
-                    else listener.onItemUnselected(getAdapterPosition(), item);
+                    if (isChecked) {
+                        content.setTextColor(ContextCompat.getColor(context, R.color.textColorLight));
+                        content.setPaintFlags(content.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                        listener.onItemSelected(getAdapterPosition(), item);
+                    }
+                    else {
+                        content.setTextColor(ContextCompat.getColor(context, R.color.textColorDark));
+                        content.setPaintFlags(content.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
+                        listener.onItemUnselected(getAdapterPosition(), item);
+                    }
                 }
             });
 

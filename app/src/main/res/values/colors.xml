@@ -23,4 +23,6 @@
     <color name="notificationText">#ffffff</color>
     <color name="notificationWarning">#ffa000</color>
     <color name="notificationOk">#00e676</color>
+    <color name="textColorDark">#000000</color>
+    <color name="textColorLight">#9e9e9e</color>
 </resources>

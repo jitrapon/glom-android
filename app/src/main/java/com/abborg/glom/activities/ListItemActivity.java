@@ -140,21 +140,25 @@ public class ListItemActivity extends AppCompatActivity
         }
 
         else if (id == R.id.action_list_done) {
-            listItem.setTitle(String.valueOf(titleText.getText()));
-
-            if (mode == Mode.CREATE) {
-                dataProvider.createListAsync(ApplicationState.getInstance().getActiveCircle(),
-                        DateTime.now(), listItem, true);
-            }
-            else if (mode == Mode.UPDATE) {
-                dataProvider.updateListAsync(ApplicationState.getInstance().getActiveCircle(), DateTime.now(), listItem, true);
-            }
-
-            finish();
+            saveAndFinish();
             return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void saveAndFinish() {
+        listItem.setTitle(String.valueOf(titleText.getText()));
+
+        if (mode == Mode.CREATE) {
+            dataProvider.createListAsync(ApplicationState.getInstance().getActiveCircle(),
+                    DateTime.now(), listItem, true);
+        }
+        else if (mode == Mode.UPDATE) {
+            dataProvider.updateListAsync(ApplicationState.getInstance().getActiveCircle(), DateTime.now(), listItem, true);
+        }
+
+        finish();
     }
 
     private void loadData(Intent intent) {
@@ -206,6 +210,11 @@ public class ListItemActivity extends AppCompatActivity
                 titleText.setText(listItem.getTitle());
             }
         }
+    }
+
+    @Override
+    public void onBackPressed() {
+        saveAndFinish();
     }
 
     /**********************************************************
