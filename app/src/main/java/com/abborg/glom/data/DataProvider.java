@@ -39,6 +39,7 @@ import com.abborg.glom.model.FileItem;
 import com.abborg.glom.model.LinkItem;
 import com.abborg.glom.model.ListItem;
 import com.abborg.glom.model.Movie;
+import com.abborg.glom.model.NoteItem;
 import com.abborg.glom.model.User;
 import com.abborg.glom.model.WatchableFeed;
 import com.abborg.glom.model.WatchableImage;
@@ -1017,6 +1018,29 @@ public class DataProvider {
 
                                                             break;
                                                         }
+
+                                                        case BoardItem.TYPE_NOTE: {
+                                                            String title = parseJsonString(info.getString(Const.JSON_SERVER_NOTE_TITLE));
+                                                            String text = parseJsonString(info.getString(Const.JSON_SERVER_NOTE_TEXT));
+
+                                                            NoteItem noteItem = null;
+                                                            for (BoardItem item : items) {
+                                                                if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_NOTE) {
+                                                                    noteItem = (NoteItem) item;
+                                                                }
+                                                            }
+                                                            if (noteItem == null) {
+                                                                DateTime createdTime = new DateTime(createdMillis);
+                                                                createNote(circle, createdTime, id, title, text);
+                                                            }
+                                                            else if (noteItem.getSyncStatus() != BoardItem.NO_SYNC) {
+                                                                DateTime updatedTime = new DateTime(updatedMillis);
+                                                                updateNote(circle, updatedTime, id, title, text);
+                                                                noteItem.setDirty(false);
+                                                            }
+
+                                                            break;
+                                                        }
                                                         default:
                                                             break;
                                                     }
@@ -1150,6 +1174,22 @@ public class DataProvider {
         cursor.moveToFirst();
         while (!cursor.isAfterLast()) {
             ListItem item = serializeList(cursor, circle);
+            items.add(item);
+            cursor.moveToNext();
+        }
+        cursor.close();
+
+        query = "SELECT * FROM " + DBHelper.TABLE_CIRCLE_ITEMS + " " +
+                "JOIN " + DBHelper.TABLE_NOTES + " ON " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_ITEMID + "=" + DBHelper.TABLE_NOTES + "." + DBHelper.NOTE_COLUMN_ID + " " +
+                "AND " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_CIRCLEID + "='" + circle.getId() + "' " +
+                "AND " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_TYPE + "=" + BoardItem.TYPE_NOTE + " " +
+                "ORDER BY " + DBHelper.TABLE_CIRCLE_ITEMS + "." + DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME + " ASC";
+        cursor = database.rawQuery(query, null);
+        result = DatabaseUtils.dumpCursorToString(cursor);
+        Log.d(TAG, "Found notes: " + result);
+        cursor.moveToFirst();
+        while (!cursor.isAfterLast()) {
+            NoteItem item = serializeNote(cursor, circle);
             items.add(item);
             cursor.moveToNext();
         }
@@ -1557,6 +1597,10 @@ public class DataProvider {
 
                 rows = database.delete(DBHelper.TABLE_LIST_ITEMS, DBHelper.LISTITEM_COLUMN_LIST_ID + "='" + id + "'", null);
                 Log.d(TAG, "Deleted all list items under list id " + id + " from list item table, affected " + rows + " row(s)");
+            }
+            else if (item.getType() == BoardItem.TYPE_NOTE) {
+                rows = database.delete(DBHelper.TABLE_NOTES, DBHelper.NOTE_COLUMN_ID + "='" + id + "'", null);
+                Log.d(TAG, "Deleted note id " + id + " from note table, affected " + rows + " row(s)");
             }
 
             if (handler != null) {
@@ -2746,6 +2790,224 @@ public class DataProvider {
         finally {
             database.endTransaction();
         }
+    }
+
+    /*************************************************
+     * NOTE ITEM
+     *************************************************/
+
+    public void createNoteAsync(final Circle circle, final DateTime createdTime, final NoteItem item, final boolean sync) {
+        item.setSyncStatus(sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
+        item.setLastAction(new FeedAction(FeedAction.CREATE, activeUser, createdTime));
+
+        run(new Runnable() {
+            @Override
+            public void run() {
+                createNoteDB(circle, createdTime, item, sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
+
+                // this 1000 ms delayed is set due to recyclerview animation bug where it needs some time
+                // for animation to work
+                if (handler != null && sync)
+                    handler.sendMessageDelayed(handler.obtainMessage(Const.MSG_NOTE_CREATED, item), 1000);
+
+                // whether or not to sync with the server
+                if (sync) requestCreateNote(circle, item);
+            }
+        });
+    }
+
+    private void createNote(Circle circle, DateTime createdTime, String id, String title, String text) {
+        createdTime = createdTime==null ? DateTime.now() : createdTime;
+        final NoteItem item = TextUtils.isEmpty(id) ? NoteItem.createNote(circle)
+                : NoteItem.createNote(id, circle, createdTime, createdTime);
+        item.setSyncStatus(BoardItem.SYNC_COMPLETE);
+        item.setTitle(title);
+        item.setText(text);
+        item.setLastAction(new FeedAction(FeedAction.CREATE, activeUser, createdTime));
+        circle.addItem(item);
+
+        createNoteDB(circle, createdTime, item, BoardItem.SYNC_COMPLETE);
+    }
+
+    private void createNoteDB(Circle circle, DateTime createdTime, NoteItem item, int syncStatus) {
+        if (!database.isOpen()) open();
+        database.beginTransaction();
+
+        try {
+            ContentValues values = new ContentValues();
+            values.put(DBHelper.CIRCLEITEM_COLUMN_CIRCLEID, circle.getId());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_ITEMID, item.getId());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_TYPE, item.getType());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_SYNC, syncStatus);
+            values.put(DBHelper.CIRCLEITEM_COLUMN_CREATED_TIME, createdTime.getMillis());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME, createdTime.getMillis());
+            long insertId = database.insert(DBHelper.TABLE_CIRCLE_ITEMS, null, values);
+            Log.d(TAG, "[" + insertId + "] Inserted new item to circle (" + circle.getId() + ") with id = " + item.getId());
+
+            values.clear();
+            values.put(DBHelper.NOTE_COLUMN_ID, item.getId());
+            values.put(DBHelper.NOTE_COLUMN_TITLE, item.getTitle());
+            values.put(DBHelper.NOTE_COLUMN_CONTENT, item.getText());
+            insertId = database.insert(DBHelper.TABLE_NOTES, null, values);
+            Log.d(TAG, "[" + insertId + "] Inserted new note with title: " + item.getTitle());
+
+            database.setTransactionSuccessful();
+        }
+        catch (SQLException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
+        finally {
+            database.endTransaction();
+        }
+    }
+
+    public void requestCreateNote(final Circle circle, final NoteItem item) {
+        if (item != null) {
+            try {
+                JSONObject body = new JSONObject();
+                body.put(Const.JSON_SERVER_ITEM_ID, item.getId());
+                body.put(Const.JSON_SERVER_ITEM_TYPE, BoardItem.TYPE_NOTE);
+                body.put(Const.JSON_SERVER_TIME, item.getCreatedTime().getMillis());
+                JSONObject info = new JSONObject();
+                info.put(Const.JSON_SERVER_NOTE_TITLE, item.getTitle());
+                info.put(Const.JSON_SERVER_NOTE_TEXT, item.getText());
+
+                body.put(Const.JSON_SERVER_INFO, info);
+
+                RequestHandler.getInstance(context).post("Create NoteItem", String.format(Const.API_BOARD, circle.getId()), body,
+                        new ResponseListener() {
+                            @Override
+                            public void onSuccess(JSONObject response) {
+                                setSyncStatus(item, Const.MSG_NOTE_CREATED_SUCCESS, BoardItem.SYNC_COMPLETE);
+                                handleNetworkSuccess();
+                            }
+
+                            @Override
+                            public void onError(VolleyError error) {
+                                setSyncStatus(item, Const.MSG_NOTE_CREATED_FAILED, BoardItem.SYNC_ERROR);
+                                handleNetworkError(error);
+                            }
+                        });
+            }
+            catch (Exception ex) {
+                ex.printStackTrace();
+                setSyncStatus(item, Const.MSG_NOTE_CREATED_FAILED, BoardItem.SYNC_ERROR);
+            }
+        }
+    }
+
+    public void updateNoteAsync(final Circle circle, final DateTime updatedTime, final NoteItem item, final boolean sync) {
+        item.setLastAction(new FeedAction(FeedAction.EDITED, activeUser, updatedTime));
+
+        run(new Runnable() {
+            @Override
+            public void run() {
+                updateNoteDB(updatedTime, item, sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
+
+                if (handler != null)
+                    handler.sendMessage(handler.obtainMessage(Const.MSG_NOTE_UPDATED, item));
+
+                // whether or not to sync this update with the server
+                if (sync) requestUpdateNote(circle, item);
+            }
+        });
+    }
+
+    private NoteItem updateNote(Circle circle, DateTime updatedTime, String id, String title, String text) {
+        List<BoardItem> items = circle.getItems();
+        NoteItem note = null;
+        for (BoardItem item : items) {
+            if (item.getId().equals(id) && item instanceof NoteItem) {
+                note = (NoteItem) item;
+                break;
+            }
+        }
+
+        if (note != null) {
+            updatedTime = updatedTime==null? DateTime.now() : updatedTime;
+            note.setLastAction(new FeedAction(FeedAction.EDITED, activeUser, updatedTime));
+            note.setTitle(title);
+            note.setText(text);
+            note.setSyncStatus(BoardItem.SYNC_COMPLETE);
+
+            updateNoteDB(updatedTime, note, BoardItem.SYNC_COMPLETE);
+        }
+
+        return note;
+    }
+
+    private void updateNoteDB(DateTime updatedTime, NoteItem item, int syncStatus) {
+        if (!database.isOpen()) open();
+        database.beginTransaction();
+
+        try {
+            ContentValues values = new ContentValues();
+            values.put(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME, updatedTime.getMillis());
+            values.put(DBHelper.CIRCLEITEM_COLUMN_SYNC, syncStatus);
+            int rows = database.update(DBHelper.TABLE_CIRCLE_ITEMS, values, DBHelper.CIRCLEITEM_COLUMN_ITEMID + "='" +
+                    item.getId() + "'", null);
+            Log.d(TAG, "Updated item with id " + item.getId() + " with status " + syncStatus + ", " + rows + " row(s) affected");
+            values.clear();
+
+            values.put(DBHelper.NOTE_COLUMN_TITLE, item.getTitle());
+            values.put(DBHelper.NOTE_COLUMN_CONTENT, item.getText());
+            rows = database.update(DBHelper.TABLE_NOTES, values,
+                    DBHelper.NOTE_COLUMN_ID + "='" + item.getId() + "'", null);
+            Log.d(TAG, "Updated note id: " + item.getId() + rows + " row(s) affected");
+
+            database.setTransactionSuccessful();
+        }
+        catch (SQLException ex) {
+            Log.e(TAG, ex.getMessage());
+        }
+        finally {
+            database.endTransaction();
+        }
+    }
+
+    public void requestUpdateNote(final Circle circle, final NoteItem item) {
+        if (item != null) {
+            try {
+                JSONObject body = new JSONObject();
+                body.put(Const.JSON_SERVER_NOTE_TITLE, item.getTitle());
+                body.put(Const.JSON_SERVER_NOTE_TEXT, item.getText());
+
+                RequestHandler.getInstance(context).post("Update NoteItem", String.format(Const.API_BOARD_ITEM, circle.getId(), item.getId()), body,
+                        new ResponseListener() {
+                            @Override
+                            public void onSuccess(JSONObject response) {
+                                setSyncStatus(item, Const.MSG_NOTE_UPDATED_SUCCESS, BoardItem.SYNC_COMPLETE);
+                                handleNetworkSuccess();
+                            }
+
+                            @Override
+                            public void onError(VolleyError error) {
+                                setSyncStatus(item, Const.MSG_NOTE_UPDATED_FAILED, BoardItem.SYNC_ERROR);
+                                handleNetworkError(error);
+                            }
+                        });
+            }
+            catch (Exception ex) {
+                ex.printStackTrace();
+                setSyncStatus(item, Const.MSG_NOTE_UPDATED_FAILED, BoardItem.SYNC_ERROR);
+            }
+        }
+    }
+
+    private NoteItem serializeNote(Cursor cursor, Circle circle) {
+        int syncStatus = cursor.getInt(cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_SYNC));
+        DateTime created = new DateTime(cursor.getLong(cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_CREATED_TIME)));
+        DateTime updated = new DateTime(cursor.getLong(cursor.getColumnIndex(DBHelper.CIRCLEITEM_COLUMN_UPDATED_TIME)));
+        String id = cursor.getString(cursor.getColumnIndex(DBHelper.NOTE_COLUMN_ID));
+        String title = cursor.getString(cursor.getColumnIndex(DBHelper.NOTE_COLUMN_TITLE));
+        String text = cursor.getString(cursor.getColumnIndex(DBHelper.NOTE_COLUMN_CONTENT));
+
+        NoteItem item = NoteItem.createNote(id, circle, created, updated);
+        item.setTitle(title);
+        item.setText(text);
+        item.setSyncStatus(syncStatus);
+
+        return item;
     }
 
     /*************************************************

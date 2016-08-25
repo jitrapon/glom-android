@@ -91,6 +91,12 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String LISTITEM_COLUMN_TEXT = "text";
     public static final String LISTITEM_COLUMN_RANK = "rank";
 
+    // note items table
+    public static final String TABLE_NOTES = "notes";
+    public static final String NOTE_COLUMN_ID = "id";
+    public static final String NOTE_COLUMN_TITLE = "title";
+    public static final String NOTE_COLUMN_CONTENT = "content";
+
     private static final String DATABASE_CASCADE = "ON DELETE CASCADE ON UPDATE CASCADE";
 
     /* Create circle table statement */
@@ -189,6 +195,14 @@ public class DBHelper extends SQLiteOpenHelper {
             "FOREIGN KEY (" + LISTITEM_COLUMN_LIST_ID + ") REFERENCES " + TABLE_LISTS + "(" + LIST_COLUMN_ID + ") " + DATABASE_CASCADE +
             ");";
 
+    /* Create note_items table statement */
+    private static final String DATABASE_CREATE_NOTES_TABLE = "CREATE TABLE " + TABLE_NOTES + " (" +
+            NOTE_COLUMN_ID + " TEXT, " +
+            NOTE_COLUMN_TITLE + " TEXT, " +
+            NOTE_COLUMN_CONTENT + " TEXT, " +
+            "FOREIGN KEY (" + NOTE_COLUMN_ID + ") REFERENCES " + TABLE_CIRCLE_ITEMS + "(" + CIRCLEITEM_COLUMN_ITEMID + ") " + DATABASE_CASCADE +
+            ");";
+
     public DBHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
@@ -209,6 +223,7 @@ public class DBHelper extends SQLiteOpenHelper {
             database.execSQL(DATABASE_CREATE_LINKS_TABLE);
             database.execSQL(DATABASE_CREATE_LISTS_TABLE);
             database.execSQL(DATABASE_CREATE_LIST_ITEMS_TABLE);
+            database.execSQL(DATABASE_CREATE_NOTES_TABLE);
 
             database.setTransactionSuccessful();
         }

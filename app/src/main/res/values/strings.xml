@@ -69,6 +69,9 @@
     <string name="ACTION_CREATE_LIST">action.NEW_LIST</string>
     <string name="ACTION_UPDATE_LIST">action.UPDATE_LIST</string>
     <string name="EXTRA_LIST_ID">extra.LIST_ID</string>
+    <string name="ACTION_CREATE_NOTE">action.CREATE_NOTE</string>
+    <string name="ACTION_UPDATE_NOTE">action.UPDATE_NOTE</string>
+    <string name="EXTRA_NOTE_ID">extra.NOTE_ID</string>
 
     <!-- Profile activity strings -->
     <string name="profile_activity_label">My Profile</string>
@@ -243,6 +246,13 @@
     <string name="title_activity_edit_list_item">Edit List</string>
     <string name="title_activity_view_list_item">View List</string>
     <string name="item_new_list">New item</string>
+
+    <!-- Note -->
+    <string name="hint_note_title">Title</string>
+    <string name="title_activity_new_note_item">New Note</string>
+    <string name="title_activity_edit_note_item">Edit Note</string>
+    <string name="title_activity_view_note_item">View Note</string>
+    <string name="hint_text">Enter note here</string>
 
     <!--Board -->
     <string name="label_empty_board">No items in this board\nAdd something to share!</string>

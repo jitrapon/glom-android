@@ -268,7 +268,7 @@ public class DrawActivity extends AppCompatActivity implements
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_note, menu);
+        getMenuInflater().inflate(R.menu.menu_draw, menu);
         eraserMenuItem = menu.findItem(R.id.action_erase);
         pencilMenuItem = menu.findItem(R.id.action_grease_pencil);
         colorPickerItem = menu.findItem(R.id.action_pick_color);

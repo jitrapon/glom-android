@@ -1,45 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context=".activities.DrawActivity">
+    tools:context=".activities.NoteItemActivity">
 
     <item
-        android:id="@+id/action_pick_color"
-        android:title="@string/menu_item_pick_color"
+        android:id="@+id/action_done"
+        android:title="@string/menu_item_done"
         android:orderInCategory="100"
-        app:showAsAction="always"
-        android:icon="@drawable/ic_action_color_picker" />
-
-    <item android:id="@+id/action_grease_pencil"
-        android:title="@string/menu_item_grease_pencil"
-        android:orderInCategory="200"
-        android:icon="@drawable/ic_action_grease_pencil"
+        android:icon="@drawable/ic_action_done"
         app:showAsAction="always" />
 
-    <item
-        android:id="@+id/action_erase"
-        android:title="@string/menu_item_erase"
-        android:orderInCategory="300"
-        android:icon="@drawable/ic_action_erase"
-        app:showAsAction="always" />
-
-    <item
-        android:id="@+id/action_change_size"
-        android:title="@string/menu_item_change_draw_size"
-        app:showAsAction="ifRoom"
-        android:icon="@drawable/ic_action_resize"
-        android:orderInCategory="400" />
-
-    <item
-        android:id="@+id/action_set_background"
-        android:title="@string/menu_item_set_background"
-        app:showAsAction="ifRoom"
-        android:icon="@drawable/ic_action_picture"
-        android:orderInCategory="600" />
-
-    <item
-        android:id="@+id/action_clear"
-        android:title="@string/menu_item_clear_drawing"
-        app:showAsAction="ifRoom"
-        android:orderInCategory="700" />
 </menu>

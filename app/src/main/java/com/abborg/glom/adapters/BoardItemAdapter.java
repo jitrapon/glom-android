@@ -32,6 +32,7 @@ import com.abborg.glom.model.FeedAction;
 import com.abborg.glom.model.FileItem;
 import com.abborg.glom.model.LinkItem;
 import com.abborg.glom.model.ListItem;
+import com.abborg.glom.model.NoteItem;
 import com.abborg.glom.utils.CircleTransform;
 import com.abborg.glom.views.InterceptTouchCardView;
 import com.bumptech.glide.Glide;
@@ -315,6 +316,48 @@ public class BoardItemAdapter
         }
     }
 
+    public static class NoteHolder extends RecyclerView.ViewHolder {
+
+        ImageView posterAvatar;
+        TextView posterName;
+        TextView postTime;
+        ImageView syncStatus;
+
+        CardView card;
+
+        TextView title;
+        TextView content;
+
+        public NoteHolder(View itemView) {
+            super(itemView);
+
+            posterAvatar = (ImageView) itemView.findViewById(R.id.card_user_avatar);
+            posterName = (TextView) itemView.findViewById(R.id.card_user_name);
+            postTime = (TextView) itemView.findViewById(R.id.card_user_post_time);
+            syncStatus = (ImageView) itemView.findViewById(R.id.card_sync_status);
+
+            card = (CardView) itemView.findViewById(R.id.card_view);
+
+            title = (TextView) itemView.findViewById(R.id.note_title);
+            content = (TextView) itemView.findViewById(R.id.note_text);
+        }
+
+        public void bind(final NoteItem item, final BoardItemClickListener listener) {
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    listener.onItemClicked(item, getAdapterPosition());
+                }
+            });
+
+            itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    return listener.onItemLongClicked(item, getAdapterPosition());
+                }
+            });
+        }
+    }
+
     /**************************************************
      * VIEW CALLBACKS
      **************************************************/
@@ -359,6 +402,10 @@ public class BoardItemAdapter
 
             return holder;
         }
+        else if (viewType == BoardItem.TYPE_NOTE) {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_note, parent, false);
+            return new NoteHolder(view);
+        }
         else return null;
     }
 
@@ -374,6 +421,8 @@ public class BoardItemAdapter
             setLinkViewHolder(position, recyclerViewHolder);
         else if (recyclerViewHolder instanceof ListHolder)
             setListViewHolder(position, recyclerViewHolder);
+        else if (recyclerViewHolder instanceof NoteHolder)
+            setNoteViewHolder(position, recyclerViewHolder);
     }
 
     @Override
@@ -429,6 +478,12 @@ public class BoardItemAdapter
                 int size = list.getItems() == null ? 0 : list.getItems().size();
                 long modified = list.getUpdatedTime().getMillis();
                 id = (title + size + modified).hashCode();
+            }
+            else if (item.getType() == BoardItem.TYPE_NOTE) {
+                NoteItem note = (NoteItem) item;
+                String title = TextUtils.isEmpty(note.getTitle()) ? "" : note.getTitle();
+                String text = TextUtils.isEmpty(note.getText()) ? "" : note.getText();
+                id = (title + text).hashCode();
             }
             return id;
         }
@@ -1001,6 +1056,27 @@ public class BoardItemAdapter
         SimpleListItemAdapter adapter = (SimpleListItemAdapter) holder.list.getAdapter();
         adapter.setItems(list.getItems());
         adapter.notifyDataSetChanged();
+    }
+
+    private void setNoteViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {
+        final NoteItem note = (NoteItem) items.get(position);
+        final NoteHolder holder = (NoteHolder) recyclerViewHolder;
+
+        holder.bind(note, listener);
+
+        // attach the last feed info about this post
+        attachPostInfo(note.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);
+
+        // set activation change
+        attachSelectionOverlay(position, holder.card);
+
+        // set sync status and progress bar
+        attachSyncStatus(note, holder.syncStatus);
+
+        holder.title.setVisibility(TextUtils.isEmpty(note.getTitle()) ? View.GONE : View.VISIBLE);
+        holder.title.setText(note.getTitle());
+        holder.content.setVisibility(TextUtils.isEmpty(note.getText()) ? View.GONE : View.VISIBLE);
+        holder.content.setText(note.getText());
     }
 
     private String trimUrl(String url) {

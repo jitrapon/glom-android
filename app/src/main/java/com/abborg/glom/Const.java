@@ -21,8 +21,8 @@ public class Const {
     /************************
      * TEST INFO
 //     ************************/
-//    public static final String TEST_USER_ID = "yoshi3003";
-    public static final String TEST_USER_ID = "fatcat18";
+    public static final String TEST_USER_ID = "yoshi3003";
+//    public static final String TEST_USER_ID = "fatcat18";
     public static final String TEST_CIRCLE_ID = "dev-circle-1";
     public static final String TEST_API_AUTHORIZATION_HEADER = "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -43,6 +43,7 @@ public class Const {
     public static final int PLACE_PICKER_REQUEST_CODE = 705;
     public static final int OPEN_LINK_RESULT_CODE = 706;
     public static final int CREATE_LIST_RESULT_CODE = 707;
+    public static final int CREATE_NOTE_RESULT_CODE = 708;
 
     /************************
      * API
@@ -124,6 +125,8 @@ public class Const {
     public static final String JSON_SERVER_LIST_ITEMS = "items";
     public static final String JSON_SERVER_LISTITEM_STATE = "state";
     public static final String JSON_SERVER_LISTITEM_TEXT = "text";
+    public static final String JSON_SERVER_NOTE_TITLE = "title";
+    public static final String JSON_SERVER_NOTE_TEXT = "text";
 
     /**
      * HANDLER MESSAGE ID
@@ -183,6 +186,12 @@ public class Const {
     public static final int MSG_LIST_UPDATED = 5064;
     public static final int MSG_LIST_UPDATED_SUCCESS = 5065;
     public static final int MSG_LIST_UPDATED_FAILED = 5066;
+    public static final int MSG_NOTE_CREATED = 5067;
+    public static final int MSG_NOTE_CREATED_SUCCESS = 5068;
+    public static final int MSG_NOTE_CREATED_FAILED = 5069;
+    public static final int MSG_NOTE_UPDATED = 5070;
+    public static final int MSG_NOTE_UPDATED_SUCCESS = 5071;
+    public static final int MSG_NOTE_UPDATED_FAILED = 5072;
 
     /************************
      * Mimetypes

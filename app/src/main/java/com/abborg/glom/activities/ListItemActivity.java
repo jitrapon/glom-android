@@ -40,9 +40,6 @@ public class ListItemActivity extends AppCompatActivity
 
     private DataProvider dataProvider;
 
-    /* The received intent, this should never be null because this activity is only launched from an intent */
-    private Intent intent;
-
     private EditText titleText;
     private RecyclerView listItemView;
     private ListItemAdapter adapter;
@@ -69,7 +66,7 @@ public class ListItemActivity extends AppCompatActivity
         dataProvider = ApplicationState.getInstance().getDataProvider();
 
         // set up all variables
-        intent = getIntent();
+        Intent intent = getIntent();
         if (intent == null) {
             finish(); // end abruptly if we don't know what MODE we're in
         }

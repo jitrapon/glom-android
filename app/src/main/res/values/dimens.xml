@@ -93,4 +93,7 @@
     <dimen name="list_item_text_size">18sp</dimen>
     <dimen name="list_item_simple_checkbox_size">20dp</dimen>
     <dimen name="list_item_simple_text_size">14sp</dimen>
+
+    <dimen name="note_item_title_text_size">24sp</dimen>
+    <dimen name="note_item_text_size">18sp</dimen>
 </resources>

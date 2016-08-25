@@ -91,6 +91,7 @@ import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FileItem;
 import com.abborg.glom.model.LinkItem;
 import com.abborg.glom.model.ListItem;
+import com.abborg.glom.model.NoteItem;
 import com.abborg.glom.model.User;
 import com.abborg.glom.service.CirclePushService;
 import com.abborg.glom.service.RegistrationIntentService;
@@ -954,7 +955,12 @@ public class MainActivity extends AppCompatActivity implements
                 showLinkDialog(null);
                 break;
             }
-            case NOTE:
+            case NOTE: {
+                Intent intent = new Intent(this, NoteActivity.class);
+                intent.setAction(getString(R.string.ACTION_CREATE_NOTE));
+                startActivityForResult(intent, Const.CREATE_NOTE_RESULT_CODE);
+                break;
+            }
             case LIST: {
                 Intent intent = new Intent(this, ListItemActivity.class);
                 intent.setAction(getString(R.string.ACTION_CREATE_LIST));
@@ -2235,6 +2241,123 @@ public class MainActivity extends AppCompatActivity implements
                             public void onClick(View v) {
                                 if (item != null) {
                                     dataProvider.requestUpdateList(appState.getActiveCircle(), item);
+                                }
+                            }
+                        })
+                        .show();
+                break;
+            }
+
+            case Const.MSG_NOTE_CREATED: {
+                final NoteItem item = msg.obj == null ? null : (NoteItem) msg.obj;
+                if (item != null) {
+                    appState.getActiveCircle().addItem(item);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemAdded(item.getId());
+                        }
+                    }
+                }
+
+                break;
+            }
+
+            case Const.MSG_NOTE_CREATED_SUCCESS: {
+                NoteItem item = msg.obj == null ? null : (NoteItem) msg.obj;
+                int status = msg.arg1;
+
+                if (item != null) {
+                    item.setSyncStatus(status);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
+
+                Toast.makeText(getApplicationContext(), getResources().getString(R.string.notification_created_item_success),
+                        Toast.LENGTH_LONG).show();
+                break;
+            }
+
+            case Const.MSG_NOTE_CREATED_FAILED: {
+                final NoteItem item = msg.obj == null ? null : (NoteItem) msg.obj;
+                int status = msg.arg1;
+
+                if (item != null) {
+                    item.setSyncStatus(status);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
+
+                Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_created_item_failed),
+                        Snackbar.LENGTH_LONG)
+                        .setAction(getResources().getString(R.string.menu_item_try_again), new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                if (item != null) {
+                                    dataProvider.requestCreateNote(appState.getActiveCircle(), item);
+                                }
+                            }
+                        })
+                        .show();
+                break;
+            }
+
+            case Const.MSG_NOTE_UPDATED: {
+                final NoteItem item = msg.obj == null ? null : (NoteItem) msg.obj;
+                if (item != null) {
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
+
+                break;
+            }
+
+            case Const.MSG_NOTE_UPDATED_SUCCESS: {
+                NoteItem item = msg.obj == null ? null : (NoteItem) msg.obj;
+                int status = msg.arg1;
+
+                if (item != null) {
+                    item.setSyncStatus(status);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
+
+                Toast.makeText(getApplicationContext(), getResources().getString(R.string.notification_updated_item_success),
+                        Toast.LENGTH_LONG).show();
+                break;
+            }
+
+            case Const.MSG_NOTE_UPDATED_FAILED: {
+                final NoteItem item = msg.obj == null ? null : (NoteItem) msg.obj;
+                int status = msg.arg1;
+
+                if (item != null) {
+                    item.setSyncStatus(status);
+                    if (boardItemChangeListeners != null) {
+                        for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                            listener.onItemModified(item.getId());
+                        }
+                    }
+                }
+
+                Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_updated_item_failed),
+                        Snackbar.LENGTH_LONG)
+                        .setAction(getResources().getString(R.string.menu_item_try_again), new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                if (item != null) {
+                                    dataProvider.requestUpdateNote(appState.getActiveCircle(), item);
                                 }
                             }
                         })

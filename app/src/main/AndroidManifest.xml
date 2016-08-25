@@ -104,8 +104,10 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.abborg.glom.activities.MainActivity" />
         </activity>
-        <activity android:name=".activities.ListItemActivity"
+        <activity
+            android:name=".activities.ListItemActivity"
             android:configChanges="orientation|screenSize" />
+        <activity android:name=".activities.NoteActivity"></activity>
     </application>
 
 </manifest>

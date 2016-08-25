@@ -26,6 +26,7 @@ import com.abborg.glom.R;
 import com.abborg.glom.activities.EventActivity;
 import com.abborg.glom.activities.ListItemActivity;
 import com.abborg.glom.activities.MainActivity;
+import com.abborg.glom.activities.NoteActivity;
 import com.abborg.glom.adapters.BoardItemAdapter;
 import com.abborg.glom.data.DataProvider;
 import com.abborg.glom.interfaces.BoardItemChangeListener;
@@ -36,6 +37,7 @@ import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FileItem;
 import com.abborg.glom.model.LinkItem;
 import com.abborg.glom.model.ListItem;
+import com.abborg.glom.model.NoteItem;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
@@ -234,6 +236,13 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
                     Intent intent = new Intent(activity, ListItemActivity.class);
                     intent.putExtra(getString(R.string.EXTRA_LIST_ID), item.getId());
                     intent.setAction(getString(R.string.ACTION_UPDATE_LIST));
+                    getActivity().startActivity(intent);
+                }
+                else if (selected instanceof NoteItem) {
+                    NoteItem item = (NoteItem) selected;
+                    Intent intent = new Intent(activity, NoteActivity.class);
+                    intent.putExtra(getString(R.string.EXTRA_NOTE_ID), item.getId());
+                    intent.setAction(getString(R.string.ACTION_UPDATE_NOTE));
                     getActivity().startActivity(intent);
                 }
             }
