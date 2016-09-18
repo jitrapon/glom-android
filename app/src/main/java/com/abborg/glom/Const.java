@@ -21,8 +21,8 @@ public class Const {
     /************************
      * TEST INFO
 //     ************************/
-    public static final String TEST_USER_ID = "yoshi3003";
-//    public static final String TEST_USER_ID = "fatcat18";
+//    public static final String TEST_USER_ID = "yoshi3003";
+    public static final String TEST_USER_ID = "fatcat18";
     public static final String TEST_CIRCLE_ID = "dev-circle-1";
     public static final String TEST_API_AUTHORIZATION_HEADER = "GLOM-AUTH-TOKEN abcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -44,6 +44,7 @@ public class Const {
     public static final int OPEN_LINK_RESULT_CODE = 706;
     public static final int CREATE_LIST_RESULT_CODE = 707;
     public static final int CREATE_NOTE_RESULT_CODE = 708;
+    public static final int GOOGLE_PLAY_SERVICES_REQUEST_CODE = 709;
 
     /************************
      * API
@@ -192,6 +193,7 @@ public class Const {
     public static final int MSG_NOTE_UPDATED = 5070;
     public static final int MSG_NOTE_UPDATED_SUCCESS = 5071;
     public static final int MSG_NOTE_UPDATED_FAILED = 5072;
+    public static final int MSG_GOOGLE_PLAY_SERVICES_UNAVAILABLE = 5073;
 
     /************************
      * Mimetypes

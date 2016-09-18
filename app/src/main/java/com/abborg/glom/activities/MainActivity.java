@@ -98,6 +98,7 @@ import com.abborg.glom.service.RegistrationIntentService;
 import com.abborg.glom.utils.BottomSheetItemDecoration;
 import com.abborg.glom.utils.CircleTransform;
 import com.bumptech.glide.Glide;
+import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.youtube.player.YouTubeStandalonePlayer;
 import com.oguzdev.circularfloatingactionmenu.library.FloatingActionMenu;
 import com.oguzdev.circularfloatingactionmenu.library.SubActionButton;
@@ -1416,8 +1417,34 @@ public class MainActivity extends AppCompatActivity implements
     public boolean handleMessage(Message msg) {
         switch (msg.what) {
 
+            /* No Google Play Services available  */
+            case Const.MSG_GOOGLE_PLAY_SERVICES_UNAVAILABLE: {
+                int resultCode = msg.arg1;
+                GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
+                if (apiAvailability.isUserResolvableError(resultCode)) {
+                    apiAvailability.showErrorDialogFragment(this, resultCode,
+                            Const.GOOGLE_PLAY_SERVICES_REQUEST_CODE);
+                }
+                else {
+                    new AlertDialog.Builder(this, R.style.AlertDialogTheme)
+                            .setMessage(getString(R.string.dialog_google_play_services_message))
+                            .setPositiveButton(R.string.dialog_google_play_services_ok,
+                                    new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    dialog.dismiss();
+                                    android.os.Process.killProcess(android.os.Process.myPid());
+                                }
+                            })
+                            .setCancelable(false)
+                            .show();
+                }
+
+                break;
+            }
+
             /* On first load */
-            case Const.MSG_INIT_SUCCESS:
+            case Const.MSG_INIT_SUCCESS: {
                 try {
                     dataProvider = appState.getDataProvider();
                     dataProvider.open();
@@ -1433,12 +1460,12 @@ public class MainActivity extends AppCompatActivity implements
 
                 if (appState.getConnectionStatus() == ApplicationState.ConnectivityStatus.DISCONNECTED) {
                     handler.sendEmptyMessage(Const.MSG_SERVER_DISCONNECTED);
-                }
-                else {
+                } else {
                     dataProvider.requestGetUsersInCircle(appState.getActiveCircle());
                 }
 
                 break;
+            }
 
             /* Get Circle */
             case Const.MSG_GET_CIRCLE: {

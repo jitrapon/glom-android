@@ -280,4 +280,8 @@
     <string name="permission_read_external_storage_rationale">Our app needs access to external storage to upload files. Allow?</string>
     <string name="permission_location_rationale">Our app needs location permission to locate you. Allow?</string>
 
+    <!-- Google Play Services -->
+    <string name="dialog_google_play_services_message">We are sorry, but Google Play Services is not installed but is required to continue. Please install it and try again</string>
+    <string name="dialog_google_play_services_ok">OK</string>
+
 </resources>

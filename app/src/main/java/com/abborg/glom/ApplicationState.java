@@ -52,9 +52,6 @@ public class ApplicationState
 
     private DataProvider dataProvider;
 
-    /* Helper class that verifies Google's Api client */
-    private GoogleApiAvailability apiAvailability;
-
     /* Google Play API client */
     private GoogleApiClient apiClient;
 
@@ -85,6 +82,10 @@ public class ApplicationState
         CONNECTED
     }
 
+    public static ApplicationState getInstance() {
+        return instance;
+    }
+
     public static ApplicationState init(Context ctx, Handler handler) {
         instance = new ApplicationState(ctx, handler);
         return instance;
@@ -103,8 +104,9 @@ public class ApplicationState
 
         // make sure the phone has installed required Google Play Services version
         // if it's available, connect to Google API services
-        apiAvailability = GoogleApiAvailability.getInstance();
-        if (verifyGooglePlayServices(context)) {
+        GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
+        int googlePlayServicesResultCode = apiAvailability.isGooglePlayServicesAvailable(context);
+        if (googlePlayServicesResultCode == ConnectionResult.SUCCESS) {
             apiClient = new GoogleApiClient
                     .Builder(context)
                     .addApi(Places.GEO_DATA_API)
@@ -112,23 +114,30 @@ public class ApplicationState
                     .addConnectionCallbacks(this)
                     .addOnConnectionFailedListener(this)
                     .build();
+
+            if (!apiClient.isConnected()) apiClient.connect();
+            keepGoogleApiAlive = false;
+
+            // initialize the date format
+            dateTimeFormatter = DateTimeFormat.forPattern(context.getResources().getString(R.string.action_create_event_datetime_format));
+
+            // initialize the google API key
+            GOOGLE_API_KEY = context.getResources().getString(R.string.google_maps_key);
+
+            // initialize the paths to store cached and internal files
+            cacheDir = context.getCacheDir();
+            internalFilesDir = context.getFilesDir();
+            externalFilesDir = new File(Environment.getExternalStorageDirectory() + "/" + Environment.DIRECTORY_DOWNLOADS + "/");
+
+            // initialize model and data provider
+            DataProvider.init(this, context, handler);
         }
-        if (!apiClient.isConnected()) apiClient.connect();
-        keepGoogleApiAlive = false;
-
-        // initialize the date format
-        dateTimeFormatter = DateTimeFormat.forPattern(context.getResources().getString(R.string.action_create_event_datetime_format));
-
-        // initialize the google API key
-        GOOGLE_API_KEY = context.getResources().getString(R.string.google_maps_key);
-
-        // initialize the paths to store cached and internal files
-        cacheDir = context.getCacheDir();
-        internalFilesDir = context.getFilesDir();
-        externalFilesDir = new File(Environment.getExternalStorageDirectory() + "/" + Environment.DIRECTORY_DOWNLOADS + "/");
-
-        // initialize model and data provider
-        DataProvider.init(this, context, handler);
+        else {
+            if (handler != null) {
+                handler.sendMessage(handler.obtainMessage(Const.MSG_GOOGLE_PLAY_SERVICES_UNAVAILABLE,
+                        googlePlayServicesResultCode));
+            }
+        }
     }
 
     public boolean isNetworkAvailable() {
@@ -140,30 +149,11 @@ public class ApplicationState
         return dateTimeFormatter;
     }
 
-    public static ApplicationState getInstance() {
-        return instance;
-    }
-
     public void setKeepGoogleApiClientAlive(boolean alive) {
         keepGoogleApiAlive = alive;
     }
 
     public boolean shouldKeepGoogleApiAlive() { return keepGoogleApiAlive; }
-
-    public boolean verifyGooglePlayServices(Context context) {
-        int resultCode = apiAvailability.isGooglePlayServicesAvailable(context);
-        if (resultCode != ConnectionResult.SUCCESS) {
-            if (apiAvailability.isUserResolvableError(resultCode)) {
-//                apiAvailability.getErrorDialog(this, resultCode, PLAY_SERVICES_RESOLUTION_REQUEST)
-//                        .show();
-            } else {
-//                Log.i(TAG, "This device is not supported.");
-//                finish();
-            }
-            return false;
-        }
-        return true;
-    }
 
     public void connectGoogleApiClient() {
         if (apiClient != null && !apiClient.isConnected()) {
