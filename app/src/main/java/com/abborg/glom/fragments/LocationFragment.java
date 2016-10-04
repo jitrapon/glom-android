@@ -33,6 +33,8 @@ import com.abborg.glom.R;
 import com.abborg.glom.activities.EventActivity;
 import com.abborg.glom.interfaces.BoardItemChangeListener;
 import com.abborg.glom.interfaces.BroadcastLocationListener;
+import com.abborg.glom.interfaces.CircleChangeListener;
+import com.abborg.glom.interfaces.UsersChangeListener;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.EventItem;
@@ -75,8 +77,12 @@ import pub.devrel.easypermissions.EasyPermissions;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class LocationFragment extends SupportMapFragment implements OnMapReadyCallback, BroadcastLocationListener,
-        BoardItemChangeListener {
+public class LocationFragment extends SupportMapFragment implements
+        OnMapReadyCallback,
+        BroadcastLocationListener,
+        BoardItemChangeListener,
+        CircleChangeListener,
+        UsersChangeListener {
 
     /* Might be null if Google Play services APK is not available. */
     private GoogleMap googleMap;
@@ -140,9 +146,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
      * FRAGMENT LIFECYCLE
      *******************************************************************/
 
-    public LocationFragment() {
-        // Required empty public constructor
-    }
+    public LocationFragment() {}
 
     @Override
     public void onCreate(Bundle savedBundleState) {
@@ -211,7 +215,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
 
             // TODO depending on settings, start CirclePushService to start tracking user location without broadcasting
 
-            updateMarkersInfo(true, false);
+            updateMarkersInfo();
         }
         else {
             isFragmentVisible = false;
@@ -311,7 +315,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         // set user location to be displayed on the map
         setUserLocationDisplayed();
 
-        update(true, true);
+        update();
     }
 
     @AfterPermissionGranted(PERMISSION_LOCATION)
@@ -409,9 +413,24 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         }
     }
 
+    @Override
+    public void onItemsChanged() {
+        update();
+    }
+
     /*******************************************************************
-     * LOCATION BROADCAST CALLBACKS
+     * OTHER CALLBACKS
      *******************************************************************/
+
+    @Override
+    public void onCircleChanged() {
+        update();
+    }
+
+    @Override
+    public void onUsersChanged() {
+        updateUserMarkers(appState.getActiveCircle().getUsers());
+    }
 
     /**
      * Called when the UI is to be updated when broadcasting location is enabled
@@ -483,9 +502,9 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         return center.distanceTo(centerLeft);
     }
 
-    private void updateMarkersInfo(boolean clearUserMarkers, boolean clearEventMarkers) {
+    private void updateMarkersInfo() {
         // update list of stale event markers
-        if (!staleEvents.isEmpty() && clearEventMarkers) {
+        if (!staleEvents.isEmpty()) {
             final Handler handler = new Handler();
             handler.postDelayed(new Runnable() {
                 @Override
@@ -498,34 +517,29 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         }
 
         // update list of user markers if set to show places nearby
-        if (clearUserMarkers) {
-            final Handler handler = new Handler();
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    for (Marker marker : userMarkers.values()) {
-                        setMarkerSnippet(marker);
-                    }
+        final Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                for (Marker marker : userMarkers.values()) {
+                    setMarkerSnippet(marker);
                 }
-            }, 100);
-        }
+            }
+        }, 100);
     }
 
-    /**
-     * Updates the map by clearing all markers
-     */
-    public void update(boolean clearUserMarkers, boolean clearEventMarkers) {
+    private void update() {
         // initialize the default user's marker from sqlite
         if (googleMap != null) {
             try {
-                if (userMarkers != null && clearUserMarkers) {
+                if (userMarkers != null) {
                     for (Marker marker : userMarkers.values()) {
                         marker.remove();
                         marker = null;
                     }
                     userMarkers.clear();
                 }
-                if (eventMarkers != null && clearEventMarkers) {
+                if (eventMarkers != null) {
                     for (Marker marker : eventMarkers.values()) {
                         marker.remove();
                         marker = null;
@@ -533,7 +547,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
                     eventMarkers.clear();
                 }
 
-                if (clearUserMarkers && clearEventMarkers) googleMap.clear();
+                googleMap.clear();
             }
             catch (Exception ex) {
                 ex.printStackTrace();
@@ -545,19 +559,16 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
 
             // initialize user markers in the circle
             // initialize events position markers
-            if (clearUserMarkers) {
-                LatLngBounds.Builder userBounds = setupUserMarkers(circle);
-                animateCamera(userBounds);
-            }
-            if (clearEventMarkers) {
-                setupEventMarkers(circle);
-            }
+            LatLngBounds.Builder userBounds = setupUserMarkers(circle);
+            animateCamera(userBounds);
 
-            updateMarkersInfo(clearUserMarkers, clearEventMarkers);
+            setupEventMarkers(circle);
+
+            updateMarkersInfo();
         }
     }
 
-    public LatLngBounds.Builder setupUserMarkers(Circle circle) {
+    private LatLngBounds.Builder setupUserMarkers(Circle circle) {
         LatLngBounds.Builder boundBuilder = new LatLngBounds.Builder();
         MarkerOptions options;
         Marker marker;
@@ -596,7 +607,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         return boundBuilder;
     }
 
-    public void setupEventMarkers(Circle circle) {
+    private void setupEventMarkers(Circle circle) {
         MarkerOptions options;
         List<BoardItem> items = circle.getItems();
         for (BoardItem item : items) {
@@ -634,7 +645,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
         }
     }
 
-    public void animateCamera(LatLngBounds.Builder boundBuilder) {
+    private void animateCamera(LatLngBounds.Builder boundBuilder) {
         try {
             if (googleMap != null) {
                 if (userMarkers.size() == 1) {
@@ -843,7 +854,7 @@ public class LocationFragment extends SupportMapFragment implements OnMapReadyCa
      *
      * @param users The list of users with new locations to update
      */
-    public void updateUserMarkers(List<User> users) {
+    private void updateUserMarkers(List<User> users) {
         if (googleMap != null) {
 
             for (User user : users) {

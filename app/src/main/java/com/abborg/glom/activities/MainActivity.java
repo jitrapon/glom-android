@@ -79,9 +79,12 @@ import com.abborg.glom.fragments.CircleFragment;
 import com.abborg.glom.fragments.DiscoverFragment;
 import com.abborg.glom.fragments.DrawerFragment;
 import com.abborg.glom.fragments.LocationFragment;
+import com.abborg.glom.interfaces.ActionModeCallbacks;
 import com.abborg.glom.interfaces.BoardItemChangeListener;
 import com.abborg.glom.interfaces.BroadcastLocationListener;
+import com.abborg.glom.interfaces.CircleChangeListener;
 import com.abborg.glom.interfaces.DiscoverItemChangeListener;
+import com.abborg.glom.interfaces.UsersChangeListener;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CloudProvider;
@@ -105,6 +108,8 @@ import com.oguzdev.circularfloatingactionmenu.library.SubActionButton;
 
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -163,6 +168,16 @@ public class MainActivity extends AppCompatActivity implements
     private Handler handler;
 
     /**
+     * User list change listeners
+     */
+    private List<UsersChangeListener> usersChangeListeners;
+
+    /**
+     * Circle change listeners
+     */
+    private List<CircleChangeListener> circleChangeListeners;
+
+    /**
      * Board item change listeners
      */
     private List<BoardItemChangeListener> boardItemChangeListeners;
@@ -178,6 +193,11 @@ public class MainActivity extends AppCompatActivity implements
     private List<DiscoverItemChangeListener> discoverItemChangeListeners;
 
     /**
+     * Action mode callbacks
+     */
+    private ActionModeCallbacks actionModeCallbacks;
+
+    /**
      * Custom tab browser client to connect
      */
     private CustomTabsClient browserServiceClient;
@@ -187,12 +207,6 @@ public class MainActivity extends AppCompatActivity implements
 
     // UI elements
     private TabLayout tabLayout;
-    private int[] tabIcons = {
-            R.drawable.ic_tab_circle,
-            R.drawable.ic_tab_location,
-            R.drawable.ic_tab_event,
-            R.drawable.ic_tab_discover
-    };
     private FloatingActionMenu avatarActionMenu;
     private Animation fadeInAnim;
     private Animation fadeOutAnim;
@@ -236,7 +250,7 @@ public class MainActivity extends AppCompatActivity implements
         private final List<Fragment> fragmentList = new ArrayList<>();
         private final List<String> fragmentTitleList = new ArrayList<>();
 
-        public ViewPagerAdapter(FragmentManager manager) {
+        ViewPagerAdapter(FragmentManager manager) {
             super(manager);
         }
 
@@ -250,7 +264,7 @@ public class MainActivity extends AppCompatActivity implements
             return fragmentList.size();
         }
 
-        public void addFragment(Fragment fragment, String title) {
+        void addFragment(Fragment fragment, String title) {
             fragmentList.add(fragment);
             fragmentTitleList.add(title);
         }
@@ -369,14 +383,17 @@ public class MainActivity extends AppCompatActivity implements
         fab.hide();
     }
 
+    @SuppressWarnings("ConstantConditions")
     private void updateView() {
+
         // set up tabs
+
         setupViewPager(viewPager);
         tabLayout.setupWithViewPager(viewPager);
-        tabLayout.getTabAt(0).setIcon(tabIcons[0]).setTag(Const.TAB_CIRCLE);
-        tabLayout.getTabAt(1).setIcon(tabIcons[1]).setTag(Const.TAB_MAP);
-        tabLayout.getTabAt(2).setIcon(tabIcons[2]).setTag(Const.TAB_BOARD);
-        tabLayout.getTabAt(3).setIcon(tabIcons[3]).setTag(Const.TAB_DISCOVER);
+        tabLayout.getTabAt(0).setIcon(R.drawable.ic_tab_circle).setTag(Const.TAB_CIRCLE);
+        tabLayout.getTabAt(1).setIcon(R.drawable.ic_tab_location).setTag(Const.TAB_MAP);
+        tabLayout.getTabAt(2).setIcon(R.drawable.ic_tab_event).setTag(Const.TAB_BOARD);
+        tabLayout.getTabAt(3).setIcon(R.drawable.ic_tab_discover).setTag(Const.TAB_DISCOVER);
         tabLayout.setOnTabSelectedListener(
                 new TabLayout.ViewPagerOnTabSelectedListener(viewPager) {
                     @Override
@@ -717,22 +734,50 @@ public class MainActivity extends AppCompatActivity implements
 
                 // location updates from MessageService
                 // updates from OTHER users
-                if ( intent.getAction().equals(getResources().getString(R.string.ACTION_RECEIVE_LOCATION)) ) {
-                    List<User> users = dataProvider.getLocationUpdates(intent, appState.getActiveCircle());
+                if (intent.getAction().equals(getResources().getString(R.string.ACTION_RECEIVE_LOCATION))) {
+                    String userJsonString = intent.getStringExtra(context.getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_USERS));
+                    String circleId = intent.getStringExtra(context.getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_CIRCLE_ID));
 
-                    if (users != null && users.size() > 0) {
+                    try {
+                        Circle circle = appState.getActiveCircle();
+                        if (!circleId.equals(circle.getId())) return;
 
-                        // only update the location markers when the map is visible and this is the current circle
-                        LocationFragment map = (LocationFragment) adapter.getItem(1);
-                        if (map.isFragmentVisible) {
-                            map.updateUserMarkers(users);
+                        JSONArray userJsonArray = new JSONArray(userJsonString);
+
+                        for (int i = 0; i < userJsonArray.length(); i++) {
+                            JSONObject userJson = userJsonArray.getJSONObject(i);
+                            String userId = userJson.getString(Const.JSON_SERVER_USERID);
+                            JSONObject locationJson = userJson.getJSONObject(Const.JSON_SERVER_LOCATION);
+                            double lat = locationJson.getDouble(Const.JSON_SERVER_LOCATION_LAT);
+                            double lng = locationJson.getDouble(Const.JSON_SERVER_LOCATION_LONG);
+
+                            // verify that each user in the JSON belongs to this circle
+                            // don't update if it's the user's own location
+                            for (User user : circle.getUsers()) {
+                                if (userId.equals(appState.getActiveUser().getId())) {
+                                    Log.d(TAG, "Skipping updating user's own location");
+                                    break;
+                                }
+                                else if (userId.equals(user.getId())) {
+                                    Location location = new Location("");
+                                    location.setLatitude(lat);
+                                    location.setLongitude(lng);
+                                    user.setLocation(location);
+                                    Log.d(TAG, "Updated user " + userId + " to new location of " + location);
+                                }
+                            }
                         }
 
-                        Toast.makeText(context, users.get(0).getId() + ": " + users.get(0).getLocation().getLatitude()
-                                + ", " + users.get(0).getLocation().getLongitude(), Toast.LENGTH_SHORT).show();
-                    }
-                    else {
+                        if (usersChangeListeners != null) {
+                            for (UsersChangeListener listener : usersChangeListeners) {
+                                listener.onUsersChanged();
+                            }
+                        }
+
                         Toast.makeText(context, "Received location update from server", Toast.LENGTH_SHORT).show();
+                    }
+                    catch (Exception ex) {
+                        Log.e(TAG, ex.getMessage());
                     }
                 }
 
@@ -745,25 +790,27 @@ public class MainActivity extends AppCompatActivity implements
                     // only update the location markers when the map is visible
                     // and this circle is in the broadcast list
                     String circleId = appState.getActiveCircle().getId();
-                    LocationFragment map = (LocationFragment) adapter.getItem(1);
 
                     // update the user's location in this circle
-                    User currentUser = null;
                     for (User user : appState.getActiveCircle().getUsers()) {
                         if (user.getId().equals(appState.getActiveUser().getId())) {
-                            currentUser = user;
-                            currentUser.setLocation(location);
+                            user.setLocation(location);
+                            Log.d(TAG, "Updated current user location to be " + location);
+                            break;
                         }
                     }
 
                     if (circleBroadcastList.contains(circleId)) {
-                        if (currentUser != null) {
-                            map.updateUserMarkers(Arrays.asList(currentUser));
+                        if (usersChangeListeners != null) {
+                            for (UsersChangeListener listener : usersChangeListeners) {
+                                listener.onUsersChanged();
+                            }
                         }
                     }
                 }
 
                 // incoming message
+                //TODO
                 else if (intent.getAction().equals(getResources().getString(R.string.ACTION_NEW_MESSAGE))) {
 
                 }
@@ -836,43 +883,58 @@ public class MainActivity extends AppCompatActivity implements
      * Event Callbacks
      **************************************************/
 
-    private void setupEventListeners() {
-        addEventChangeListener((LocationFragment) adapter.getItem(1));
-        addEventChangeListener((BoardFragment) adapter.getItem(2));
+    private void setupCallbackListeners() {
+        addUsersChangeListener((CircleFragment) adapter.getItem(0));
+        addUsersChangeListener((LocationFragment) adapter.getItem(1));
+
+        addCircleChangeListener((CircleFragment) adapter.getItem(0));
+        addCircleChangeListener((LocationFragment) adapter.getItem(1));
+        addCircleChangeListener((BoardFragment) adapter.getItem(2));
+
+        addItemChangeListener((LocationFragment) adapter.getItem(1));
+        addItemChangeListener((BoardFragment) adapter.getItem(2));
 
         addBroadcastLocationListener((CircleFragment) adapter.getItem(0));
         addBroadcastLocationListener((LocationFragment) adapter.getItem(1));
 
         addDiscoverItemChangeListener((DiscoverFragment) adapter.getItem(3));
+
+        actionModeCallbacks = ((BoardFragment) adapter.getItem(2));
     }
 
-    private void addEventChangeListener(BoardItemChangeListener listener) {
-        if (listener != null) {
-            if (boardItemChangeListeners == null) {
-                boardItemChangeListeners = new ArrayList<>();
-                boardItemChangeListeners.add(listener);
-            }
-            else boardItemChangeListeners.add(listener);
+    private void addUsersChangeListener(UsersChangeListener listener) {
+        if (usersChangeListeners == null) {
+            usersChangeListeners = new ArrayList<>();
         }
+        usersChangeListeners.add(listener);
+    }
+
+    private void addCircleChangeListener(CircleChangeListener listener) {
+        if (circleChangeListeners == null) {
+            circleChangeListeners = new ArrayList<>();
+        }
+        circleChangeListeners.add(listener);
+    }
+
+    private void addItemChangeListener(BoardItemChangeListener listener) {
+        if (boardItemChangeListeners == null) {
+            boardItemChangeListeners = new ArrayList<>();
+        }
+        boardItemChangeListeners.add(listener);
     }
 
     private void addBroadcastLocationListener(BroadcastLocationListener listener) {
-        if (listener != null) {
-            if (broadcastLocationListeners == null) {
-                broadcastLocationListeners = new ArrayList<>();
-                broadcastLocationListeners.add(listener);
-            }
-            else broadcastLocationListeners.add(listener);
+        if (broadcastLocationListeners == null) {
+            broadcastLocationListeners = new ArrayList<>();
         }
+        broadcastLocationListeners.add(listener);
     }
 
     private void addDiscoverItemChangeListener(DiscoverItemChangeListener listener) {
-        if (listener != null) {
-            if (discoverItemChangeListeners == null) {
-                discoverItemChangeListeners = new ArrayList<>();
-            }
-            discoverItemChangeListeners.add(listener);
+        if (discoverItemChangeListeners == null) {
+            discoverItemChangeListeners = new ArrayList<>();
         }
+        discoverItemChangeListeners.add(listener);
     }
 
     /**************************************************
@@ -1397,16 +1459,18 @@ public class MainActivity extends AppCompatActivity implements
     /**
      * Forces updates of all fragments and UI. Use only if selecting a new circle to display.
      */
-    private void updateView(Circle circle) {
+    private void showCircle(Circle circle) {
         if (getSupportActionBar() != null) getSupportActionBar().setTitle(circle.getTitle() + " (" + circle.getUsers().size() + ")");
 
         // update broadcast location sheet
         broadcastLocationToggle.setChecked(appState.getActiveCircle().isUserBroadcastingLocation());
 
         // refresh all fragments
-        ((CircleFragment) adapter.getItem(0)).update();
-        ((LocationFragment) adapter.getItem(1)).update(true, true);
-        ((BoardFragment) adapter.getItem(2)).update();
+        if (circleChangeListeners != null) {
+            for (CircleChangeListener listener : circleChangeListeners) {
+                listener.onCircleChanged();
+            }
+        }
     }
 
 
@@ -1454,7 +1518,7 @@ public class MainActivity extends AppCompatActivity implements
 
                 updateView();
 
-                setupEventListeners();
+                setupCallbackListeners();
 
                 setupService();
 
@@ -1475,7 +1539,7 @@ public class MainActivity extends AppCompatActivity implements
                     Log.d(TAG, "Done retrieving circle info with id: " + circle.getId() + ", name: " + circle.getTitle()
                             + ", " + circle.getUsers().size() + " users, " + circle.getItems().size() + " items");
                     appState.setActiveCircle(circle);
-                    updateView(circle);
+                    showCircle(circle);
                 }
 
                 break;
@@ -1534,19 +1598,23 @@ public class MainActivity extends AppCompatActivity implements
             case Const.MSG_GET_USERS:
                 Circle circle = appState.getActiveCircle();
 
-                if (getSupportActionBar() != null)
-                    getSupportActionBar().setTitle(circle.getTitle() + " (" + circle.getUsers().size() + ")");
-                CircleFragment circleFragment = (CircleFragment) adapter.getItem(0);
-                circleFragment.update();
+                if (getSupportActionBar() != null) getSupportActionBar().setTitle(circle.getTitle() + " (" + circle.getUsers().size() + ")");
+                if (usersChangeListeners != null) {
+                    for (UsersChangeListener listener : usersChangeListeners) {
+                        listener.onUsersChanged();
+                    }
+                }
 
-                LocationFragment mapFragment = (LocationFragment) adapter.getItem(1);
-                mapFragment.updateUserMarkers(circle.getUsers());
                 break;
 
             /* Request: get board item in a circle */
             case Const.MSG_GET_ITEMS:
-                ((LocationFragment) adapter.getItem(1)).update(false, true);
-                ((BoardFragment) adapter.getItem(2)).update();
+                if (boardItemChangeListeners != null) {
+                    for (BoardItemChangeListener listener : boardItemChangeListeners) {
+                        listener.onItemsChanged();
+                    }
+                }
+
                 break;
 
             case Const.MSG_EVENT_CREATED: {
@@ -1960,7 +2028,7 @@ public class MainActivity extends AppCompatActivity implements
             /* Starting of ACTION MODE */
             case Const.MSG_START_ACTION_MODE: {
                 if (actionMode == null) {
-                    actionMode = this.startSupportActionMode(this);
+                    actionMode = startSupportActionMode(this);
                     actionMode.setTitle(String.format(getString(R.string.title_action_mode_board_items), 1));
                 }
 
@@ -2571,43 +2639,37 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-        mode.getMenuInflater().inflate(R.menu.menu_context_board_item, menu);
+        if (actionModeCallbacks != null) {
+            return actionModeCallbacks.onCreateActionMode(mode, menu);
+        }
+
         return true;
     }
 
     @Override
     public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-        BoardFragment fragment = ((BoardFragment) adapter.getItem(2));
-        boolean show = fragment.getSelectedItemCount() > 0;
-        menu.findItem(R.id.action_delete).setVisible(show);
-        menu.findItem(R.id.action_star).setVisible(show);
-        menu.findItem(R.id.action_copy).setVisible(show);
-        menu.findItem(R.id.action_share).setVisible(show);
+        if (actionModeCallbacks != null) {
+            return actionModeCallbacks.onPrepareActionMode(mode, menu);
+        }
+
         return true;
     }
 
     @Override
     public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-        BoardFragment fragment = ((BoardFragment) adapter.getItem(2));
-        switch (item.getItemId()) {
-            case R.id.action_delete:
-                List<String> ids= fragment.getSelectedItemsId();
-                for (String id : ids) {
-                    Log.d(TAG, "Attempting to delete item " + id);
-                    dataProvider.deleteItemAsync(id, appState.getActiveCircle(), true);
-                }
-                mode.finish();
-                return true;
-            default: return true;
+        if (actionModeCallbacks != null) {
+            return actionModeCallbacks.onActionItemClicked(mode, item);
         }
+
+        return true;
     }
 
     @Override
     public void onDestroyActionMode(ActionMode mode) {
         actionMode = null;
 
-        BoardFragment fragment = ((BoardFragment) adapter.getItem(2));
-        fragment.clearItemSelections();
-        fragment.setActionModeEnabled(false);
+        if (actionModeCallbacks != null) {
+            actionModeCallbacks.onDestroyActionMode(mode);
+        }
     }
 }

@@ -11,11 +11,14 @@ import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.view.ActionMode;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -29,8 +32,10 @@ import com.abborg.glom.activities.MainActivity;
 import com.abborg.glom.activities.NoteActivity;
 import com.abborg.glom.adapters.BoardItemAdapter;
 import com.abborg.glom.data.DataProvider;
+import com.abborg.glom.interfaces.ActionModeCallbacks;
 import com.abborg.glom.interfaces.BoardItemChangeListener;
 import com.abborg.glom.interfaces.BoardItemClickListener;
+import com.abborg.glom.interfaces.CircleChangeListener;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.DrawItem;
 import com.abborg.glom.model.EventItem;
@@ -55,7 +60,9 @@ import java.util.Locale;
 public class BoardFragment extends Fragment implements
         BoardItemClickListener,
         BoardItemChangeListener,
-        SwipeRefreshLayout.OnRefreshListener {
+        SwipeRefreshLayout.OnRefreshListener,
+        CircleChangeListener,
+        ActionModeCallbacks {
 
     private static final String TAG = "BoardFragment";
 
@@ -93,8 +100,7 @@ public class BoardFragment extends Fragment implements
      * View Initializations
      **********************************************************/
 
-    public BoardFragment() {
-    }
+    public BoardFragment() {}
 
     @Override
     public void onStart() {
@@ -188,10 +194,13 @@ public class BoardFragment extends Fragment implements
         }
     }
 
-    private void showOrHideEmptyIcon() {
-        if (emptyView != null) {
-            emptyView.setVisibility(items != null && items.size() > 0 ? View.GONE: View.VISIBLE);
-        }
+    /**********************************************************
+     * Other callbacks
+     **********************************************************/
+
+    @Override
+    public void onCircleChanged() {
+        update();
     }
 
     /**********************************************************
@@ -394,16 +403,74 @@ public class BoardFragment extends Fragment implements
         showOrHideEmptyIcon();
     }
 
+    @Override
+    public void onItemsChanged() {
+        update();
+    }
+
+    /**********************************************************
+     * Action Mode Callbacks
+     **********************************************************/
+
+    @Override
+    public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+        mode.getMenuInflater().inflate(R.menu.menu_context_board_item, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+        boolean shouldShowMenu = adapter.getSelectedItemCount() > 0;
+        menu.findItem(R.id.action_delete).setVisible(shouldShowMenu);
+        menu.findItem(R.id.action_star).setVisible(shouldShowMenu);
+        menu.findItem(R.id.action_copy).setVisible(shouldShowMenu);
+        menu.findItem(R.id.action_share).setVisible(shouldShowMenu);
+        return true;
+    }
+
+    @Override
+    public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+        List<String> ids = new ArrayList<>(adapter.getSelectedItems().size());
+        for (Integer position : adapter.getSelectedItems()) {
+            ids.add(items.get(position).getId());
+        }
+
+        switch (item.getItemId()) {
+            case R.id.action_delete:
+                for (String id : ids) {
+                    Log.d(TAG, "Attempting to delete item " + id);
+                    if (handler != null) {
+                        handler.sendMessage(handler.obtainMessage(Const.MSG_ITEM_TO_DELETE, id));
+                    }
+                }
+                mode.finish();
+                return true;
+            default: return true;
+        }
+    }
+
+    @Override
+    public void onDestroyActionMode(ActionMode mode) {
+        adapter.clearSelections();
+        setActionModeEnabled(false);
+    }
+
     /**********************************************************
      * Helpers
      **********************************************************/
 
-    public List<BoardItem> getItems() {
+    private void showOrHideEmptyIcon() {
+        if (emptyView != null) {
+            emptyView.setVisibility(items != null && items.size() > 0 ? View.GONE: View.VISIBLE);
+        }
+    }
+
+    private List<BoardItem> getItems() {
         items = appState.getActiveCircle().getItems();
         return items;
     }
 
-    public void update() {
+    private void update() {
         if (activity != null && adapter != null) {
             items = appState.getActiveCircle().getItems();
             adapter.update(items);
@@ -415,22 +482,8 @@ public class BoardFragment extends Fragment implements
         showOrHideEmptyIcon();
     }
 
-    public List<String> getSelectedItemsId() {
-        List<String> ids = new ArrayList<>(adapter.getSelectedItems().size());
-        for (Integer position : adapter.getSelectedItems()) {
-            ids.add(items.get(position).getId());
-        }
-        return ids;
-    }
-
-    public int getSelectedItemCount() { return adapter.getSelectedItemCount(); }
-
     public void setActionModeEnabled(boolean enabled) {
         isActionModeEnabled = enabled;
         refreshView.setEnabled(!enabled);
-    }
-
-    public void clearItemSelections() {
-        adapter.clearSelections();
     }
 }

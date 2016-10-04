@@ -18,6 +18,8 @@ import com.abborg.glom.ApplicationState;
 import com.abborg.glom.R;
 import com.abborg.glom.adapters.UserAvatarAdapter;
 import com.abborg.glom.interfaces.BroadcastLocationListener;
+import com.abborg.glom.interfaces.CircleChangeListener;
+import com.abborg.glom.interfaces.UsersChangeListener;
 import com.abborg.glom.model.User;
 import com.abborg.glom.utils.LayoutUtils;
 import com.nhaarman.listviewanimations.appearance.simple.ScaleInAnimationAdapter;
@@ -30,7 +32,10 @@ import java.util.List;
  * The fragment can show group of users in grid style, circle style,
  * or a traditional scroll view style.
  * */
-public class CircleFragment extends Fragment implements BroadcastLocationListener {
+public class CircleFragment extends Fragment implements
+        BroadcastLocationListener,
+        CircleChangeListener,
+        UsersChangeListener {
 
     private static final String TAG = "CIRCLE_FRAGMENT";
 
@@ -49,6 +54,10 @@ public class CircleFragment extends Fragment implements BroadcastLocationListene
     private GridView gridView;
 
     private AdapterView.OnItemClickListener listener;
+
+    /**********************************************************
+     * View Initializations
+     **********************************************************/
 
     @Override
     public void setUserVisibleHint(boolean isVisibleToUser) {
@@ -71,13 +80,6 @@ public class CircleFragment extends Fragment implements BroadcastLocationListene
 
         if (appState != null && appState.getActiveCircle() != null) {
             users = appState.getActiveCircle().getUsers();
-        }
-    }
-
-    public void update() {
-        if (appState != null) {
-            users = appState.getActiveCircle().getUsers();
-            avatarAdapter.update(users);
         }
     }
 
@@ -119,16 +121,6 @@ public class CircleFragment extends Fragment implements BroadcastLocationListene
     }
 
     @Override
-    public void onBroadcastLocationEnabled(long duration) {
-        setAvatarBroadcastingAnimation(true);
-    }
-
-    @Override
-    public void onBroadcastLocationDisabled() {
-        setAvatarBroadcastingAnimation(false);
-    }
-
-    @Override
     public void onAttach(Context context) {
         super.onAttach(context);
 
@@ -139,6 +131,41 @@ public class CircleFragment extends Fragment implements BroadcastLocationListene
             catch (ClassCastException ex) {
                 Log.e(TAG, "The attached activity does not implement listener for GridView!");
             }
+        }
+    }
+
+    /**********************************************************
+     * Callbacks
+     **********************************************************/
+
+    @Override
+    public void onBroadcastLocationEnabled(long duration) {
+        setAvatarBroadcastingAnimation(true);
+    }
+
+    @Override
+    public void onBroadcastLocationDisabled() {
+        setAvatarBroadcastingAnimation(false);
+    }
+
+    @Override
+    public void onCircleChanged() {
+        update();
+    }
+
+    @Override
+    public void onUsersChanged() {
+        update();
+    }
+
+    /**********************************************************
+     * Helpers
+     **********************************************************/
+
+    private void update() {
+        if (appState != null) {
+            users = appState.getActiveCircle().getUsers();
+            avatarAdapter.update(users);
         }
     }
 

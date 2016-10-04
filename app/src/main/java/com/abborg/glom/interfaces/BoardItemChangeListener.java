@@ -7,4 +7,6 @@ public interface BoardItemChangeListener {
     void onItemModified(String id);
 
     void onItemDeleted(String id);
+
+    void onItemsChanged();
 }

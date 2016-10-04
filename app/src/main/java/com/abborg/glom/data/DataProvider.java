@@ -2,7 +2,6 @@ package com.abborg.glom.data;
 
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -755,7 +754,7 @@ public class DataProvider {
                         location.setLongitude(locationJson.getDouble(Const.JSON_SERVER_LOCATION_LONG));
 
                         // update user location in DB
-                        updateUserLocation(userId, circleId, location.getLatitude(), location.getLongitude());
+                        updateUserLocationDB(userId, circleId, location.getLatitude(), location.getLongitude());
 
                         Log.i(TAG, "User ID: " + userId + "\nLat: " + locationJson.getDouble(Const.JSON_SERVER_LOCATION_LAT) + "\nLong: " +
                                 locationJson.getDouble(Const.JSON_SERVER_LOCATION_LONG));
@@ -780,7 +779,7 @@ public class DataProvider {
         circleCursor.close();
     }
 
-    public void updateUserLocation(String userId, String circleId, Double lat, Double lng) {
+    public void updateUserLocationDB(String userId, String circleId, Double lat, Double lng) {
         ContentValues values = new ContentValues();
         values.put(DBHelper.USERCIRCLE_COLUMN_LATITUDE, lat);
         values.put(DBHelper.USERCIRCLE_COLUMN_LONGITUDE, lng);
@@ -788,46 +787,6 @@ public class DataProvider {
                 DBHelper.USERCIRCLE_COLUMN_USER_ID + "='" + userId + "' AND " +
                         DBHelper.USERCIRCLE_COLUMN_CIRCLE_ID + "='" + circleId + "'", null);
         Log.d(TAG, "Updated " + rowAffected + " row(s) in " + DBHelper.TABLE_USER_CIRCLE);
-    }
-
-    public List<User> getLocationUpdates(Intent intent, Circle circle) {
-        List<User> userList = new ArrayList<>();
-        String userJson = intent.getStringExtra(context.getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_USERS));
-        String circleId = intent.getStringExtra(context.getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_CIRCLE_ID));
-
-        try {
-            // we don't update anything in-memory if this is not the current circle
-            if (!circleId.equals(circle.getId())) return null;
-
-            JSONArray users = new JSONArray(userJson);
-
-            for (int i = 0; i < users.length(); i++) {
-                JSONObject user = users.getJSONObject(i);
-
-                // verify that each user in the JSON belongs to this circle
-                // don't update if it's the user's own location
-                for (User s : circle.getUsers()) {
-                    String userId = user.getString(Const.JSON_SERVER_USERID);
-                    if (userId.equals(appState.getActiveUser().getId())) {
-                        Log.d(TAG, "Skipping updating user's own location");
-                        continue;
-                    }
-                    if (userId.equals(s.getId())) {
-                        JSONObject locationJson = user.getJSONObject(Const.JSON_SERVER_LOCATION);
-                        Location location = new Location("");
-                        location.setLatitude(locationJson.getDouble(Const.JSON_SERVER_LOCATION_LAT));
-                        location.setLongitude(locationJson.getDouble(Const.JSON_SERVER_LOCATION_LONG));
-                        userList.add(new User(s.getName(), userId, location, s.getType()));
-                        s.setLocation(location);
-                    }
-                }
-            }
-        }
-        catch (JSONException ex) {
-            Log.e(TAG, ex.getMessage());
-        }
-
-        return userList;
     }
 
     /*************************************************
