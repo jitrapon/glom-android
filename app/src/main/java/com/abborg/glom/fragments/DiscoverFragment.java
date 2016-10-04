@@ -23,7 +23,8 @@ import com.abborg.glom.model.DiscoverItem;
 
 import java.util.List;
 
-public class DiscoverFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener,
+public class DiscoverFragment extends Fragment implements
+        SwipeRefreshLayout.OnRefreshListener,
         DiscoverItemChangeListener {
 
     private static final String TAG = "DiscoverFragment";
@@ -83,6 +84,7 @@ public class DiscoverFragment extends Fragment implements SwipeRefreshLayout.OnR
         View root = inflater.inflate(R.layout.fragment_discover, container, false);
         refreshView = (SwipeRefreshLayout) root.findViewById(R.id.discover_refresh_layout);
         refreshView.setOnRefreshListener(this);
+        refreshView.setColorSchemeResources(R.color.colorPrimary, R.color.colorPrimaryDark);
         recyclerView = (RecyclerView) root.findViewById(R.id.circle_discover_view);
         recyclerView.setHasFixedSize(true);
         layoutManager = new LinearLayoutManager(getContext());

@@ -52,7 +52,9 @@ import java.util.Locale;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class BoardFragment extends Fragment implements BoardItemClickListener, BoardItemChangeListener,
+public class BoardFragment extends Fragment implements
+        BoardItemClickListener,
+        BoardItemChangeListener,
         SwipeRefreshLayout.OnRefreshListener {
 
     private static final String TAG = "BoardFragment";
@@ -127,6 +129,7 @@ public class BoardFragment extends Fragment implements BoardItemClickListener, B
 
         refreshView = (SwipeRefreshLayout) root.findViewById(R.id.board_refresh_layout);
         refreshView.setOnRefreshListener(this);
+        refreshView.setColorSchemeResources(R.color.colorPrimary, R.color.colorPrimaryDark);
         RecyclerView recyclerView = (RecyclerView) root.findViewById(R.id.board_recycler_view);
         recyclerView.setHasFixedSize(true);
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
