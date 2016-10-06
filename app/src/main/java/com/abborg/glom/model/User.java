@@ -1,8 +1,6 @@
 package com.abborg.glom.model;
 
 import android.location.Location;
-import android.os.Parcel;
-import android.os.Parcelable;
 
 /**
  * Base class for all users
@@ -10,7 +8,7 @@ import android.os.Parcelable;
  *
  * Created by Boat on 8/9/58.
  */
-public class User implements Parcelable {
+public class User {
 
     private String name;
 
@@ -28,16 +26,6 @@ public class User implements Parcelable {
 
     private boolean dirty;
 
-    /** All user permissions **/
-    public static final int POST_IMAGE_GALLERY = 1;                        // permission to post images from gallery
-    public static final int POST_IMAGE_CAMERA = 2;                         // permission to post images from camera
-    public static final int MEDIA_AUDIO_RECEIVE = 2;
-    public static final int MEDIA_VIDEO_RECEIVE = 3;
-    public static final int ALARM_RECEIVE = 4;
-    public static final int NOTE_RECEIVE = 5;
-    public static final int REQUEST_LOCATION = 6;                          // permission to send/receive location requests
-    public static final int CREATE_EVENT = 7;
-
     public static final int TYPE_USER = 1;
     public static final int TYPE_ENTITY = 2;
     public static final int TYPE_BOT = 3;
@@ -50,46 +38,6 @@ public class User implements Parcelable {
         this.status = null;
         this.type = type;
     }
-
-    public User(Parcel parcel) {
-        readFromParcel(parcel);
-    }
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(name);
-        dest.writeString(id);
-        location.writeToParcel(dest, flags);
-        dest.writeString(avatar);
-        dest.writeParcelable(currentCircle, flags);
-        dest.writeString(status);
-    }
-
-    private void readFromParcel(Parcel in) {
-        // needs to be in the same order as when they are written
-        name = in.readString();
-        id = in.readString();
-        location = Location.CREATOR.createFromParcel(in);
-        avatar = in.readString();
-        currentCircle = in.readParcelable(Circle.class.getClassLoader());
-        status = in.readString();
-    }
-
-    public static final Parcelable.Creator CREATOR =
-        new Parcelable.Creator() {
-            public User createFromParcel(Parcel in) {
-                return new User(in);
-            }
-
-            public User[] newArray(int size) {
-                return new User[size];
-            }
-        };
 
     public void setName(String name) {
         this.name = name;

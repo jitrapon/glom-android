@@ -65,7 +65,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -482,7 +481,7 @@ public class DataProvider {
         );
     }
 
-    public void addUsersToCircle(Circle circle, List<User> users) {
+    public void addUsersToCircleDB(Circle circle, List<User> users) {
         if (circle != null && users != null) {
             database.beginTransaction();
 
@@ -519,7 +518,7 @@ public class DataProvider {
         }
     }
 
-    public void modifyUsersInCircle(Circle circle, List<User> users) {
+    public void modifyUsersInCircleDB(Circle circle, List<User> users) {
         if (circle != null && users != null) {
             database.beginTransaction();
 
@@ -546,7 +545,7 @@ public class DataProvider {
         }
     }
 
-    public void removeUsersFromCircle(Circle circle, List<User> users) {
+    public void removeUsersFromCircleDB(Circle circle, List<User> users) {
         if (circle != null && users != null) {
             database.beginTransaction();
 
@@ -598,92 +597,101 @@ public class DataProvider {
         RequestHandler.getInstance(context).get("Get Users", String.format(Const.API_GET_USERS, circle.getId()),
                 new ResponseListener() {
                     @Override
-                    public void onSuccess(JSONObject response) {
+                    public void onSuccess(JSONObject resp) {
                         handleNetworkSuccess();
 
-                        try {
-                            if (response != null) {
-                                JSONArray jsonArray = response.getJSONArray(Const.JSON_SERVER_USERS);
-                                List<User> toModify = new ArrayList<>();        // list of users to modify in DB
-                                List<User> toAdd = new ArrayList<>();       // list of users to update in DB
-                                List<User> toDelete = new ArrayList<>();    // list of users to be deleted from DB
-                                int unchanged = 0;
+                        final JSONObject response = resp;
+                        run(new Runnable() {
 
-                                for (int i = 0; i < jsonArray.length(); i++) {
-                                    JSONObject json = jsonArray.getJSONObject(i);
-                                    String id = json.getString(Const.JSON_SERVER_USERID);
-                                    String name = json.getString(Const.JSON_SERVER_USERNAME);
-                                    String avatar = json.getString(Const.JSON_SERVER_USER_AVATAR);
-                                    int type = json.getInt(Const.JSON_SERVER_USERTYPE);
-                                    id = TextUtils.isEmpty(id) ? "" : id;
-                                    name = TextUtils.isEmpty(name) ? "" : name;
-                                    avatar = TextUtils.isEmpty(avatar) ? "" : avatar;
+                            @Override
+                            public void run() {
+                                try {
+                                    if (response != null) {
+                                        JSONArray jsonArray = response.getJSONArray(Const.JSON_SERVER_USERS);
+                                        List<User> toModify = new ArrayList<>();        // list of users to modify in DB
+                                        List<User> toAdd = new ArrayList<>();       // list of users to update in DB
+                                        List<User> toDelete = new ArrayList<>();    // list of users to be deleted from DB
+                                        int unchanged = 0;
 
-                                    User user = circle.getUser(id);
+                                        for (int i = 0; i < jsonArray.length(); i++) {
+                                            JSONObject json = jsonArray.getJSONObject(i);
+                                            String id = json.getString(Const.JSON_SERVER_USERID);
+                                            String name = json.getString(Const.JSON_SERVER_USERNAME);
+                                            String avatar = json.getString(Const.JSON_SERVER_USER_AVATAR);
+                                            int type = json.getInt(Const.JSON_SERVER_USERTYPE);
+                                            id = TextUtils.isEmpty(id) ? "" : id;
+                                            name = TextUtils.isEmpty(name) ? "" : name;
+                                            avatar = TextUtils.isEmpty(avatar) ? "" : avatar;
 
-                                    // if the user already exists in this circle, modify them
-                                    if (user != null) {
+                                            User user = circle.getUser(id);
 
-                                        // update only if necessary
-                                        if (!name.equals(user.getName()) || !avatar.equals(user.getAvatar())) {
-                                            if (id.equals(appState.getActiveUser().getId())) {
-                                                appState.getActiveUser().setName(name);
-                                                appState.getActiveUser().setAvatar(avatar);
-                                                appState.getActiveUser().setType(type);
+                                            // if the user already exists in this circle, modify them
+                                            if (user != null) {
+
+                                                // update only if necessary
+                                                if (!name.equals(user.getName()) || !avatar.equals(user.getAvatar())) {
+                                                    if (id.equals(appState.getActiveUser().getId())) {
+                                                        appState.getActiveUser().setName(name);
+                                                        appState.getActiveUser().setAvatar(avatar);
+                                                        appState.getActiveUser().setType(type);
+                                                    }
+                                                    user.setName(name);
+                                                    user.setAvatar(avatar);
+                                                    user.setType(type);
+
+                                                    // add to the list of ones to be modified;
+                                                    toModify.add(user);
+                                                } else unchanged += 1;
+
+                                                // mark user to be stable
+                                                user.setDirty(false);
                                             }
-                                            user.setName(name);
-                                            user.setAvatar(avatar);
-                                            user.setType(type);
 
-                                            // add to the list of ones to be modified;
-                                            toModify.add(user);
-                                        } else unchanged += 1;
+                                            // if there's a new user, add them
+                                            else {
+                                                if (!TextUtils.isEmpty(id)) {
+                                                    Location location = new Location("");
+                                                    location.setLatitude(0);
+                                                    location.setLongitude(0);
+                                                    user = new User(name, id, location, type);
+                                                    user.setDirty(false);
+                                                    if (user.getAvatar() == null || !user.getAvatar().equals(avatar))
+                                                        user.setAvatar(avatar);
 
-                                        // mark user to be stable
-                                        user.setDirty(false);
-                                    }
+                                                    circle.addUser(user);
 
-                                    // if there's a new user, add them
-                                    else {
-                                        if (!TextUtils.isEmpty(id)) {
-                                            Location location = new Location("");
-                                            location.setLatitude(0);
-                                            location.setLongitude(0);
-                                            user = new User(name, id, location, type);
-                                            user.setDirty(false);
-                                            if (user.getAvatar() == null || !user.getAvatar().equals(avatar))
-                                                user.setAvatar(avatar);
-
-                                            circle.addUser(user);
-
-                                            // add to the list of ones to be added
-                                            toAdd.add(user);
+                                                    // add to the list of ones to be added
+                                                    toAdd.add(user);
+                                                }
+                                            }
                                         }
-                                    }
-                                }
 
-                                if (!toModify.isEmpty()) modifyUsersInCircle(circle, toModify);
-                                if (!toAdd.isEmpty()) addUsersToCircle(circle, toAdd);
-                                for (Iterator<User> iter = circle.getUsers().iterator(); iter.hasNext(); ) {
-                                    User user = iter.next();
-                                    if (user.isDirty()) {
-                                        toDelete.add(user);
-                                        iter.remove();
-                                    }
-                                }
-                                if (!toDelete.isEmpty()) removeUsersFromCircle(circle, toDelete);
-                                Log.d(TAG, "Added " + toModify.size() + " new user(s)");
-                                Log.d(TAG, "Modified " + toModify.size() + " user(s)");
-                                Log.d(TAG, "Removed " + toDelete.size() + " user(s)");
-                                Log.d(TAG, unchanged + " user(s) remained unchanged");
+                                        // otherwise, if the user is not found in the list of response, delete them
+                                        for (User user : circle.getUsers()) {
+                                            if (user.isDirty()) {
+                                                toDelete.add(user);
+                                            }
+                                        }
+                                        circle.removeDirtyUsers();
 
-                                // alert UI that we may have some changes to user list
-                                if (handler != null) handler.sendEmptyMessage(Const.MSG_GET_USERS);
+                                        // update DB copy
+                                        if (!toModify.isEmpty()) modifyUsersInCircleDB(circle, toModify);
+                                        if (!toAdd.isEmpty()) addUsersToCircleDB(circle, toAdd);
+                                        if (!toDelete.isEmpty()) removeUsersFromCircleDB(circle, toDelete);
+                                        Log.d(TAG, "Added " + toModify.size() + " new user(s)");
+                                        Log.d(TAG, "Modified " + toModify.size() + " user(s)");
+                                        Log.d(TAG, "Removed " + toDelete.size() + " user(s)");
+                                        Log.d(TAG, unchanged + " user(s) remained unchanged");
+
+                                        // alert UI that we may have some changes to user list
+                                        if (handler != null) handler.sendEmptyMessage(Const.MSG_GET_USERS);
+                                    }
+                                } catch (Exception ex) {
+                                    ex.printStackTrace();
+                                    Log.e(TAG, ex.getMessage());
+                                }
                             }
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
-                            Log.e(TAG, ex.getMessage());
-                        }
+                        });
                     }
 
                     @Override
@@ -1009,14 +1017,13 @@ public class DataProvider {
                                         Log.d(TAG, "Found " + numItem + " items");
 
                                         // board items that are marked dirty and not marked as no-sync
-                                        Iterator<BoardItem> iterator = items.iterator();
-                                        while (iterator.hasNext()) {
-                                            BoardItem item = iterator.next();
+                                        for (BoardItem item : items) {
                                             if (item.isDirty()) {
-                                                Log.d(TAG, "Item " + item.getId() + " is dirty, deleting...");
                                                 deleteItemDB(item);
+                                                Log.d(TAG, "Item " + item.getId() + " is dirty, deleting...");
                                             }
                                         }
+                                        circle.removeDirtyItems();
 
                                         // update UI
                                         if (handler != null)

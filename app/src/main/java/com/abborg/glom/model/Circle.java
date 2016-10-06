@@ -1,22 +1,21 @@
 package com.abborg.glom.model;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by Boat on 9/9/58.
  *
  * A circle is a unit of room of users.
- * This class is also responsible for each row in navigation drawer menu of circles
  *
- * Note that Parcel does not work yet (circular reference as issued in https://github.com/johncarl81/parceler/issues/66)
+ * (circular reference as issued in https://github.com/johncarl81/parceler/issues/66)
  */
-public class Circle implements Parcelable {
+public class Circle {
 
     /**
      * List of user in this circle
@@ -34,155 +33,109 @@ public class Circle implements Parcelable {
     private String id;
 
     /**
-     * Nav-drawer notify
-     */
-    private boolean showNotify;
-
-    /**
      * Whether or not the current user is broadcasting location in this circle
      */
-    private boolean userIsBroadcastingLocation;
-
-    /**
-     * Whether or not the current user is discoverable in this circle
-     */
-    private boolean userIsDiscoverable;
+    private AtomicBoolean userIsBroadcastingLocation;
 
     /**
      * List of saved items in this circle
      */
     private List<BoardItem> items;
 
-
-    /**
-     * Create a new circle with this user in it
-     * TODO throw exception by checking SQLite and server if the circle's title already exists
-     *
-     * @param title The user-defined title of the new circle to be created
-     * @return The created circle instance if the title is not created before
-     */
-    public static Circle createCircle(String title, User user) {
-        String id = generateCircleId();
-
-        //TODO add to SQLITE and update server
-        ArrayList<User> users = new ArrayList<>(Arrays.asList(user));
-        return new Circle(id, title, users);
-    }
-
-    public Circle(Parcel parcel) {
-        readFromParcel(parcel);
-    }
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeTypedList(users);
-        dest.writeString(title);
-        dest.writeString(id);
-        dest.writeByte((byte) (showNotify ? 1 : 0));
-        dest.writeByte((byte) (userIsBroadcastingLocation ? 1 : 0));
-        dest.writeByte((byte) (userIsDiscoverable ? 1 : 0));
-    }
-
-    private void readFromParcel(Parcel in) {
-        // needs to be in the same order as when they are written
-        users = new ArrayList<>();
-        in.readTypedList(users, User.CREATOR);
-        title = in.readString();
-        id = in.readString();
-        showNotify = in.readByte() != 0;
-        userIsBroadcastingLocation = in.readByte() != 0;
-        userIsDiscoverable = in.readByte() != 0;
-    }
-
-    public static final Parcelable.Creator CREATOR =
-            new Parcelable.Creator() {
-                public Circle createFromParcel(Parcel in) {
-                    return new Circle(in);
-                }
-
-                public Circle[] newArray(int size) {
-                    return new Circle[size];
-                }
-            };
-
-    /**
-     * Call this in DEBUG only to override the generated ID
-     *
-     * @param id
-     */
-    public void setId(String id) {
-        this.id = id;
-    }
+    /***********************************************************************************
+     * INITIALIZATIONS
+     ***********************************************************************************/
 
     private Circle(String id, String title, List<User> users) {
         this.id = id;
         this.title = title;
-        this.users = users;
-        this.showNotify = false;
-        this.userIsBroadcastingLocation = false;
-        this.userIsDiscoverable = false;
-        this.items = new ArrayList<>();
+        this.users = Collections.synchronizedList(users);
+        this.items =  Collections.synchronizedList(new ArrayList<BoardItem>());
+        this.userIsBroadcastingLocation = new AtomicBoolean(false);
     }
 
-    public boolean isShowNotify() {
-        return showNotify;
+    public static Circle createCircle(String title, User user) {
+        String id = generateCircleId();
+        return new Circle(id, title, Arrays.asList(user));
     }
 
-    public void setShowNotify(boolean showNotify) {
-        this.showNotify = showNotify;
-    }
-
-    public List<User> getUsers() { return users; }
-
-    public User getUser(String id) {
-        for (User user : users) {
-            if (user.getId().equalsIgnoreCase(id)) return user;
-        }
-
-        return null;
-    }
-
-    public String getUserListString() {
-        StringBuilder userList = new StringBuilder();
-        for (User user : users) {
-            userList.append(user.getId());
-            userList.append(",");
-        }
-        return userList.length() > 0 ? userList.substring(0, userList.length() - 1) : "";
-    }
+    /***********************************************************************************
+     * CIRCLE INFO
+     ***********************************************************************************/
 
     public String getTitle() { return title; }
+
+    public void setId(String id) {
+        this.id = id;
+    }
 
     public String getId() { return id; }
 
     public void setTitle(String newTitle) { title = newTitle; }
-
-    public void addUser(User user) { users.add(user); }
-
-    public void setUsers(List<User> users) {
-        this.users = users;
-    }
-
-    public void addUsers(List<User> users) {
-        this.users.addAll(users);
-    }
 
     private static String generateCircleId() {
         return String.valueOf(UUID.randomUUID());
     }
 
     public void setBroadcastingLocation(boolean enabled) {
-        userIsBroadcastingLocation = enabled;
+        userIsBroadcastingLocation.set(enabled);
     }
 
     public boolean isUserBroadcastingLocation() {
-        return userIsBroadcastingLocation;
+        return userIsBroadcastingLocation.get();
     }
+
+    @Override
+    public String toString() {
+        return title;
+    }
+
+    /***********************************************************************************
+     * USERS OPERATIONS
+     ***********************************************************************************/
+
+    public User getUser(String id) {
+        for (int i = 0; i < users.size(); i++) {
+            if (users.get(i).getId().equalsIgnoreCase(id)) return users.get(i);
+        }
+
+        return null;
+    }
+
+    public List<User> getUsers() { return users; }
+
+    public String getUserListString() {
+        StringBuilder userList = new StringBuilder();
+        for (int i = 0; i < users.size(); i++) {
+            userList.append(users.get(i).getId());
+            userList.append(",");
+        }
+        return userList.length() > 0 ? userList.substring(0, userList.length() - 1) : "";
+    }
+
+    public void addUser(User toAdd) { users.add(toAdd); }
+
+    public void addUsers(List<User> toAdd) {
+        users.addAll(toAdd);
+    }
+
+    public void setUsers(List<User> newUsers) {
+        users = Collections.synchronizedList(newUsers);
+    }
+
+    public void removeDirtyUsers() {
+        ListIterator<User> iterator = users.listIterator();
+        while (iterator.hasNext()) {
+            User user = iterator.next();
+            if (user.isDirty()) {
+                iterator.remove();
+            }
+        }
+    }
+
+    /***********************************************************************************
+     * ITEMS OPERATIONS
+     ***********************************************************************************/
 
     public List<BoardItem> getItems() { return items; }
 
@@ -195,11 +148,16 @@ public class Circle implements Parcelable {
     }
 
     public void setItems(List<BoardItem> items) {
-        this.items = items;
+        this.items = Collections.synchronizedList(items);
     }
 
-    @Override
-    public String toString() {
-        return title;
+    public void removeDirtyItems() {
+        ListIterator<BoardItem> iterator = items.listIterator();
+        while (iterator.hasNext()) {
+            BoardItem item = iterator.next();
+            if (item.isDirty()) {
+                iterator.remove();
+            }
+        }
     }
 }
