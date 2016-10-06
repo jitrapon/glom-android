@@ -1520,6 +1520,10 @@ public class DataProvider {
                         || item.getSyncStatus() == BoardItem.SYNC_IN_PROGRESS) {
                     Log.d(TAG, "Deleting item because sync status is either none or error");
                     deleteItemDB(item);
+
+                    if (handler != null) {
+                        handler.sendMessage(handler.obtainMessage(Const.MSG_ITEM_DELETED_SUCCESS, -1, -1, item));
+                    }
                 }
                 else {
                     Log.d(TAG, "Sending request to delete item " + id);
@@ -1568,10 +1572,6 @@ public class DataProvider {
                 rows = database.delete(DBHelper.TABLE_NOTES, DBHelper.NOTE_COLUMN_ID + "='" + id + "'", null);
                 Log.d(TAG, "Deleted note id " + id + " from note table, affected " + rows + " row(s)");
             }
-
-            if (handler != null) {
-                handler.sendMessage(handler.obtainMessage(Const.MSG_ITEM_DELETED_SUCCESS, -1, -1, item));
-            }
         }
     }
 
@@ -1585,6 +1585,10 @@ public class DataProvider {
                                 @Override
                                 public void run() {
                                     deleteItemDB(item);
+
+                                    if (handler != null) {
+                                        handler.sendMessage(handler.obtainMessage(Const.MSG_ITEM_DELETED_SUCCESS, -1, -1, item));
+                                    }
                                 }
                             });
                             handleNetworkSuccess();
