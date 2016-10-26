@@ -37,23 +37,20 @@ import java.util.Map;
  * This class is responsible for handling all network requests.
  * Use this class with the Application context.
  */
-public class RequestHandler {
-
-    /* The singleton instance to be used throughout the app cycle */
-    private static RequestHandler instance;
+public class HttpClient {
 
     /* Google RequestQueue instance */
     private RequestQueue requestQueue;
 
     /* The context of this RequestQueue */
-    private static Context context;
+    private Context context;
 
     /* Volley's image loader */
     private ImageLoader imageLoader;
 
     private static final String TAG = "Network";
 
-    private RequestHandler(Context context) {
+    public HttpClient(Context context) {
         this.context = context;
         requestQueue = getRequestQueue();
 
@@ -117,18 +114,6 @@ public class RequestHandler {
         }
 
         return false;
-    }
-
-    /**
-     * Returns the singleton instance of the RequestHandler
-     * @param context The context in which the RequestQueue is to associated with. Use the application context.
-     * @return The singleton instance
-     */
-    public static synchronized RequestHandler getInstance(Context context) {
-        if (instance == null) {
-            instance = new RequestHandler(context);
-        }
-        return instance;
     }
 
     /**

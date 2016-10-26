@@ -19,8 +19,10 @@ import com.abborg.glom.ApplicationState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.activities.MainActivity;
+import com.abborg.glom.data.DataProvider;
+import com.abborg.glom.di.ComponentInjector;
 import com.abborg.glom.interfaces.ResponseListener;
-import com.abborg.glom.utils.RequestHandler;
+import com.abborg.glom.utils.HttpClient;
 import com.android.volley.VolleyError;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -33,6 +35,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+
+import javax.inject.Inject;
 
 import pub.devrel.easypermissions.EasyPermissions;
 
@@ -50,8 +54,19 @@ import pub.devrel.easypermissions.EasyPermissions;
  *
  * Created by Jitrapon Tiachunpun on 8/10/58.
  */
-public class CirclePushService extends Service implements LocationListener,
-        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+public class CirclePushService extends Service implements
+        LocationListener,
+        GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener {
+
+    @Inject
+    ApplicationState appState;
+
+    @Inject
+    DataProvider dataProvider;
+
+    @Inject
+    HttpClient httpClient;
 
     private static final String TAG = "CirclePushService";
 
@@ -84,6 +99,34 @@ public class CirclePushService extends Service implements LocationListener,
 
     public static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
 
+    /**
+     * One-time initialization of service. If service is already started, this is not called.
+     */
+    @Override
+    public void onCreate() {
+        ComponentInjector.INSTANCE.getApplicationComponent().inject(this);
+
+        circles = new ArrayList<>();
+        durations = new ArrayList<>();
+
+        locationRequest = LocationRequest.create();
+        locationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+
+        apiAvailability = GoogleApiAvailability.getInstance();
+
+        if (verifyGooglePlayServices(this)) {
+            apiClient = new GoogleApiClient
+                    .Builder(this)
+                    .addApi(LocationServices.API)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .build();
+        }
+
+        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+    }
+
     @Override
     public IBinder onBind(Intent intent) {
         return null;
@@ -114,11 +157,10 @@ public class CirclePushService extends Service implements LocationListener,
 
             // loop through list of circles and send updates to them
             if (!circles.isEmpty()) {
-                ApplicationState appState = ApplicationState.getInstance();
-                appState.getDataProvider().open();
+                dataProvider.openDB();
                 for (String circleId : circles) {
                     sendLocationUpdateRequest(circleId, userLocation);
-                    appState.getDataProvider().updateUserLocationDB(appState.getActiveUser().getId(),
+                    dataProvider.updateUserLocationDB(appState.getActiveUser().getId(),
                             circleId, location.getLatitude(), location.getLongitude());
                     Log.d(TAG, "Sending location info of " + location.getLatitude() + ", " + location.getLongitude());
                 }
@@ -188,7 +230,7 @@ public class CirclePushService extends Service implements LocationListener,
             Log.e(TAG, ex.getMessage());
         }
 
-        RequestHandler.getInstance(ctx).post("Update Location", Const.API_LOCATION, body, new ResponseListener() {
+        httpClient.post("Update Location", Const.API_LOCATION, body, new ResponseListener() {
             @Override
             public void onSuccess(JSONObject response) {
                 if (response != null) {
@@ -207,7 +249,7 @@ public class CirclePushService extends Service implements LocationListener,
 
             @Override
             public void onError(VolleyError error) {
-                RequestHandler.getInstance(ctx).handleError(error);
+                httpClient.handleError(error);
             }
         });
     }
@@ -333,32 +375,6 @@ public class CirclePushService extends Service implements LocationListener,
     }
 
     /**
-     * One-time initialization of service. If service is already started, this is not called.
-     */
-    @Override
-    public void onCreate() {
-        circles = new ArrayList<>();
-        durations = new ArrayList<>();
-
-        locationRequest = LocationRequest.create();
-        locationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
-
-        apiAvailability = GoogleApiAvailability.getInstance();
-
-        if (verifyGooglePlayServices(this)) {
-            apiClient = new GoogleApiClient
-                    .Builder(this)
-                    .addApi(LocationServices.API)
-                    .addConnectionCallbacks(this)
-                    .addOnConnectionFailedListener(this)
-                    .build();
-        }
-
-        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
-        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
-    }
-
-    /**
      * Clean up before service is destroyed from stopService()
      */
     @Override
@@ -397,11 +413,10 @@ public class CirclePushService extends Service implements LocationListener,
         hideNotification();
 
         // make sure to remove all broadcasting circles accordingly before closing
-        ApplicationState appState = ApplicationState.getInstance();
-        appState.getDataProvider().open();
+        dataProvider.openDB();
         if (circles != null && !circles.isEmpty()) {
             for (String circleId : circles) {
-                appState.getDataProvider().updateCircleLocationBroadcast(circleId, false);
+                dataProvider.updateCircleLocationBroadcast(circleId, false);
             }
             circles.clear();
         }

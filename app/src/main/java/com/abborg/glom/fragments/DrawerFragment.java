@@ -17,13 +17,19 @@ import android.view.ViewGroup;
 import com.abborg.glom.ApplicationState;
 import com.abborg.glom.R;
 import com.abborg.glom.adapters.NavigationDrawerAdapter;
+import com.abborg.glom.di.ComponentInjector;
 import com.abborg.glom.interfaces.ClickListener;
 import com.abborg.glom.model.CircleInfo;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.inject.Inject;
+
 public class DrawerFragment extends Fragment {
+
+    @Inject
+    ApplicationState appState;
 
     private RecyclerView recyclerView;
 
@@ -40,7 +46,6 @@ public class DrawerFragment extends Fragment {
     private FragmentDrawerListener drawerListener;
 
     public DrawerFragment() {
-
     }
 
     public void setDrawerListener(FragmentDrawerListener listener) {
@@ -50,7 +55,6 @@ public class DrawerFragment extends Fragment {
     public static List<CircleInfo> getData() {
         List<CircleInfo> data = new ArrayList<>();
 
-
         //TODO retrieve Circle list from SQLite or server
         //preparing navigation drawer items
         for (CircleInfo c : circles) {
@@ -58,6 +62,12 @@ public class DrawerFragment extends Fragment {
         }
 
         return data;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        ComponentInjector.INSTANCE.getApplicationComponent().inject(this);
     }
 
     @Override
@@ -71,7 +81,7 @@ public class DrawerFragment extends Fragment {
     }
 
     public void setUp(int fragmentId, DrawerLayout drawerLayout, final Toolbar toolbar) {
-        circles = ApplicationState.getInstance().getAllCircleInfo();
+        circles = appState.getAllCircleInfo();
         adapter = new NavigationDrawerAdapter(getActivity(), getData());
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));

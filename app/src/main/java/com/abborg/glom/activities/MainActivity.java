@@ -12,7 +12,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
-import android.database.SQLException;
 import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.net.Uri;
@@ -32,9 +31,6 @@ import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.ViewCompat;
@@ -73,7 +69,9 @@ import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.adapters.BoardItemAction;
 import com.abborg.glom.adapters.BoardItemActionClickListener;
+import com.abborg.glom.adapters.ViewPagerAdapter;
 import com.abborg.glom.data.DataProvider;
+import com.abborg.glom.di.ComponentInjector;
 import com.abborg.glom.fragments.BoardFragment;
 import com.abborg.glom.fragments.CircleFragment;
 import com.abborg.glom.fragments.DiscoverFragment;
@@ -118,6 +116,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.inject.Inject;
+
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
@@ -140,12 +140,14 @@ public class MainActivity extends AppCompatActivity implements
     /**
      * The global class at the application context level
      */
-    private ApplicationState appState;
+    @Inject
+    ApplicationState appState;
 
     /**
      * Abstracts data management via SQLite and network operations
      */
-    public DataProvider dataProvider;
+    @Inject
+    DataProvider dataProvider;
 
     /**
      * A receiver for incoming location updates and other various GCM push updates
@@ -233,7 +235,6 @@ public class MainActivity extends AppCompatActivity implements
     private SwitchCompat broadcastLocationToggle;
     private CoordinatorLayout mainCoordinatorLayout;
 
-    private static final boolean SHOW_TAB_TITLE = false;
     private static final int MENU_OVERLAY_ANIM_TIME = 150;
     private static final boolean START_YOUTUBE_VIDEO_LIGHTBOX = false;
 
@@ -242,48 +243,6 @@ public class MainActivity extends AppCompatActivity implements
     private static final int PERMISSION_READ_STORAGE = 2;
     private static final int PERMISSION_WRITE_STORAGE = 3;
 
-    /**************************************************
-     * View pager adapter that controls the pages
-     **************************************************/
-
-    class ViewPagerAdapter extends FragmentPagerAdapter {
-        private final List<Fragment> fragmentList = new ArrayList<>();
-        private final List<String> fragmentTitleList = new ArrayList<>();
-
-        ViewPagerAdapter(FragmentManager manager) {
-            super(manager);
-        }
-
-        @Override
-        public Fragment getItem(int position) {
-            return fragmentList.get(position);
-        }
-
-        @Override
-        public int getCount() {
-            return fragmentList.size();
-        }
-
-        void addFragment(Fragment fragment, String title) {
-            fragmentList.add(fragment);
-            fragmentTitleList.add(title);
-        }
-
-        @Override
-        public CharSequence getPageTitle(int position) {
-            return SHOW_TAB_TITLE ? fragmentTitleList.get(position) : null;
-        }
-    }
-
-    private void setupViewPager(ViewPager viewPager) {
-        adapter = new ViewPagerAdapter(getSupportFragmentManager());
-        adapter.addFragment(new CircleFragment(), Const.TAB_CIRCLE);
-        adapter.addFragment(new LocationFragment(), Const.TAB_MAP);
-        adapter.addFragment(new BoardFragment(), Const.TAB_BOARD);
-        adapter.addFragment(new DiscoverFragment(), Const.TAB_DISCOVER);
-        viewPager.setAdapter(adapter);
-    }
-
     /**********************************************************
      * VIEW INITIALIZATIONS
      **********************************************************/
@@ -291,6 +250,7 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ComponentInjector.INSTANCE.getApplicationComponent().inject(this);
 
         firstLaunch = true;
 
@@ -301,7 +261,9 @@ public class MainActivity extends AppCompatActivity implements
 
         setupBroadcastReceiver();
 
-        appState = ApplicationState.init(this, handler);
+        // begin loading and fetching data
+        dataProvider.setHandler(handler);
+        dataProvider.loadDataAsync();
     }
 
     @Override
@@ -309,22 +271,13 @@ public class MainActivity extends AppCompatActivity implements
         super.onStart();
 
         // connect to the Google Play API
-        if (appState != null) {
-            appState.connectGoogleApiClient();
-            appState.setKeepGoogleApiClientAlive(false);
-        }
+        appState.connectGoogleApiClient();
+        appState.setKeepGoogleApiClientAlive(false);
 
         // register local broadcast receiver
         registerBroadcastReceivers();
 
-        // get database writable object, if already initialized
-        if (dataProvider != null) {
-            try {
-                dataProvider.open();
-            } catch (SQLException ex) {
-                Log.e(TAG, ex.getMessage());
-            }
-        }
+        dataProvider.openDB();
 
         willLaunchBrowser = false;
     }
@@ -338,10 +291,10 @@ public class MainActivity extends AppCompatActivity implements
         if (appState != null)
             if (!appState.shouldKeepGoogleApiAlive()) appState.disconnectGoogleApiClient();
 
-        // close database and cancells all network operations
+        // closeDB database and cancells all network operations
         if (dataProvider != null) {
             dataProvider.cancelAllNetworkRequests();
-            dataProvider.close();
+            dataProvider.closeDB();
         }
 
         // unbind services
@@ -383,11 +336,19 @@ public class MainActivity extends AppCompatActivity implements
         fab.hide();
     }
 
+    private void setupViewPager(ViewPager viewPager) {
+        adapter = new ViewPagerAdapter(getSupportFragmentManager());
+        adapter.addFragment(new CircleFragment(), Const.TAB_CIRCLE);
+        adapter.addFragment(new LocationFragment(), Const.TAB_MAP);
+        adapter.addFragment(new BoardFragment(), Const.TAB_BOARD);
+        adapter.addFragment(new DiscoverFragment(), Const.TAB_DISCOVER);
+        viewPager.setAdapter(adapter);
+    }
+
     @SuppressWarnings("ConstantConditions")
     private void updateView() {
 
         // set up tabs
-
         setupViewPager(viewPager);
         tabLayout.setupWithViewPager(viewPager);
         tabLayout.getTabAt(0).setIcon(R.drawable.ic_tab_circle).setTag(Const.TAB_CIRCLE);
@@ -1481,6 +1442,27 @@ public class MainActivity extends AppCompatActivity implements
     public boolean handleMessage(Message msg) {
         switch (msg.what) {
 
+            /* On first load */
+            case Const.MSG_INIT_SUCCESS: {
+
+                dataProvider.openDB();
+
+                updateView();
+
+                setupCallbackListeners();
+
+                setupService();
+
+                if (appState.getConnectionStatus() == ApplicationState.ConnectivityStatus.DISCONNECTED) {
+                    handler.sendEmptyMessage(Const.MSG_SERVER_DISCONNECTED);
+                }
+                else {
+                    dataProvider.requestGetUsersInCircle(appState.getActiveCircle());
+                }
+
+                break;
+            }
+
             /* No Google Play Services available  */
             case Const.MSG_GOOGLE_PLAY_SERVICES_UNAVAILABLE: {
                 int resultCode = msg.arg1;
@@ -1502,30 +1484,6 @@ public class MainActivity extends AppCompatActivity implements
                             })
                             .setCancelable(false)
                             .show();
-                }
-
-                break;
-            }
-
-            /* On first load */
-            case Const.MSG_INIT_SUCCESS: {
-                try {
-                    dataProvider = appState.getDataProvider();
-                    dataProvider.open();
-                } catch (SQLException ex) {
-                    Log.e(TAG, ex.getMessage());
-                }
-
-                updateView();
-
-                setupCallbackListeners();
-
-                setupService();
-
-                if (appState.getConnectionStatus() == ApplicationState.ConnectivityStatus.DISCONNECTED) {
-                    handler.sendEmptyMessage(Const.MSG_SERVER_DISCONNECTED);
-                } else {
-                    dataProvider.requestGetUsersInCircle(appState.getActiveCircle());
                 }
 
                 break;

@@ -1,7 +1,6 @@
 package com.abborg.glom.activities;
 
 import android.content.Intent;
-import android.database.SQLException;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -21,6 +20,7 @@ import com.abborg.glom.R;
 import com.abborg.glom.adapters.ItemTouchHelperCallback;
 import com.abborg.glom.adapters.ListItemAdapter;
 import com.abborg.glom.data.DataProvider;
+import com.abborg.glom.di.ComponentInjector;
 import com.abborg.glom.interfaces.ItemStateChangedListener;
 import com.abborg.glom.interfaces.ItemTouchListener;
 import com.abborg.glom.model.BoardItem;
@@ -33,12 +33,19 @@ import org.joda.time.DateTime;
 import java.util.Collections;
 import java.util.List;
 
-public class ListItemActivity extends AppCompatActivity
-        implements ItemStateChangedListener, ItemTouchListener {
+import javax.inject.Inject;
+
+public class ListItemActivity extends AppCompatActivity implements
+        ItemStateChangedListener,
+        ItemTouchListener {
+
+    @Inject
+    ApplicationState appState;
+
+    @Inject
+    DataProvider dataProvider;
 
     public static final String TAG = "ListItemActivity";
-
-    private DataProvider dataProvider;
 
     private EditText titleText;
     private RecyclerView listItemView;
@@ -61,9 +68,9 @@ public class ListItemActivity extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_list_item);
+        ComponentInjector.INSTANCE.getApplicationComponent().inject(this);
 
-        dataProvider = ApplicationState.getInstance().getDataProvider();
+        setContentView(R.layout.activity_list_item);
 
         // set up all variables
         Intent intent = getIntent();
@@ -111,12 +118,7 @@ public class ListItemActivity extends AppCompatActivity
 
     @Override
     protected void onResume() {
-        try {
-            dataProvider.open();
-        }
-        catch (SQLException ex) {
-            Log.e(TAG, ex.getMessage());
-        }
+        dataProvider.openDB();
 
         super.onResume();
     }
@@ -148,11 +150,11 @@ public class ListItemActivity extends AppCompatActivity
         listItem.setTitle(String.valueOf(titleText.getText()));
 
         if (mode == Mode.CREATE) {
-            dataProvider.createListAsync(ApplicationState.getInstance().getActiveCircle(),
+            dataProvider.createListAsync(appState.getActiveCircle(),
                     DateTime.now(), listItem, true);
         }
         else if (mode == Mode.UPDATE) {
-            dataProvider.updateListAsync(ApplicationState.getInstance().getActiveCircle(), DateTime.now(), listItem, true);
+            dataProvider.updateListAsync(appState.getActiveCircle(), DateTime.now(), listItem, true);
         }
 
         finish();
@@ -169,7 +171,7 @@ public class ListItemActivity extends AppCompatActivity
         switch (mode) {
 
             case CREATE:
-                listItem = ListItem.createList(ApplicationState.getInstance().getActiveCircle());
+                listItem = ListItem.createList(appState.getActiveCircle());
                 listItem.getItems().add(new CheckedItem(ListItem.STATE_DEFAULT, null));
                 if (getSupportActionBar() != null) {
                     getSupportActionBar().setTitle(getString(R.string.title_activity_new_list_item));
@@ -180,7 +182,7 @@ public class ListItemActivity extends AppCompatActivity
                     getSupportActionBar().setTitle(getString(R.string.title_activity_edit_list_item));
                 }
                 String id = intent.getStringExtra(getString(R.string.EXTRA_LIST_ID));
-                List<BoardItem> boardItems = ApplicationState.getInstance().getActiveCircle().getItems();
+                List<BoardItem> boardItems = appState.getActiveCircle().getItems();
                 for (BoardItem item : boardItems) {
                     if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_LIST) {
                         listItem = (ListItem) item;
@@ -196,7 +198,7 @@ public class ListItemActivity extends AppCompatActivity
                     getSupportActionBar().setTitle(getString(R.string.title_activity_view_list_item));
                 }
                 String id = intent.getStringExtra(getString(R.string.EXTRA_LIST_ID));
-                List<BoardItem> boardItems = ApplicationState.getInstance().getActiveCircle().getItems();
+                List<BoardItem> boardItems = appState.getActiveCircle().getItems();
                 for (BoardItem item : boardItems) {
                     if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_LIST) {
                         listItem = (ListItem) item;

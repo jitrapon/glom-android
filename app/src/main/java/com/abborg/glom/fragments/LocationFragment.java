@@ -31,6 +31,7 @@ import com.abborg.glom.ApplicationState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.activities.EventActivity;
+import com.abborg.glom.di.ComponentInjector;
 import com.abborg.glom.interfaces.BoardItemChangeListener;
 import com.abborg.glom.interfaces.BroadcastLocationListener;
 import com.abborg.glom.interfaces.CircleChangeListener;
@@ -71,6 +72,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.inject.Inject;
+
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
@@ -83,6 +86,9 @@ public class LocationFragment extends SupportMapFragment implements
         BoardItemChangeListener,
         CircleChangeListener,
         UsersChangeListener {
+
+    @Inject
+    ApplicationState appState;
 
     /* Might be null if Google Play services APK is not available. */
     private GoogleMap googleMap;
@@ -101,8 +107,6 @@ public class LocationFragment extends SupportMapFragment implements
 
     /* The custom user marker view constructed from the custom layour */
     private View userMarkerView;
-
-    private ApplicationState appState;
 
     /* List of event markers that need to be updated */
     private List<EventItem> staleEvents;
@@ -151,10 +155,11 @@ public class LocationFragment extends SupportMapFragment implements
     @Override
     public void onCreate(Bundle savedBundleState) {
         super.onCreate(savedBundleState);
+        ComponentInjector.INSTANCE.getApplicationComponent().inject(this);
+        
         userMarkers = new ConcurrentHashMap<>();
         eventMarkers = new ConcurrentHashMap<>();
         staleEvents = new ArrayList<>();
-        appState = ApplicationState.getInstance();
         formatter = DateTimeFormat.forPattern(getContext().getResources().getString(R.string.card_event_datetime_format));
     }
 
@@ -289,7 +294,7 @@ public class LocationFragment extends SupportMapFragment implements
                         Intent intent = new Intent(getActivity(), EventActivity.class);
                         intent.putExtra(getResources().getString(R.string.EXTRA_EVENT_ID), eventId);
                         intent.setAction(getResources().getString(R.string.ACTION_UPDATE_EVENT));
-                        ApplicationState.getInstance().setKeepGoogleApiClientAlive(true);
+                        appState.setKeepGoogleApiClientAlive(true);
                         getActivity().startActivityForResult(intent, Const.UPDATE_EVENT_RESULT_CODE);
                     }
                 }
@@ -668,7 +673,7 @@ public class LocationFragment extends SupportMapFragment implements
 
     private void updateEventMarkers(final EventItem event) {
         // connect to Google's PlaceAPI to update the location
-        GoogleApiClient apiClient = ApplicationState.getInstance().getGoogleApiClient();
+        GoogleApiClient apiClient = appState.getGoogleApiClient();
         if (apiClient != null && apiClient.isConnected() && !TextUtils.isEmpty(event.getPlace())) {
             PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(apiClient, event.getPlace());
             placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {
@@ -781,7 +786,7 @@ public class LocationFragment extends SupportMapFragment implements
                 // show nearby-place for this user
                 if (true) {
                     if (userMarkers.get(appState.getActiveUser().getId()).getId().equals(marker.getId())) {
-                        GoogleApiClient apiClient = ApplicationState.getInstance().getGoogleApiClient();
+                        GoogleApiClient apiClient = appState.getGoogleApiClient();
                         if (apiClient != null && apiClient.isConnected()) {
                             PendingResult<PlaceLikelihoodBuffer> placeResult = Places.PlaceDetectionApi.getCurrentPlace(apiClient, null);
                             placeResult.setResultCallback(new ResultCallback<PlaceLikelihoodBuffer>() {

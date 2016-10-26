@@ -17,7 +17,10 @@ import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.activities.MainActivity;
 import com.abborg.glom.data.DataProvider;
+import com.abborg.glom.di.ComponentInjector;
 import com.google.android.gms.gcm.GcmListenerService;
+
+import javax.inject.Inject;
 
 /**
  * Created by Boat on 13/9/58.
@@ -27,6 +30,12 @@ import com.google.android.gms.gcm.GcmListenerService;
  */
 public class MessageService extends GcmListenerService {
 
+    @Inject
+    ApplicationState appState;
+
+    @Inject
+    DataProvider dataProvider;
+
     private static final String TAG = "MessageService";
 
     private static final int LOCATION_UPDATE = 0;
@@ -34,6 +43,11 @@ public class MessageService extends GcmListenerService {
     private static final int EDIT_MESSAGE = 2;
     private static final int DELETE_MESSAGE = 3;
     private static final int SERVER_ACK_MESSAGE = 4;
+
+    @Override
+    public void onCreate() {
+        ComponentInjector.INSTANCE.getApplicationComponent().inject(this);
+    }
 
     @Override
     public void onMessageSent(String messageId) {
@@ -76,15 +90,6 @@ public class MessageService extends GcmListenerService {
                 int opCode = Integer.parseInt(opCodeString);
                 Log.d(TAG, "Message of type " + opCode + " received");
 
-                ApplicationState appState = ApplicationState.getInstance();
-                DataProvider dataProvider;
-                String currentUserId = null;
-                if (appState != null) {
-                    currentUserId = appState.getActiveUser().getId();
-                    dataProvider = appState.getDataProvider();
-                }
-                else dataProvider = DataProvider.init(this);
-
                 //TODO keep track of received message of user and circleId
                 //TODO store it in USERS table under column notification
                 switch(opCode) {
@@ -94,8 +99,8 @@ public class MessageService extends GcmListenerService {
                         Intent locUpdateIntent = new Intent(getResources().getString(R.string.ACTION_RECEIVE_LOCATION));
 
                         // save updated location in DB
-                        dataProvider.open();
-                        dataProvider.onLocationUpdateReceived(data, currentUserId);
+                        dataProvider.openDB();
+                        dataProvider.onLocationUpdateReceived(data);
 
                         // broadcast update
                         locUpdateIntent.putExtra(getResources().getString(R.string.EXTRA_RECEIVE_LOCATION_USERS),

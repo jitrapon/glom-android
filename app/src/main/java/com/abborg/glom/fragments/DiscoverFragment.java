@@ -18,14 +18,23 @@ import com.abborg.glom.R;
 import com.abborg.glom.activities.MainActivity;
 import com.abborg.glom.adapters.DiscoverRecyclerViewAdapter;
 import com.abborg.glom.data.DataProvider;
+import com.abborg.glom.di.ComponentInjector;
 import com.abborg.glom.interfaces.DiscoverItemChangeListener;
 import com.abborg.glom.model.DiscoverItem;
 
 import java.util.List;
 
+import javax.inject.Inject;
+
 public class DiscoverFragment extends Fragment implements
         SwipeRefreshLayout.OnRefreshListener,
         DiscoverItemChangeListener {
+
+    @Inject
+    ApplicationState appState;
+
+    @Inject
+    DataProvider dataProvider;
 
     private static final String TAG = "DiscoverFragment";
 
@@ -44,16 +53,11 @@ public class DiscoverFragment extends Fragment implements
     /* Adapter to the recycler view */
     private DiscoverRecyclerViewAdapter adapter;
 
-    /* Main activity's data updater */
-    private DataProvider dataProvider;
-
     private boolean firstView;
 
     private MainActivity activity;
 
     private Handler handler;
-
-    private ApplicationState appState;
 
     public DiscoverFragment() {}
 
@@ -71,8 +75,8 @@ public class DiscoverFragment extends Fragment implements
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        appState = ApplicationState.getInstance();
-        dataProvider = appState.getDataProvider();
+        ComponentInjector.INSTANCE.getApplicationComponent().inject(this);
+
         adapter = new DiscoverRecyclerViewAdapter(getContext(), handler);
     }
 

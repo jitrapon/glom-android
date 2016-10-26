@@ -36,6 +36,8 @@ import java.util.List;
  */
 public class FileTransfer {
 
+    private DataProvider dataProvider;
+
     private static final String TAG = "FileTransfer";
 
     private Context context;
@@ -46,8 +48,6 @@ public class FileTransfer {
     /* Main thread handler */
     private Handler handler;
 
-    private DataProvider dataProvider;
-
     private List<String> downloadList;
 
     private File downloadDir;
@@ -56,12 +56,16 @@ public class FileTransfer {
     private TransferUtility s3Transfer;
     private AmazonS3Client s3Client;
 
-    public FileTransfer(DataProvider updater, Context ctx, Handler hand) {
+    public FileTransfer(Context ctx, ApplicationState appState, DataProvider dp) {
+        dataProvider = dp;
         context = ctx;
-        handler = hand;
-        dataProvider = updater;
+        handler = dataProvider.getHandler();
         downloadList = Collections.synchronizedList(new ArrayList<String>());
-        downloadDir = ApplicationState.getInstance().getExternalFilesDir();
+        downloadDir = appState.getExternalFilesDir();
+    }
+
+    public void setHandler(Handler h) {
+        handler = h;
     }
 
     public void upload(final CloudProvider provider, final Circle circle, final DrawItem item) {

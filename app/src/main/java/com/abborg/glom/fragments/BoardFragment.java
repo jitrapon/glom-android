@@ -32,6 +32,7 @@ import com.abborg.glom.activities.MainActivity;
 import com.abborg.glom.activities.NoteActivity;
 import com.abborg.glom.adapters.BoardItemAdapter;
 import com.abborg.glom.data.DataProvider;
+import com.abborg.glom.di.ComponentInjector;
 import com.abborg.glom.interfaces.ActionModeCallbacks;
 import com.abborg.glom.interfaces.BoardItemChangeListener;
 import com.abborg.glom.interfaces.BoardItemClickListener;
@@ -54,6 +55,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import javax.inject.Inject;
+
 /**
  * A simple {@link Fragment} subclass.
  */
@@ -63,6 +66,12 @@ public class BoardFragment extends Fragment implements
         SwipeRefreshLayout.OnRefreshListener,
         CircleChangeListener,
         ActionModeCallbacks {
+
+    @Inject
+    ApplicationState appState;
+
+    @Inject
+    DataProvider dataProvider;
 
     private static final String TAG = "BoardFragment";
 
@@ -75,9 +84,6 @@ public class BoardFragment extends Fragment implements
     /* Adapter to the recycler view */
     private BoardItemAdapter adapter;
 
-    /* Main activity's data updater */
-    private DataProvider dataProvider;
-
     /* The list of items in this circle */
     private List<BoardItem> items;
 
@@ -86,7 +92,6 @@ public class BoardFragment extends Fragment implements
 
     private MainActivity activity;
     private Handler handler;
-    private ApplicationState appState;
 
     private boolean isActionModeEnabled;
 
@@ -122,9 +127,9 @@ public class BoardFragment extends Fragment implements
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        appState = ApplicationState.getInstance();
+        ComponentInjector.INSTANCE.getApplicationComponent().inject(this);
+
         adapter = new BoardItemAdapter(getContext(), getItems(), this);
-        dataProvider = appState.getDataProvider();
     }
 
     @Override
@@ -290,7 +295,7 @@ public class BoardFragment extends Fragment implements
                         EventItem event = (EventItem) item;
                         final String placeId = event.getPlace();
                         if (!TextUtils.isEmpty(placeId)) {
-                            GoogleApiClient apiClient = ApplicationState.getInstance().getGoogleApiClient();
+                            GoogleApiClient apiClient = appState.getGoogleApiClient();
                             if (apiClient != null && apiClient.isConnected()) {
                                 PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(apiClient, placeId);
                                 placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {

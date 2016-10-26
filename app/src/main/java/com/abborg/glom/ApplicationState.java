@@ -5,11 +5,9 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
+import android.support.annotation.NonNull;
 import android.util.Log;
-import android.widget.Toast;
 
-import com.abborg.glom.data.DataProvider;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CircleInfo;
 import com.abborg.glom.model.User;
@@ -31,15 +29,11 @@ import java.util.List;
  * so long as the OS does not kill the application context, this class and fields will
  * not get initialized
  *
- * Created by Boat on 22/10/58.
+ * Created by Jitrapon
  */
-public class ApplicationState
-        implements GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks {
-
-    // static variables persist as long as the class is in memory
-    private static ApplicationState instance = null;
-
-    private Context context;
+public class ApplicationState implements
+        GoogleApiClient.OnConnectionFailedListener,
+        GoogleApiClient.ConnectionCallbacks {
 
     /* The current activeUser */
     private User activeUser;
@@ -50,10 +44,11 @@ public class ApplicationState
     /* List of circle info */
     private List<CircleInfo> circles;
 
-    private DataProvider dataProvider;
-
     /* Google Play API client */
-    private GoogleApiClient apiClient;
+    private GoogleApiClient googleApiClient;
+
+    /* Whthere or not Google API client is connected */
+    private boolean googleApiClientConnected;
 
     /* Whether or not to keep Google Api connection alive */
     private boolean keepGoogleApiAlive;
@@ -75,24 +70,17 @@ public class ApplicationState
 
     /* Server connectivity state */
     private ConnectivityStatus connectivityStatus;
+
     private ConnectivityManager connectivityManager;
+
     public enum ConnectivityStatus {
         DISCONNECTED,
         CONNECTING,
         CONNECTED
     }
 
-    public static ApplicationState getInstance() {
-        return instance;
-    }
-
-    public static ApplicationState init(Context ctx, Handler handler) {
-        instance = new ApplicationState(ctx, handler);
-        return instance;
-    }
-
-    private ApplicationState(Context ctx, Handler handler) {
-        context = ctx.getApplicationContext();
+    public ApplicationState(Context ctx) {
+        Context context = ctx.getApplicationContext();
 
         // check device connectivity
         connectivityManager = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -102,41 +90,34 @@ public class ApplicationState
         // joda-time-android will not work.
         JodaTimeAndroid.init(context);
 
+        // initialize the date format
+        dateTimeFormatter = DateTimeFormat.forPattern(context.getResources().getString(R.string.action_create_event_datetime_format));
+
+        // initialize the google API key
+        GOOGLE_API_KEY = context.getResources().getString(R.string.google_maps_key);
+
+        // initialize the paths to store cached and internal files
+        cacheDir = context.getCacheDir();
+        internalFilesDir = context.getFilesDir();
+        externalFilesDir = new File(Environment.getExternalStorageDirectory() + "/" + Environment.DIRECTORY_DOWNLOADS + "/");
+
         // make sure the phone has installed required Google Play Services version
         // if it's available, connect to Google API services
         GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
         int googlePlayServicesResultCode = apiAvailability.isGooglePlayServicesAvailable(context);
         if (googlePlayServicesResultCode == ConnectionResult.SUCCESS) {
-            apiClient = new GoogleApiClient
+            googleApiClient = new GoogleApiClient
                     .Builder(context)
                     .addApi(Places.GEO_DATA_API)
                     .addApi(Places.PLACE_DETECTION_API)
                     .addConnectionCallbacks(this)
                     .addOnConnectionFailedListener(this)
                     .build();
-
-            if (!apiClient.isConnected()) apiClient.connect();
+            connectGoogleApiClient();
             keepGoogleApiAlive = false;
-
-            // initialize the date format
-            dateTimeFormatter = DateTimeFormat.forPattern(context.getResources().getString(R.string.action_create_event_datetime_format));
-
-            // initialize the google API key
-            GOOGLE_API_KEY = context.getResources().getString(R.string.google_maps_key);
-
-            // initialize the paths to store cached and internal files
-            cacheDir = context.getCacheDir();
-            internalFilesDir = context.getFilesDir();
-            externalFilesDir = new File(Environment.getExternalStorageDirectory() + "/" + Environment.DIRECTORY_DOWNLOADS + "/");
-
-            // initialize model and data provider
-            DataProvider.init(this, context, handler);
         }
         else {
-            if (handler != null) {
-                handler.sendMessage(handler.obtainMessage(Const.MSG_GOOGLE_PLAY_SERVICES_UNAVAILABLE,
-                        googlePlayServicesResultCode));
-            }
+            googleApiClientConnected = false;
         }
     }
 
@@ -156,14 +137,14 @@ public class ApplicationState
     public boolean shouldKeepGoogleApiAlive() { return keepGoogleApiAlive; }
 
     public void connectGoogleApiClient() {
-        if (apiClient != null && !apiClient.isConnected()) {
-            apiClient.connect();
+        if (googleApiClient != null && !googleApiClient.isConnected()) {
+            googleApiClient.connect();
         }
     }
 
     public void disconnectGoogleApiClient() {
-        if (apiClient != null && apiClient.isConnected()) {
-            apiClient.disconnect();
+        if (googleApiClient != null && googleApiClient.isConnected()) {
+            googleApiClient.disconnect();
             Log.d("Google API Client", "Google Places API disconnected");
         }
     }
@@ -171,25 +152,21 @@ public class ApplicationState
     @Override
     public void onConnected(Bundle bundle) {
         Log.d("Google API Client", "Google Places API connected.");
+        googleApiClientConnected = true;
     }
 
     @Override
-    public void onConnectionFailed(ConnectionResult result) {
+    public void onConnectionFailed(@NonNull ConnectionResult result) {
         Log.e("Google API Client", "Google Places API connection failed with error code: "
                 + result.getErrorCode());
-
-        Toast.makeText(context,
-                "Google Places API connection failed with error code:" +
-                        result.getErrorCode(),
-                Toast.LENGTH_SHORT).show();
+        googleApiClientConnected = false;
     }
 
     @Override
     public void onConnectionSuspended(int i) {
         Log.e("Google API Client", "Google Places API connection suspended.");
+        googleApiClientConnected = false;
     }
-
-    public void setDataProvider(DataProvider updater) { dataProvider = updater; }
 
     public void setCircleInfos(List<CircleInfo> info) { circles = info; }
 
@@ -203,9 +180,9 @@ public class ApplicationState
 
     public List<CircleInfo> getAllCircleInfo() { return circles; }
 
-    public DataProvider getDataProvider() { return dataProvider; }
+    public GoogleApiClient getGoogleApiClient() { return googleApiClient; }
 
-    public GoogleApiClient getGoogleApiClient() { return apiClient; }
+    public boolean isGoogleApiClientConnected() { return googleApiClientConnected; }
 
     public String getGoogleApiKey() { return GOOGLE_API_KEY; }
 

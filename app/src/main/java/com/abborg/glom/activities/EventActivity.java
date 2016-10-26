@@ -5,7 +5,6 @@ import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.TimePickerDialog;
 import android.content.Intent;
-import android.database.SQLException;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -32,6 +31,7 @@ import com.abborg.glom.ApplicationState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.data.DataProvider;
+import com.abborg.glom.di.ComponentInjector;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.User;
@@ -57,9 +57,15 @@ import org.joda.time.format.DateTimeFormatter;
 
 import java.util.List;
 
+import javax.inject.Inject;
+
 public class EventActivity extends AppCompatActivity {
 
-    private ApplicationState appState;
+    @Inject
+    ApplicationState appState;
+
+    @Inject
+    DataProvider dataProvider;
 
     public static final String TAG = "EventActivity";
     public static final String START_DATE_TAG = "CREATE_EVENT_START_DATE";
@@ -67,7 +73,6 @@ public class EventActivity extends AppCompatActivity {
     public static final String START_TIME_TAG = "CREATE_EVENT_START_TIME";
     public static final String END_TIME_TAG = "CREATE_EVENT_END_TIME";
 
-    private DataProvider dataProvider;
     private TextInputLayout nameTextLayout;
     private EditText nameText;
     private EditText startDateText;
@@ -99,14 +104,13 @@ public class EventActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ComponentInjector.INSTANCE.getApplicationComponent().inject(this);
 
         // set up all variables
         intent = getIntent();
         if (intent == null) {
             finishWithResult(null); // end abruptly if we don't know what MODE we're in
         }
-        appState = ApplicationState.getInstance();
-        dataProvider = appState.getDataProvider();
         startDateTime = null;
         endDateTime = null;
 
@@ -821,12 +825,7 @@ public class EventActivity extends AppCompatActivity {
 
     @Override
     protected void onResume() {
-        try {
-            dataProvider.open();
-        }
-        catch (SQLException ex) {
-            Log.e(TAG, ex.getMessage());
-        }
+        dataProvider.openDB();
 
         // make sure google api client for place api is connected
         appState.connectGoogleApiClient();

@@ -17,6 +17,7 @@ import android.widget.RelativeLayout;
 import com.abborg.glom.ApplicationState;
 import com.abborg.glom.R;
 import com.abborg.glom.adapters.UserAvatarAdapter;
+import com.abborg.glom.di.ComponentInjector;
 import com.abborg.glom.interfaces.BroadcastLocationListener;
 import com.abborg.glom.interfaces.CircleChangeListener;
 import com.abborg.glom.interfaces.UsersChangeListener;
@@ -25,6 +26,8 @@ import com.abborg.glom.utils.LayoutUtils;
 import com.nhaarman.listviewanimations.appearance.simple.ScaleInAnimationAdapter;
 
 import java.util.List;
+
+import javax.inject.Inject;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -37,6 +40,9 @@ public class CircleFragment extends Fragment implements
         CircleChangeListener,
         UsersChangeListener {
 
+    @Inject
+    ApplicationState appState;
+
     private static final String TAG = "CIRCLE_FRAGMENT";
 
     private List<User> users;
@@ -48,8 +54,6 @@ public class CircleFragment extends Fragment implements
 
     // Required empty public constructor
     public CircleFragment() {}
-
-    private ApplicationState appState;
 
     private GridView gridView;
 
@@ -75,8 +79,7 @@ public class CircleFragment extends Fragment implements
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        appState = ApplicationState.getInstance();
+        ComponentInjector.INSTANCE.getApplicationComponent().inject(this);
 
         if (appState != null && appState.getActiveCircle() != null) {
             users = appState.getActiveCircle().getUsers();
@@ -172,7 +175,7 @@ public class CircleFragment extends Fragment implements
     private void setAvatarBroadcastingAnimation(boolean isBroadcasting) {
         int avatarIndex = 0;
         for (User user : users) {
-            if (user.getId().equals(ApplicationState.getInstance().getActiveUser().getId())) {
+            if (user.getId().equals(appState.getActiveUser().getId())) {
                 View avatar = getAvatarByPosition(avatarIndex);
                 Log.d(TAG, "Setting broadcast animation for " + avatarIndex);
                 avatarAdapter.setUserIsBroadcastingLocation(avatar, isBroadcasting);

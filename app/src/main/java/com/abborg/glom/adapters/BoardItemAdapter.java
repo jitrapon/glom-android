@@ -22,6 +22,7 @@ import android.widget.TextView;
 
 import com.abborg.glom.ApplicationState;
 import com.abborg.glom.R;
+import com.abborg.glom.di.ComponentInjector;
 import com.abborg.glom.interfaces.BoardItemClickListener;
 import com.abborg.glom.interfaces.MultiSelectionListener;
 import com.abborg.glom.model.BoardItem;
@@ -55,12 +56,17 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.inject.Inject;
+
 /**
  * Handles the view logic to display items in a RecyclerView. The adapter can support
  * showing items in two layouts: the traditional linear layout and in a staggered grid.
  */
 public class BoardItemAdapter
         extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements MultiSelectionListener {
+
+    @Inject
+    ApplicationState appState;
 
     private static String TAG = "BoardItemAdapter";
 
@@ -363,6 +369,8 @@ public class BoardItemAdapter
      **************************************************/
 
     public BoardItemAdapter(Context ctx, List<BoardItem> models, BoardItemClickListener clickListener) {
+        ComponentInjector.INSTANCE.getApplicationComponent().inject(this);
+
         context = ctx;
         items = models;
         listener = clickListener;
@@ -886,7 +894,7 @@ public class BoardItemAdapter
             String placeName = event.getLocation()!=null ?
                     event.getLocation().getLatitude() + ", " + event.getLocation().getLongitude() :
                     context.getResources().getString(R.string.notify_retrieving_place_info);
-            GoogleApiClient apiClient = ApplicationState.getInstance().getGoogleApiClient();
+            GoogleApiClient apiClient = appState.getGoogleApiClient();
             if (apiClient != null && apiClient.isConnected()) {
                 PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(apiClient, event.getPlace());
                 placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {

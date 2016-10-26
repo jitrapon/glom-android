@@ -1,11 +1,9 @@
 package com.abborg.glom.activities;
 
 import android.content.Intent;
-import android.database.SQLException;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
@@ -13,6 +11,7 @@ import android.widget.EditText;
 import com.abborg.glom.ApplicationState;
 import com.abborg.glom.R;
 import com.abborg.glom.data.DataProvider;
+import com.abborg.glom.di.ComponentInjector;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.NoteItem;
 
@@ -20,11 +19,17 @@ import org.joda.time.DateTime;
 
 import java.util.List;
 
+import javax.inject.Inject;
+
 public class NoteActivity extends AppCompatActivity {
 
     public static final String TAG = "NoteItemActivity";
 
-    private DataProvider dataProvider;
+    @Inject
+    ApplicationState appState;
+
+    @Inject
+    DataProvider dataProvider;
 
     private EditText titleText;
     private EditText contentText;
@@ -45,9 +50,9 @@ public class NoteActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_note);
+        ComponentInjector.INSTANCE.getApplicationComponent().inject(this);
 
-        dataProvider = ApplicationState.getInstance().getDataProvider();
+        setContentView(R.layout.activity_note);
 
         // set up all variables
         Intent intent = getIntent();
@@ -74,12 +79,7 @@ public class NoteActivity extends AppCompatActivity {
 
     @Override
     protected void onResume() {
-        try {
-            dataProvider.open();
-        }
-        catch (SQLException ex) {
-            Log.e(TAG, ex.getMessage());
-        }
+        dataProvider.openDB();
 
         super.onResume();
     }
@@ -112,11 +112,11 @@ public class NoteActivity extends AppCompatActivity {
         noteItem.setText(String.valueOf(contentText.getText()));
 
         if (mode == Mode.CREATE) {
-            dataProvider.createNoteAsync(ApplicationState.getInstance().getActiveCircle(),
+            dataProvider.createNoteAsync(appState.getActiveCircle(),
                     DateTime.now(), noteItem, true);
         }
         else if (mode == Mode.UPDATE) {
-            dataProvider.updateNoteAsync(ApplicationState.getInstance().getActiveCircle(), DateTime.now(), noteItem, true);
+            dataProvider.updateNoteAsync(appState.getActiveCircle(), DateTime.now(), noteItem, true);
         }
 
         finish();
@@ -133,7 +133,7 @@ public class NoteActivity extends AppCompatActivity {
         switch (mode) {
 
             case CREATE:
-                noteItem = NoteItem.createNote(ApplicationState.getInstance().getActiveCircle());
+                noteItem = NoteItem.createNote(appState.getActiveCircle());
                 if (getSupportActionBar() != null) {
                     getSupportActionBar().setTitle(getString(R.string.title_activity_new_note_item));
                 }
@@ -143,7 +143,7 @@ public class NoteActivity extends AppCompatActivity {
                     getSupportActionBar().setTitle(getString(R.string.title_activity_edit_note_item));
                 }
                 String id = intent.getStringExtra(getString(R.string.EXTRA_NOTE_ID));
-                List<BoardItem> boardItems = ApplicationState.getInstance().getActiveCircle().getItems();
+                List<BoardItem> boardItems = appState.getActiveCircle().getItems();
                 for (BoardItem item : boardItems) {
                     if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_NOTE) {
                         noteItem = (NoteItem) item;
@@ -160,7 +160,7 @@ public class NoteActivity extends AppCompatActivity {
                     getSupportActionBar().setTitle(getString(R.string.title_activity_view_note_item));
                 }
                 String id = intent.getStringExtra(getString(R.string.EXTRA_NOTE_ID));
-                List<BoardItem> boardItems = ApplicationState.getInstance().getActiveCircle().getItems();
+                List<BoardItem> boardItems = appState.getActiveCircle().getItems();
                 for (BoardItem item : boardItems) {
                     if (item.getId().equals(id) && item.getType() == BoardItem.TYPE_NOTE) {
                         noteItem = (NoteItem) item;

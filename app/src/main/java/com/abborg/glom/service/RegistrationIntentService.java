@@ -10,7 +10,8 @@ import android.widget.Toast;
 
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
-import com.abborg.glom.utils.RequestHandler;
+import com.abborg.glom.di.ComponentInjector;
+import com.abborg.glom.utils.HttpClient;
 import com.abborg.glom.interfaces.ResponseListener;
 import com.android.volley.VolleyError;
 import com.google.android.gms.gcm.GcmPubSub;
@@ -22,10 +23,15 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 
+import javax.inject.Inject;
+
 /**
  * Created by Boat on 13/9/58.
  */
 public class RegistrationIntentService extends IntentService {
+
+    @Inject
+    HttpClient httpClient;
 
     private static final String TAG = "RegIntentService";
     private static final String[] TOPICS = {"global"};
@@ -34,6 +40,12 @@ public class RegistrationIntentService extends IntentService {
 
     public RegistrationIntentService() {
         super(TAG);
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        ComponentInjector.INSTANCE.getApplicationComponent().inject(this);
     }
 
     @Override
@@ -95,7 +107,7 @@ public class RegistrationIntentService extends IntentService {
         }
 
         final IntentService ctx = this;
-        RequestHandler.getInstance(ctx).post("Check In", Const.API_CHECKIN, body, new ResponseListener() {
+        httpClient.post("Check In", Const.API_CHECKIN, body, new ResponseListener() {
             @Override
             public void onSuccess(JSONObject response) {
                 if (response != null) {
@@ -117,7 +129,7 @@ public class RegistrationIntentService extends IntentService {
 
             @Override
             public void onError(VolleyError error) {
-                RequestHandler.getInstance(ctx).handleError(error);
+                httpClient.handleError(error);
             }
         });
     }

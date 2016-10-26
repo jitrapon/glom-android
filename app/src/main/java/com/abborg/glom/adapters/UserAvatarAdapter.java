@@ -12,11 +12,14 @@ import android.widget.TextView;
 
 import com.abborg.glom.ApplicationState;
 import com.abborg.glom.R;
+import com.abborg.glom.di.ComponentInjector;
 import com.abborg.glom.model.User;
 import com.abborg.glom.utils.CircleTransform;
 import com.bumptech.glide.Glide;
 
 import java.util.List;
+
+import javax.inject.Inject;
 
 /**
  * This class is responsible for providing the view the information it needs to render
@@ -24,6 +27,9 @@ import java.util.List;
  * Created by Boat on 30/9/58.
  */
 public class UserAvatarAdapter extends BaseAdapter {
+
+    @Inject
+    ApplicationState appState;
 
     private Context context;
 
@@ -36,6 +42,8 @@ public class UserAvatarAdapter extends BaseAdapter {
     private Animation broadcastLocationAnimation;
 
     public UserAvatarAdapter(Context context, List<User> users) {
+        ComponentInjector.INSTANCE.getApplicationComponent().inject(this);
+
         this.context = context;
         this.users = users;
 
@@ -138,7 +146,6 @@ public class UserAvatarAdapter extends BaseAdapter {
         holder.secondaryText.setText(user.getId());
 
         // start any animation regarding the user state
-        ApplicationState appState = ApplicationState.getInstance();
         if (user.getId().equals(appState.getActiveUser().getId())) {
             setUserIsBroadcastingLocation(convertView, appState.getActiveCircle().isUserBroadcastingLocation());
         }

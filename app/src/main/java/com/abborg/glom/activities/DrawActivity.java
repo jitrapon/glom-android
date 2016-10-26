@@ -35,6 +35,7 @@ import com.abborg.glom.ApplicationState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.data.DataProvider;
+import com.abborg.glom.di.ComponentInjector;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.DrawItem;
@@ -49,6 +50,8 @@ import org.joda.time.Instant;
 
 import java.io.InputStream;
 
+import javax.inject.Inject;
+
 /**
  * This activity handles live drawItem and drawing board item. It contains a custom view
  * CanvasView
@@ -57,15 +60,20 @@ import java.io.InputStream;
  */
 @SuppressLint("SetJavaScriptEnabled")
 public class DrawActivity extends AppCompatActivity implements
-        CanvasView.CanvasEventListener, Handler.Callback, ColorPickerDialog.OnColorSelectedListener {
+        CanvasView.CanvasEventListener,
+        Handler.Callback,
+        ColorPickerDialog.OnColorSelectedListener {
 
     private static final String TAG = "DrawActivity";
 
-    /** Item state information **/
+    @Inject
     ApplicationState appState;
+
+    @Inject
+    DataProvider dataProvider;
+
     Circle circle;
     User user;
-    DataProvider dataProvider;
     DrawItem drawItem;
 
     CanvasView canvas;
@@ -111,14 +119,10 @@ public class DrawActivity extends AppCompatActivity implements
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ComponentInjector.INSTANCE.getApplicationComponent().inject(this);
 
-        appState = ApplicationState.getInstance();
-        if (appState == null || appState.getDataProvider() == null || getIntent() == null) {
-            finish();
-        }
         circle = appState.getActiveCircle();
         user = appState.getActiveUser();
-        dataProvider = appState.getDataProvider();
         handler = new Handler(this);
         shouldCreateRoom = getIntent().getAction().equals(getResources().getString(R.string.ACTION_CREATE_DRAWING));
         savedFilePath = getIntent().getStringExtra(getResources().getString(R.string.EXTRA_DRAWING_PATH));
@@ -166,7 +170,7 @@ public class DrawActivity extends AppCompatActivity implements
         if (drawItem == null) super.onBackPressed();
         else {
             String name = TextUtils.isEmpty(drawItem.getName()) ? drawItem.getId() : drawItem.getName();
-            final String savedFile = ApplicationState.getInstance().getExternalFilesDir().getPath() + "/" + name + ".png";
+            final String savedFile = appState.getExternalFilesDir().getPath() + "/" + name + ".png";
 
             final Snackbar snackbar = Snackbar.make(
                     rootView, getString(R.string.notification_saving_bitmap), Snackbar.LENGTH_INDEFINITE);

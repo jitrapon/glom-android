@@ -25,6 +25,7 @@ import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.adapters.ChatMessageAdapter;
 import com.abborg.glom.data.DataProvider;
+import com.abborg.glom.di.ComponentInjector;
 import com.abborg.glom.interfaces.OnMessageClickListener;
 import com.abborg.glom.model.BaseChatMessage;
 import com.abborg.glom.model.ChatMessage;
@@ -35,19 +36,26 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import javax.inject.Inject;
+
 import static com.abborg.glom.model.BaseChatMessage.OutgoingStatus;
 
-public class ChatActivity extends AppCompatActivity implements View.OnClickListener, Handler.Callback,
+public class ChatActivity extends AppCompatActivity implements
+        View.OnClickListener,
+        Handler.Callback,
         OnMessageClickListener {
 
-    /** Circle state information **/
+    @Inject
     ApplicationState appState;
-    Circle circle;
-    User user;
+
+    @Inject
     DataProvider dataProvider;
 
-    /** model **/
-    List<BaseChatMessage> messages;
+    private Circle circle;
+
+    private User user;
+
+    private List<BaseChatMessage> messages;
 
     /** UI elements **/
     private static final String TAG = "ChatActivity";
@@ -65,17 +73,12 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ComponentInjector.INSTANCE.getApplicationComponent().inject(this);
 
         handler = new Handler(this);
 
-        //TODO load circle info if null
-        appState = ApplicationState.getInstance();
-        if (appState == null || appState.getDataProvider() == null) {
-            finish();
-        }
         circle = appState.getActiveCircle();
         user = appState.getActiveUser();
-        dataProvider = appState.getDataProvider();
         messages = new ArrayList<>();
 
         setContentView(R.layout.activity_chat);
