@@ -18,15 +18,13 @@ import com.abborg.glom.ApplicationState;
 import com.abborg.glom.R;
 import com.abborg.glom.adapters.NavigationDrawerAdapter;
 import com.abborg.glom.di.ComponentInjector;
+import com.abborg.glom.interfaces.CircleListListener;
 import com.abborg.glom.interfaces.ClickListener;
-import com.abborg.glom.model.CircleInfo;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.inject.Inject;
 
-public class DrawerFragment extends Fragment {
+public class DrawerFragment extends Fragment implements
+        CircleListListener {
 
     @Inject
     ApplicationState appState;
@@ -41,8 +39,6 @@ public class DrawerFragment extends Fragment {
 
     private View containerView;
 
-    private static List<CircleInfo> circles;
-
     private FragmentDrawerListener drawerListener;
 
     public DrawerFragment() {
@@ -50,18 +46,6 @@ public class DrawerFragment extends Fragment {
 
     public void setDrawerListener(FragmentDrawerListener listener) {
         this.drawerListener = listener;
-    }
-
-    public static List<CircleInfo> getData() {
-        List<CircleInfo> data = new ArrayList<>();
-
-        //TODO retrieve Circle list from SQLite or server
-        //preparing navigation drawer items
-        for (CircleInfo c : circles) {
-            data.add(c);
-        }
-
-        return data;
     }
 
     @Override
@@ -73,16 +57,14 @@ public class DrawerFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflating view layout
         View layout = inflater.inflate(R.layout.fragment_navigation_drawer, container, false);
         recyclerView = (RecyclerView) layout.findViewById(R.id.drawerList);
 
         return layout;
     }
 
-    public void setUp(int fragmentId, DrawerLayout drawerLayout, final Toolbar toolbar) {
-        circles = appState.getAllCircleInfo();
-        adapter = new NavigationDrawerAdapter(getActivity(), getData());
+    public void init(int fragmentId, DrawerLayout drawerLayout, final Toolbar toolbar) {
+        adapter = new NavigationDrawerAdapter(getActivity(), appState.getCircleList());
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         recyclerView.addOnItemTouchListener(new RecyclerTouchListener(getActivity(), recyclerView, new ClickListener() {
@@ -176,5 +158,11 @@ public class DrawerFragment extends Fragment {
 
     public interface FragmentDrawerListener {
         void onDrawerItemSelected(View view, int position);
+    }
+
+
+    @Override
+    public void onCircleListChanged() {
+        adapter.update(appState.getCircleList());
     }
 }

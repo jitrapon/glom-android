@@ -5,8 +5,10 @@ import android.graphics.Bitmap;
 import android.support.v4.util.LruCache;
 import android.widget.Toast;
 
+import com.abborg.glom.ApplicationState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
+import com.abborg.glom.di.ComponentInjector;
 import com.abborg.glom.interfaces.ResponseListener;
 import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkError;
@@ -30,6 +32,8 @@ import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.inject.Inject;
+
 /**
  * Created by Boat on 8/9/58.
  *
@@ -38,6 +42,9 @@ import java.util.Map;
  * Use this class with the Application context.
  */
 public class HttpClient {
+
+    @Inject
+    ApplicationState appState;
 
     /* Google RequestQueue instance */
     private RequestQueue requestQueue;
@@ -51,6 +58,7 @@ public class HttpClient {
     private static final String TAG = "Network";
 
     public HttpClient(Context context) {
+        ComponentInjector.INSTANCE.getApplicationComponent().inject(this);
         this.context = context;
         requestQueue = getRequestQueue();
 
@@ -235,6 +243,7 @@ public class HttpClient {
             public Map<String, String> getHeaders() throws AuthFailureError {
                 HashMap<String, String> headers = new HashMap<String, String>();
                 headers.put(Const.API_AUTHORIZATION_HEADER, Const.TEST_API_AUTHORIZATION_HEADER);
+                headers.put(Const.API_USERID_HEADER, appState.getActiveUser().getId());
                 return headers;
             }
 
@@ -284,6 +293,7 @@ public class HttpClient {
             public Map<String, String> getHeaders() throws AuthFailureError {
                 HashMap<String, String> headers = new HashMap<String, String>();
                 headers.put(Const.API_AUTHORIZATION_HEADER, Const.TEST_API_AUTHORIZATION_HEADER);
+                headers.put(Const.API_USERID_HEADER, appState.getActiveUser().getId());
                 return headers;
             }
 
@@ -333,6 +343,7 @@ public class HttpClient {
             public Map<String, String> getHeaders() throws AuthFailureError {
                 HashMap<String, String> headers = new HashMap<String, String>();
                 headers.put(Const.API_AUTHORIZATION_HEADER, Const.TEST_API_AUTHORIZATION_HEADER);
+                headers.put(Const.API_USERID_HEADER, appState.getActiveUser().getId());
                 return headers;
             }
 

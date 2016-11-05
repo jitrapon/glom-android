@@ -81,10 +81,12 @@ import com.abborg.glom.interfaces.ActionModeCallbacks;
 import com.abborg.glom.interfaces.BoardItemChangeListener;
 import com.abborg.glom.interfaces.BroadcastLocationListener;
 import com.abborg.glom.interfaces.CircleChangeListener;
+import com.abborg.glom.interfaces.CircleListListener;
 import com.abborg.glom.interfaces.DiscoverItemChangeListener;
 import com.abborg.glom.interfaces.UsersChangeListener;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
+import com.abborg.glom.model.CircleInfo;
 import com.abborg.glom.model.CloudProvider;
 import com.abborg.glom.model.DiscoverItem;
 import com.abborg.glom.model.DrawItem;
@@ -170,28 +172,13 @@ public class MainActivity extends AppCompatActivity implements
     private Handler handler;
 
     /**
-     * User list change listeners
+     * Listener callbacks
      */
+    private List<CircleListListener> circleListListeners;
     private List<UsersChangeListener> usersChangeListeners;
-
-    /**
-     * Circle change listeners
-     */
     private List<CircleChangeListener> circleChangeListeners;
-
-    /**
-     * Board item change listeners
-     */
     private List<BoardItemChangeListener> boardItemChangeListeners;
-
-    /**
-     * Broadcast location listeners
-     */
     private List<BroadcastLocationListener> broadcastLocationListeners;
-
-    /**
-     * Discover item change listeners
-     */
     private List<DiscoverItemChangeListener> discoverItemChangeListeners;
 
     /**
@@ -208,6 +195,7 @@ public class MainActivity extends AppCompatActivity implements
     private boolean willLaunchBrowser;
 
     // UI elements
+    private DrawerFragment drawerFragment;
     private TabLayout tabLayout;
     private FloatingActionMenu avatarActionMenu;
     private Animation fadeInAnim;
@@ -249,6 +237,7 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.d(TAG, "OnCreate()");
         super.onCreate(savedInstanceState);
         ComponentInjector.INSTANCE.getApplicationComponent().inject(this);
 
@@ -268,6 +257,7 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     protected void onStart() {
+        Log.d(TAG, "onStart()");
         super.onStart();
 
         // connect to the Google Play API
@@ -373,9 +363,9 @@ public class MainActivity extends AppCompatActivity implements
         }
 
         // set up the navigation drawer
-        DrawerFragment drawerFragment = (DrawerFragment)
+        drawerFragment = (DrawerFragment)
                 getSupportFragmentManager().findFragmentById(R.id.fragment_navigation_drawer);
-        drawerFragment.setUp(R.id.fragment_navigation_drawer, (DrawerLayout) findViewById(R.id.drawer_layout), toolbar);
+        drawerFragment.init(R.id.fragment_navigation_drawer, (DrawerLayout) findViewById(R.id.drawer_layout), toolbar);
         drawerFragment.setDrawerListener(this);
 
         // set up the bottom sheets
@@ -845,6 +835,8 @@ public class MainActivity extends AppCompatActivity implements
      **************************************************/
 
     private void setupCallbackListeners() {
+        addCircleListListener(drawerFragment);
+
         addUsersChangeListener((CircleFragment) adapter.getItem(0));
         addUsersChangeListener((LocationFragment) adapter.getItem(1));
 
@@ -861,6 +853,13 @@ public class MainActivity extends AppCompatActivity implements
         addDiscoverItemChangeListener((DiscoverFragment) adapter.getItem(3));
 
         actionModeCallbacks = ((BoardFragment) adapter.getItem(2));
+    }
+
+    private void addCircleListListener(CircleListListener listener) {
+        if (circleListListeners == null) {
+            circleListListeners = new ArrayList<>();
+        }
+        circleListListeners.add(listener);
     }
 
     private void addUsersChangeListener(UsersChangeListener listener) {
@@ -1457,6 +1456,40 @@ public class MainActivity extends AppCompatActivity implements
                     handler.sendEmptyMessage(Const.MSG_SERVER_DISCONNECTED);
                 }
                 else {
+                    dataProvider.requestGetCirclesInfo();
+                }
+
+                break;
+            }
+
+            /* On circle list populated */
+            case Const.MSG_GET_CIRCLES: {
+                List<CircleInfo> circles = (List<CircleInfo>) msg.obj;
+                appState.setCircleList(circles);
+                Log.d(TAG, "AppState circle list size: " + appState.getCircleList().size());
+                if (circles.isEmpty()) {
+                    //TODO show screen that user is not in any circles
+                }
+                else {
+                    if (circleListListeners != null) {
+                        for (CircleListListener listener : circleListListeners) {
+                            listener.onCircleListChanged();
+                        }
+                    }
+
+                    for (CircleInfo circle : circles) {
+                        if (circle.id.equals(appState.getActiveCircle().getId())) {
+                            Circle activeCircle = appState.getActiveCircle();
+                            activeCircle.setTitle(circle.name);
+                            activeCircle.setAvatar(circle.avatar);
+                            activeCircle.setInfo(circle.info);
+                            break;
+                        }
+                    }
+
+                    getSupportActionBar().setTitle(appState.getActiveCircle().getTitle()
+                            + " (" + appState.getActiveCircle().getUsers().size() + ")");
+
                     dataProvider.requestGetUsersInCircle(appState.getActiveCircle());
                 }
 
@@ -1498,6 +1531,9 @@ public class MainActivity extends AppCompatActivity implements
                             + ", " + circle.getUsers().size() + " users, " + circle.getItems().size() + " items");
                     appState.setActiveCircle(circle);
                     showCircle(circle);
+
+                    // refresh users
+                    dataProvider.requestGetUsersInCircle(appState.getActiveCircle());
                 }
 
                 break;
@@ -2464,7 +2500,8 @@ public class MainActivity extends AppCompatActivity implements
      **********************************************************/
     @Override
     public void onDrawerItemSelected(View view, int position) {
-        dataProvider.getCircleByIdAsync(appState.getAllCircleInfo().get(position).id);
+        dataProvider.cancelAllNetworkRequests();
+        dataProvider.getCircleByIdAsync(appState.getCircleList().get(position).id);
     }
 
     /**********************************************************

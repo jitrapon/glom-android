@@ -4,7 +4,11 @@ public class CircleInfo {
 
     public String id;
 
-    public String title;
+    public String name;
+
+    public String avatar;
+
+    public String info;
 
     public int numUsers;
 }

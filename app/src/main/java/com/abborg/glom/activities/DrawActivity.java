@@ -177,7 +177,7 @@ public class DrawActivity extends AppCompatActivity implements
             snackbar.show();
 
             // save the bitmap on a worker thread, then finishes the activity
-            dataProvider.run(new Runnable() {
+            dataProvider.executeAsync(new Runnable() {
                 @Override
                 public void run() {
                     FileUtils.saveBitmapAsFile(canvas.getBitmap(), savedFile);

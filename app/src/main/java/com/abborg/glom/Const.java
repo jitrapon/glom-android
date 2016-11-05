@@ -49,6 +49,8 @@ public class Const {
     /************************
      * API
      ************************/
+    public static final String API_CIRCLES = "/circles";
+    public static final String API_USERID_HEADER = "user-id";
     public static final String API_AUTHORIZATION_HEADER = "Authorization";
     public static final String API_CHECKIN = "/checkin";
     public static final String API_LOCATION = "/location";
@@ -128,6 +130,11 @@ public class Const {
     public static final String JSON_SERVER_LISTITEM_TEXT = "text";
     public static final String JSON_SERVER_NOTE_TITLE = "title";
     public static final String JSON_SERVER_NOTE_TEXT = "text";
+    public static final String JSON_SERVER_CIRCLES = "circles";
+    public static final String JSON_SERVER_CIRCLES_ID = "circle_id";
+    public static final String JSON_SERVER_CIRCLES_AVATAR = "avatar";
+    public static final String JSON_SERVER_CIRCLES_NAME = "name";
+    public static final String JSON_SERVER_CIRCLES_INFO = "info";
 
     /**
      * HANDLER MESSAGE ID
@@ -194,6 +201,7 @@ public class Const {
     public static final int MSG_NOTE_UPDATED_SUCCESS = 5071;
     public static final int MSG_NOTE_UPDATED_FAILED = 5072;
     public static final int MSG_GOOGLE_PLAY_SERVICES_UNAVAILABLE = 5073;
+    public static final int MSG_GET_CIRCLES = 5074;
 
     /************************
      * Mimetypes

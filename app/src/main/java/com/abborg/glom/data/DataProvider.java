@@ -103,10 +103,19 @@ public class DataProvider {
     /* Database */
     private SQLiteDatabase database;
     private DBHelper dbHelper;
-    private String[] circleColumns = { DBHelper.CIRCLE_COLUMN_ID,
-            DBHelper.CIRCLE_COLUMN_NAME, DBHelper.CIRCLE_COLUMN_BROADCAST_LOCATION };
-    private String[] userCircleColumns = { DBHelper.USERCIRCLE_COLUMN_USER_ID, DBHelper.USERCIRCLE_COLUMN_CIRCLE_ID,
-            DBHelper.USERCIRCLE_COLUMN_LATITUDE, DBHelper.USERCIRCLE_COLUMN_LONGITUDE };
+    private String[] circleColumns = {
+            DBHelper.CIRCLE_COLUMN_ID,
+            DBHelper.CIRCLE_COLUMN_NAME,
+            DBHelper.CIRCLE_COLUMN_AVATAR,
+            DBHelper.CIRCLE_COLUMN_INFO,
+            DBHelper.CIRCLE_COLUMN_BROADCAST_LOCATION
+    };
+    private String[] userCircleColumns = {
+            DBHelper.USERCIRCLE_COLUMN_USER_ID,
+            DBHelper.USERCIRCLE_COLUMN_CIRCLE_ID,
+            DBHelper.USERCIRCLE_COLUMN_LATITUDE,
+            DBHelper.USERCIRCLE_COLUMN_LONGITUDE
+    };
 
     /* Determines the type of app start */
     private enum AppStart {
@@ -136,8 +145,12 @@ public class DataProvider {
 
     public Handler getHandler() { return handler; }
 
+    /*************************************************
+     * HELPERS
+     *************************************************/
+
     public void loadDataAsync() {
-        run(new Runnable() {
+        executeAsync(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -148,6 +161,7 @@ public class DataProvider {
                     if (user == null) {
                         user = createUser(getActiveUserId());
                     }
+                    appState.setActiveUser(user);
 
                     // determine if the user has launched the app before and what version
                     AppStart appStart = checkAppStart();
@@ -161,16 +175,15 @@ public class DataProvider {
                         case FIRST_TIME:
                             Log.d("INIT", "App has not been launched before, resetting the state to default");
                             resetCircles();
-                            createCircle(context.getResources().getString(R.string.friends_circle_title), null, Const.TEST_CIRCLE_ID);
+                            createCircle(context.getResources().getString(R.string.friends_circle_title), null, getActiveCircleId());
                             break;
                         default:
                     }
 
                     // finally before finishing this async task, set the appropriate fields in the AppState
                     List<CircleInfo> circleInfoList = getCirclesInfo();
-                    Circle circle = getCircleById(Const.TEST_CIRCLE_ID);
-                    appState.setActiveUser(user);
-                    appState.setCircleInfos(circleInfoList);
+                    Circle circle = getCircleById(getActiveCircleId());
+                    appState.setCircleList(circleInfoList);
                     appState.setActiveCircle(circle);
 
                     if (handler != null) {
@@ -258,6 +271,14 @@ public class DataProvider {
         dbHelper.close();
     }
 
+    public void executeAsync(Runnable runnable) {
+        threadPool.submit(runnable);
+    }
+
+    /*************************************************
+     * GENERIC SERVER AND NETWORK OPERATIONS
+     *************************************************/
+
     public void cancelAllNetworkRequests() {
         httpClient.getRequestQueue().cancelAll(new RequestQueue.RequestFilter() {
             @Override
@@ -296,14 +317,15 @@ public class DataProvider {
         });
     }
 
-    public void run(Runnable runnable) {
-        threadPool.submit(runnable);
-    }
-
     /*************************************************
      * CIRCLE OPERATIONS
      *************************************************/
-    public void resetCircles() {
+
+    private String getActiveCircleId() {
+        return Const.TEST_CIRCLE_ID;
+    }
+
+    private void resetCircles() {
         try {
             database.beginTransaction();
 
@@ -317,6 +339,84 @@ public class DataProvider {
         finally {
             database.endTransaction();
         }
+    }
+
+    public void requestGetCirclesInfo() {
+        httpClient.get("Get Circles", Const.API_CIRCLES,
+                new ResponseListener() {
+                    @Override
+                    public void onSuccess(JSONObject resp) {
+                        handleNetworkSuccess();
+
+                        final JSONObject response = resp;
+
+                        executeAsync(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    List<CircleInfo> circles = new ArrayList<>();
+                                    JSONArray jsonArray = response.getJSONArray(Const.JSON_SERVER_CIRCLES);
+
+                                    //TODO process circle list
+                                    //TODO Mark circles as dirty
+                                    Log.d(TAG, jsonArray.toString(4));
+
+                                    for (int i = 0; i < jsonArray.length(); i++) {
+                                        JSONObject circleJson = jsonArray.getJSONObject(i);
+                                        CircleInfo circle = new CircleInfo();
+                                        circle.id = circleJson.getString(Const.JSON_SERVER_CIRCLES_ID);
+                                        circle.avatar = circleJson.getString(Const.JSON_SERVER_CIRCLES_AVATAR);
+                                        circle.name = circleJson.getString(Const.JSON_SERVER_CIRCLES_NAME);
+                                        circle.info = circleJson.getString(Const.JSON_SERVER_CIRCLES_INFO);
+                                        circles.add(circle);
+
+                                        // update or create new circle(s) in DB
+                                        if (!updateCircleDB(circle)) {
+                                            createCircle(circle.name, null, circle.id);
+                                        }
+                                    }
+
+                                    if (handler != null) {
+                                        handler.sendMessage(handler.obtainMessage(Const.MSG_GET_CIRCLES, circles));
+                                    }
+                                }
+                                catch (Exception ex) {
+                                    Log.e(TAG, ex.getMessage());
+                                }
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(VolleyError error) {
+                        handleNetworkError(error);
+                    }
+                });
+    }
+
+    private boolean updateCircleDB(CircleInfo circle) {
+        int rows = 0;
+        if (circle != null) {
+            database.beginTransaction();
+
+            try {
+                ContentValues values = new ContentValues();
+                values.put(DBHelper.CIRCLE_COLUMN_NAME, circle.name);
+                values.put(DBHelper.CIRCLE_COLUMN_AVATAR, circle.avatar);
+                values.put(DBHelper.CIRCLE_COLUMN_INFO, circle.info);
+                rows = database.update(DBHelper.TABLE_CIRCLES, values, DBHelper.CIRCLE_COLUMN_ID + "='" + circle.id + "'", null);
+                Log.d(TAG, "Updating table circle id " + circle.id + " with name: " + circle.name + ", " + rows + " row(s) affected");
+
+                database.setTransactionSuccessful();
+            }
+            catch (SQLException ex) {
+                Log.e(TAG, ex.getMessage());
+            }
+            finally {
+                database.endTransaction();
+            }
+        }
+        return rows > 0;
     }
 
     public Circle createCircle(String name, List<User> users, String id) {
@@ -351,8 +451,8 @@ public class DataProvider {
                 values.clear();
                 values.put(DBHelper.USERCIRCLE_COLUMN_USER_ID, user.getId());
                 values.put(DBHelper.USERCIRCLE_COLUMN_CIRCLE_ID, circle.getId());
-                values.put(DBHelper.USERCIRCLE_COLUMN_LATITUDE, user.getLocation().getLatitude());
-                values.put(DBHelper.USERCIRCLE_COLUMN_LONGITUDE, user.getLocation().getLongitude());
+                values.put(DBHelper.USERCIRCLE_COLUMN_LATITUDE, user.getLocation() == null ? 0 : user.getLocation().getLatitude());
+                values.put(DBHelper.USERCIRCLE_COLUMN_LONGITUDE, user.getLocation() == null ? 0 : user.getLocation().getLongitude());
                 insertId = database.insert(DBHelper.TABLE_USER_CIRCLE, null, values);
                 Log.d(TAG, "Inserted user with _id: " + insertId + ", userId: " + user.getId()
                         + ", circleId: " + circle.getId() + " into " + DBHelper.TABLE_USER_CIRCLE);
@@ -398,8 +498,10 @@ public class DataProvider {
 
     private Circle serializeCircle(Cursor cursor) {
         Circle circle = Circle.createCircle(null, appState.getActiveUser());
-        circle.setId(cursor.getString(0));
-        circle.setTitle(cursor.getString(1));
+        circle.setId(cursor.getString((cursor.getColumnIndex(DBHelper.CIRCLE_COLUMN_ID))));
+        circle.setTitle(cursor.getString(cursor.getColumnIndex(DBHelper.CIRCLE_COLUMN_NAME)));
+        circle.setAvatar(cursor.getString(cursor.getColumnIndex(DBHelper.CIRCLE_COLUMN_AVATAR)));
+        circle.setInfo(cursor.getString(cursor.getColumnIndex(DBHelper.CIRCLE_COLUMN_INFO)));
         circle.setBroadcastingLocation((cursor.getInt(cursor.getColumnIndex(DBHelper.CIRCLE_COLUMN_BROADCAST_LOCATION)) == 1));
 
         List<User> users = getUsersInCircle(circle);
@@ -412,7 +514,7 @@ public class DataProvider {
     private CircleInfo serializeCircleInfo(Cursor cursor) {
         CircleInfo info = new CircleInfo();
         info.id = cursor.getString(0);
-        info.title = cursor.getString(1);
+        info.name = cursor.getString(1);
 
         Cursor userListCursor = database.query(DBHelper.TABLE_USER_CIRCLE, userCircleColumns, DBHelper.USERCIRCLE_COLUMN_CIRCLE_ID + "='" + info.id + "'",
                 null, null, null, null);
@@ -437,7 +539,7 @@ public class DataProvider {
     }
 
     public void getCircleByIdAsync(final String id) {
-        run(new Runnable() {
+        executeAsync(new Runnable() {
 
             @Override
             public void run() {
@@ -602,7 +704,7 @@ public class DataProvider {
                         handleNetworkSuccess();
 
                         final JSONObject response = resp;
-                        run(new Runnable() {
+                        executeAsync(new Runnable() {
 
                             @Override
                             public void run() {
@@ -809,7 +911,7 @@ public class DataProvider {
                         handleNetworkSuccess();
 
                         final JSONObject respJson = response;
-                        run(new Runnable() {
+                        executeAsync(new Runnable() {
                             @Override
                             public void run() {
                                 try {
@@ -1166,7 +1268,7 @@ public class DataProvider {
 
     public void setSyncStatus(final BoardItem item, final int action, final int status) {
         if (item != null) {
-            run(new Runnable() {
+            executeAsync(new Runnable() {
                 @Override
                 public void run() {
                     if (!database.isOpen()) openDB();
@@ -1202,7 +1304,7 @@ public class DataProvider {
         event.setEventInfo(name, startTime, endTime, placeId, location, note);
         event.setLastAction(new FeedAction(FeedAction.CREATE, appState.getActiveUser(), createdTime));
 
-        run(new Runnable() {
+        executeAsync(new Runnable() {
             @Override
             public void run() {
                 createEventDB(circle, createdTime, event, sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
@@ -1360,7 +1462,7 @@ public class DataProvider {
             event.setLocation(location);
             event.setNote(note);
 
-            run(new Runnable() {
+            executeAsync(new Runnable() {
                 @Override
                 public void run() {
                     updateEventDB(updatedTime, event, sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
@@ -1503,7 +1605,7 @@ public class DataProvider {
     }
 
     public void deleteItemAsync(final String id, final Circle circle, final boolean sync) {
-        run(new Runnable() {
+        executeAsync(new Runnable() {
             @Override
             public void run() {
                 List<BoardItem> items = circle.getItems();
@@ -1581,7 +1683,7 @@ public class DataProvider {
                     new ResponseListener() {
                         @Override
                         public void onSuccess(JSONObject response) {
-                            run(new Runnable() {
+                            executeAsync(new Runnable() {
                                 @Override
                                 public void run() {
                                     deleteItemDB(item);
@@ -1649,7 +1751,7 @@ public class DataProvider {
      * FILE OPERATIONS
      *************************************************/
     public void postFilesAsync(final List<Uri> uriList, final Circle circle, final boolean sync) {
-        run(new Runnable() {
+        executeAsync(new Runnable() {
             @Override
             public void run() {
                 if (uriList != null && uriList.size() > 0) {
@@ -1754,7 +1856,7 @@ public class DataProvider {
             final String name = cursor.getString(nameIndex);
             final Long size = cursor.getLong(sizeIndex);
             cursor.close();
-            run(new Runnable() {
+            executeAsync(new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -1939,7 +2041,7 @@ public class DataProvider {
     }
 
     public void requestUploadFileRemote(final Circle circle, final FileItem file, final CloudProvider provider) {
-        run(new Runnable() {
+        executeAsync(new Runnable() {
             @Override
             public void run() {
                 fileTransfer.upload(provider, circle, file);
@@ -1948,7 +2050,7 @@ public class DataProvider {
     }
 
     public void requestDeleteFileRemote(final Circle circle, final FileItem file, final CloudProvider provider) {
-        run(new Runnable() {
+        executeAsync(new Runnable() {
             @Override
             public void run() {
                 fileTransfer.delete(provider, circle, file);
@@ -1957,7 +2059,7 @@ public class DataProvider {
     }
 
     public void requestDownloadFileRemote(final Circle circle, final FileItem file, final CloudProvider provider) {
-        run(new Runnable() {
+        executeAsync(new Runnable() {
             @Override
             public void run() {
                 fileTransfer.download(provider, circle, file);
@@ -2023,7 +2125,7 @@ public class DataProvider {
 
     public void postDrawingAsync(final String id, final String name, final String path,
                                  final Circle circle, final DateTime time, final boolean sync) {
-        run(new Runnable() {
+        executeAsync(new Runnable() {
             @Override
             public void run() {
                 if (!TextUtils.isEmpty(id)) {
@@ -2057,7 +2159,7 @@ public class DataProvider {
     }
 
     public void requestDeleteDrawingRemote(final Circle circle, final DrawItem item, final CloudProvider provider) {
-        run(new Runnable() {
+        executeAsync(new Runnable() {
             @Override
             public void run() {
                 fileTransfer.delete(provider, circle, item);
@@ -2066,7 +2168,7 @@ public class DataProvider {
     }
 
     public void requestUploadDrawingRemote(final Circle circle, final DrawItem item, final CloudProvider provider) {
-        run(new Runnable() {
+        executeAsync(new Runnable() {
             @Override
             public void run() {
                 fileTransfer.upload(provider, circle, item);
@@ -2091,7 +2193,7 @@ public class DataProvider {
             drawing.setUpdatedTime(time);
             drawing.setName(name);
 
-            run(new Runnable() {
+            executeAsync(new Runnable() {
                 @Override
                 public void run() {
                     // update db
@@ -2232,7 +2334,7 @@ public class DataProvider {
     }
 
     public void requestDownloadDrawingRemote(final Circle circle, final DrawItem drawItem, final CloudProvider provider) {
-        run(new Runnable() {
+        executeAsync(new Runnable() {
             @Override
             public void run() {
                 fileTransfer.download(provider, circle, drawItem);
@@ -2250,7 +2352,7 @@ public class DataProvider {
         link.setSyncStatus(sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
         link.setLastAction(new FeedAction(FeedAction.CREATE, appState.getActiveUser(), createdTime));
 
-        run(new Runnable() {
+        executeAsync(new Runnable() {
             @Override
             public void run() {
                 createLinkDB(circle, createdTime, link, sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
@@ -2381,7 +2483,7 @@ public class DataProvider {
             link.setLastAction(new FeedAction(FeedAction.EDITED, appState.getActiveUser(), updatedTime));
             link.setLinkInfo(url, null, null, null);
 
-            run(new Runnable() {
+            executeAsync(new Runnable() {
                 @Override
                 public void run() {
                     updateLinkDB(updatedTime, link, sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
@@ -2488,7 +2590,7 @@ public class DataProvider {
         list.setSyncStatus(sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
         list.setLastAction(new FeedAction(FeedAction.CREATE, appState.getActiveUser(), createdTime));
 
-        run(new Runnable() {
+        executeAsync(new Runnable() {
             @Override
             public void run() {
                 createListDB(circle, createdTime, list, sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
@@ -2695,7 +2797,7 @@ public class DataProvider {
     public void updateListAsync(final Circle circle, final DateTime updatedTime, final ListItem item, final boolean sync) {
         item.setLastAction(new FeedAction(FeedAction.EDITED, appState.getActiveUser(), updatedTime));
 
-        run(new Runnable() {
+        executeAsync(new Runnable() {
             @Override
             public void run() {
                 updateListDB(updatedTime, item, sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
@@ -2758,7 +2860,7 @@ public class DataProvider {
         item.setSyncStatus(sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
         item.setLastAction(new FeedAction(FeedAction.CREATE, appState.getActiveUser(), createdTime));
 
-        run(new Runnable() {
+        executeAsync(new Runnable() {
             @Override
             public void run() {
                 createNoteDB(circle, createdTime, item, sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
@@ -2857,7 +2959,7 @@ public class DataProvider {
     public void updateNoteAsync(final Circle circle, final DateTime updatedTime, final NoteItem item, final boolean sync) {
         item.setLastAction(new FeedAction(FeedAction.EDITED, appState.getActiveUser(), updatedTime));
 
-        run(new Runnable() {
+        executeAsync(new Runnable() {
             @Override
             public void run() {
                 updateNoteDB(updatedTime, item, sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
@@ -2974,7 +3076,7 @@ public class DataProvider {
 
     public void sendUpstreamMessage(final BaseChatMessage message) {
         if (message != null) {
-            run(new Runnable() {
+            executeAsync(new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -3010,7 +3112,7 @@ public class DataProvider {
                         handleNetworkSuccess();
 
                         final JSONObject respJson = response;
-                        run(new Runnable() {
+                        executeAsync(new Runnable() {
                             @Override
                             public void run() {
                                 try {

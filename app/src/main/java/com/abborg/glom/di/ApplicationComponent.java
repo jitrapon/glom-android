@@ -17,6 +17,7 @@ import com.abborg.glom.fragments.LocationFragment;
 import com.abborg.glom.service.CirclePushService;
 import com.abborg.glom.service.MessageService;
 import com.abborg.glom.service.RegistrationIntentService;
+import com.abborg.glom.utils.HttpClient;
 
 import javax.inject.Singleton;
 
@@ -29,6 +30,8 @@ public interface ApplicationComponent {
     void inject(MainActivity activity);
 
     void inject(DataProvider provider);
+
+    void inject(HttpClient httpClient);
 
     void inject(ChatActivity activity);
 

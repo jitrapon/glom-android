@@ -17,29 +17,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class Circle {
 
-    /**
-     * List of user in this circle
-     */
     private List<User> users;
 
-    /**
-     * User-defined title
-     */
     private String title;
 
-    /**
-     * Unique ID generated
-     */
+    private String avatar;
+
+    private String info;
+
     private String id;
 
-    /**
-     * Whether or not the current user is broadcasting location in this circle
-     */
     private AtomicBoolean userIsBroadcastingLocation;
 
-    /**
-     * List of saved items in this circle
-     */
     private List<BoardItem> items;
 
     /***********************************************************************************
@@ -84,6 +73,14 @@ public class Circle {
     public boolean isUserBroadcastingLocation() {
         return userIsBroadcastingLocation.get();
     }
+
+    public void setAvatar(String avatar) { this.avatar = avatar; }
+
+    public String getAvatar() { return avatar; }
+
+    public void setInfo(String info) { this.info = info; }
+
+    public String getInfo() { return info; }
 
     @Override
     public String toString() {

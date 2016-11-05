@@ -10,15 +10,12 @@ import android.widget.TextView;
 import com.abborg.glom.R;
 import com.abborg.glom.model.CircleInfo;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by Boat on 17/9/58.
- */
 public class NavigationDrawerAdapter extends RecyclerView.Adapter<NavigationDrawerAdapter.MyViewHolder> {
 
-    List<CircleInfo> data = Collections.emptyList();
+    private List<CircleInfo> circles;
 
     private LayoutInflater inflater;
 
@@ -27,37 +24,35 @@ public class NavigationDrawerAdapter extends RecyclerView.Adapter<NavigationDraw
     public NavigationDrawerAdapter(Context context, List<CircleInfo> data) {
         this.context = context;
         inflater = LayoutInflater.from(context);
-        this.data = data;
+        circles = data == null ? new ArrayList<CircleInfo>() : data;
     }
 
-    public void delete(int position) {
-        data.remove(position);
-        notifyItemRemoved(position);
+    public void update(List<CircleInfo> list) {
+        circles = list;
+        notifyDataSetChanged();
     }
 
     @Override
     public MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = inflater.inflate(R.layout.nav_drawer_row, parent, false);
-        MyViewHolder holder = new MyViewHolder(view);
-        return holder;
+        return new MyViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(MyViewHolder holder, int position) {
-        CircleInfo current = data.get(position);
-        int memberCount = current.numUsers;
-        holder.title.setText(current.title + " (" + memberCount + ")");
+        CircleInfo current = circles.get(position);
+        holder.title.setText(current.name);
     }
 
     @Override
     public int getItemCount() {
-        return data.size();
+        return circles == null ? 0 : circles.size();
     }
 
     class MyViewHolder extends RecyclerView.ViewHolder {
         TextView title;
 
-        public MyViewHolder(View itemView) {
+        MyViewHolder(View itemView) {
             super(itemView);
             title = (TextView) itemView.findViewById(R.id.circleTitle);
         }

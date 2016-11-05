@@ -168,7 +168,9 @@ public class ApplicationState implements
         googleApiClientConnected = false;
     }
 
-    public void setCircleInfos(List<CircleInfo> info) { circles = info; }
+    public void setCircleList(List<CircleInfo> info) {
+        circles = info;
+    }
 
     public void setActiveUser(User user) { activeUser = user; }
 
@@ -178,7 +180,7 @@ public class ApplicationState implements
 
     public Circle getActiveCircle() { return activeCircle; }
 
-    public List<CircleInfo> getAllCircleInfo() { return circles; }
+    public List<CircleInfo> getCircleList() { return circles; }
 
     public GoogleApiClient getGoogleApiClient() { return googleApiClient; }
 
