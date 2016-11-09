@@ -47,7 +47,7 @@
                 android:layout_toEndOf="@id/card_user_avatar"
                 android:paddingTop="@dimen/card_username_padding_top"
                 android:textSize="@dimen/card_supporting_text_size"
-                android:textColor="@color/cardPrimaryText"
+                android:textColor="@color/darkPrimaryText"
                 android:text="@string/card_host_name_placeholder"/>
 
             <TextView
@@ -83,7 +83,7 @@
             android:paddingTop="@dimen/card_primary_text_padding_top"
             android:paddingBottom="@dimen/card_primary_text_padding_bottom"
             android:textSize="@dimen/card_primary_text_size"
-            android:textColor="@color/cardPrimaryText"
+            android:textColor="@color/darkPrimaryText"
             android:text="@string/card_text_placeholder"
             android:maxLines="2"
             android:ellipsize="end" />

@@ -104,12 +104,12 @@ public class ListItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     if (isChecked) {
-                        content.setTextColor(ContextCompat.getColor(context, R.color.textColorLight));
+                        content.setTextColor(ContextCompat.getColor(context, R.color.darkSecondaryText));
                         content.setPaintFlags(content.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
                         listener.onItemSelected(getAdapterPosition(), item);
                     }
                     else {
-                        content.setTextColor(ContextCompat.getColor(context, R.color.textColorDark));
+                        content.setTextColor(ContextCompat.getColor(context, R.color.darkPrimaryText));
                         content.setPaintFlags(content.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
                         listener.onItemUnselected(getAdapterPosition(), item);
                     }

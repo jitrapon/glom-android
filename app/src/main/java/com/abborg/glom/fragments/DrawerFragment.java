@@ -57,8 +57,8 @@ public class DrawerFragment extends Fragment implements
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View layout = inflater.inflate(R.layout.fragment_navigation_drawer, container, false);
-        recyclerView = (RecyclerView) layout.findViewById(R.id.drawerList);
+        View layout = inflater.inflate(R.layout.fragment_drawer, container, false);
+        recyclerView = (RecyclerView) layout.findViewById(R.id.drawer_recycler_view);
 
         return layout;
     }

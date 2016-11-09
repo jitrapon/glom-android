@@ -43,7 +43,7 @@
                 android:layout_toRightOf="@+id/card_user_avatar"
                 android:paddingTop="@dimen/card_username_padding_top"
                 android:textSize="@dimen/card_supporting_text_size"
-                android:textColor="@color/cardPrimaryText"
+                android:textColor="@color/darkPrimaryText"
                 android:text="@string/card_host_name_placeholder"/>
 
             <TextView

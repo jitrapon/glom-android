@@ -122,7 +122,7 @@ public class UserAvatarAdapter extends BaseAdapter {
         // populate the images and texts
         if (convertView == null) {
             holder = new ViewHolder();
-            convertView = inflater.inflate(R.layout.user_avatar, null);
+            convertView = inflater.inflate(R.layout.avatar_user, null);
 
             holder.avatar = (ImageView) convertView.findViewById(R.id.userAvatar);
             holder.primaryText = (TextView) convertView.findViewById(R.id.userPrimaryText);

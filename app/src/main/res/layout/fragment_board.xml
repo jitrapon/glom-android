@@ -3,6 +3,7 @@
     android:id="@+id/circle_board_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/lightBackground"
     tools:context=".fragments.BoardFragment">
 
     <android.support.v4.widget.SwipeRefreshLayout

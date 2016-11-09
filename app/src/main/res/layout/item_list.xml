@@ -48,7 +48,7 @@
         android:layout_height="wrap_content"
         android:minHeight="@dimen/list_item_height"
         android:textSize="@dimen/list_item_text_size"
-        android:textColor="@color/cardPrimaryText"
+        android:textColor="@color/darkPrimaryText"
         android:background="@android:color/transparent" />
 
 </RelativeLayout>

@@ -364,8 +364,8 @@ public class MainActivity extends AppCompatActivity implements
 
         // set up the navigation drawer
         drawerFragment = (DrawerFragment)
-                getSupportFragmentManager().findFragmentById(R.id.fragment_navigation_drawer);
-        drawerFragment.init(R.id.fragment_navigation_drawer, (DrawerLayout) findViewById(R.id.drawer_layout), toolbar);
+                getSupportFragmentManager().findFragmentById(R.id.fragment_drawer);
+        drawerFragment.init(R.id.fragment_drawer, (DrawerLayout) findViewById(R.id.drawer_layout), toolbar);
         drawerFragment.setDrawerListener(this);
 
         // set up the bottom sheets
@@ -1558,7 +1558,7 @@ public class MainActivity extends AppCompatActivity implements
                     dataProvider.cancelAllNetworkRequests();
                 }
 
-                showNotificationBar(ContextCompat.getColor(getApplicationContext(), R.color.notificationWarning),
+                showNotificationBar(ContextCompat.getColor(getApplicationContext(), R.color.notificationWarningBackground),
                         getResources().getString(R.string.notification_offline), -1L);
 
                 break;
@@ -1572,7 +1572,7 @@ public class MainActivity extends AppCompatActivity implements
                     dataProvider.requestServerStatus();
                 }
 
-                showNotificationBar(ContextCompat.getColor(getApplicationContext(), R.color.notificationWarning),
+                showNotificationBar(ContextCompat.getColor(getApplicationContext(), R.color.notificationWarningBackground),
                         getResources().getString(R.string.notification_connecting), -1L);
 
                 break;
@@ -1582,7 +1582,7 @@ public class MainActivity extends AppCompatActivity implements
             case Const.MSG_SERVER_CONNECTED: {
                 Log.d(TAG, "Connection established to server successfully!");
 
-                showNotificationBar(ContextCompat.getColor(getApplicationContext(), R.color.notificationOk),
+                showNotificationBar(ContextCompat.getColor(getApplicationContext(), R.color.notificationSuccessBackground),
                         getResources().getString(R.string.notification_connected), 3000);
 
                 break;

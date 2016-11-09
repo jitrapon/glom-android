@@ -197,7 +197,7 @@ public class LocationFragment extends SupportMapFragment implements
 
                 mapView.addView(overlay);
 
-                userMarkerView = inflater.inflate(R.layout.user_marker, null);
+                userMarkerView = inflater.inflate(R.layout.marker_user, null);
             }
         }
 

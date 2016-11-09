@@ -23,7 +23,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="This is a sample item"
-        android:textColor="@color/cardPrimaryText"
+        android:textColor="@color/darkPrimaryText"
         android:textSize="@dimen/list_item_simple_text_size"/>
 
 </LinearLayout>

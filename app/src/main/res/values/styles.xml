@@ -1,12 +1,18 @@
 <resources>
 
-    <style name="AppMaterialTheme" parent="AppMaterialTheme.Base" />
+    <style name="AppTheme" parent="AppTheme.Base" />
+
+    <!-- No background theme -->
+    <style name="Theme.NoBackground" parent="AppTheme">
+        <item name="android:windowBackground">@null</item>
+    </style>
 
     <!-- Base application theme. -->
-    <style name="AppMaterialTheme.Base" parent="Theme.AppCompat.Light.DarkActionBar">
+    <style name="AppTheme.Base" parent="Theme.AppCompat.Light.DarkActionBar">
         <item name="windowNoTitle">true</item>
         <item name="windowActionBar">false</item>
         <item name="windowActionModeOverlay">true</item>
+        <item name="android:windowBackground">@color/windowBackground</item>
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
@@ -15,7 +21,7 @@
 
     <!-- Alert Dialog -->
     <style name="AlertDialogTheme" parent="Theme.AppCompat.Light.Dialog">
-        <item name="colorAccent">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorPrimary</item>
     </style>
 
     <!-- Floating action button -->
@@ -24,19 +30,24 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_margin">@dimen/spacing_large</item>
         <item name="android:src">@drawable/ic_action_new</item>
-        <item name="backgroundTint">@color/colorPrimaryDark</item>
+        <item name="backgroundTint">@color/colorPrimary</item>
         <item name="borderWidth">0dp</item>
         <item name="elevation">6dp</item>
         <item name="pressedTranslationZ">12dp</item>
         <item name="rippleColor">@android:color/white</item>
     </style>
 
+    <!-- Base AppBarLayout theme -->
     <style name="AppMaterialTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
+    <!-- Base Toolbar theme -->
     <style name="AppMaterialTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
-    <style name="Theme.NoBackground" parent="AppMaterialTheme">
-        <item name="android:windowBackground">@null</item>
+    <!-- Tab bar layout -->
+    <style name="AppMaterialTheme.TabBarLayout" parent="Widget.Design.TabLayout" >
+        <item name="tabMaxWidth">@dimen/tab_max_width</item>
+        <item name="tabIndicatorColor">@color/tabIndicatorColor</item>
+        <item name="tabIndicatorHeight">2dp</item>
     </style>
 
     <!-- Toolbar Small Title -->

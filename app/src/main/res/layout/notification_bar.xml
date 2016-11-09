@@ -9,8 +9,8 @@
         android:gravity="center"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/notificationOk"
-        android:textColor="@color/notificationText"
+        android:background="@color/notificationSuccessBackground"
+        android:textColor="@color/notificationTextColor"
         android:textSize="@dimen/notification_text_size"
         android:text="@string/notification_placeholder"/>
 

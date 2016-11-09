@@ -1,6 +1,6 @@
 <resources>
 
-    <style name="AppMaterialTheme" parent="AppMaterialTheme.Base">
+    <style name="AppTheme" parent="AppTheme.Base">
         <item name="android:windowContentTransitions">true</item>
         <item name="android:windowAllowEnterTransitionOverlap">true</item>
         <item name="android:windowAllowReturnTransitionOverlap">true</item>

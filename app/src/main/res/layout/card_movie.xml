@@ -46,7 +46,7 @@
                 android:paddingTop="@dimen/card_primary_text_padding_top"
                 android:paddingBottom="@dimen/card_primary_text_padding_bottom"
                 android:textSize="@dimen/card_primary_text_size"
-                android:textColor="@color/cardPrimaryText"
+                android:textColor="@color/darkPrimaryText"
                 android:text="@string/undefined"
                 android:maxLines="2"
                 android:ellipsize="end"/>
@@ -101,7 +101,7 @@
                     android:layout_marginStart="4dp"
                     android:gravity="center"
                     android:textSize="@dimen/card_supporting_text_size"
-                    android:textColor="@color/cardPrimaryText"
+                    android:textColor="@color/darkPrimaryText"
                     android:text="120 mins"
                     android:maxLines="1"
                     android:ellipsize="end" />
@@ -192,7 +192,7 @@
                     android:layout_height="wrap_content"
                     android:padding="@dimen/card_action_padding"
                     android:background="?android:attr/selectableItemBackground"
-                    android:textColor="@color/actionButtonColor"
+                    android:textColor="@color/cardActionButtonTextColor"
                     android:text="@string/card_action_book"/>
 
                 <Button
@@ -204,7 +204,7 @@
                     android:padding="@dimen/card_action_padding"
                     android:background="?android:attr/selectableItemBackground"
                     android:layout_toRightOf="@+id/card_action_book"
-                    android:textColor="@color/actionButtonColor"
+                    android:textColor="@color/cardActionButtonTextColor"
                     android:text="@string/card_action_watch_trailer"/>
 
             </RelativeLayout>

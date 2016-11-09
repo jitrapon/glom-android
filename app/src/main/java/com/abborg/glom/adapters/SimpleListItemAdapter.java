@@ -91,8 +91,8 @@ public class SimpleListItemAdapter extends RecyclerView.Adapter<RecyclerView.Vie
 
         viewHolder.checkbox.setChecked(state == STATE_CHECKED);
         viewHolder.text.setTextColor((state == STATE_CHECKED) ?
-                ContextCompat.getColor(context, R.color.textColorLight)
-                : ContextCompat.getColor(context, R.color.textColorDark));
+                ContextCompat.getColor(context, R.color.darkSecondaryText)
+                : ContextCompat.getColor(context, R.color.darkPrimaryText));
         viewHolder.text.setPaintFlags((state == STATE_CHECKED) ?
                 viewHolder.text.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG
                 : viewHolder.text.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
