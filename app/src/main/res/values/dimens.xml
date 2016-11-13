@@ -1,5 +1,4 @@
 <resources>
-    <!-- Default screen margins, per the Android Design guidelines. -->
     <dimen name="spacing_xsmall">2dp</dimen>
     <dimen name="spacing_medium">8dp</dimen>
     <dimen name="spacing_large">16dp</dimen>
@@ -9,6 +8,13 @@
     <dimen name="elevation_high">12dp</dimen>
     <dimen name="status_bar_height">25dp</dimen>
 
+    <!-- toolbar -->
+    <dimen name="toolbar_elevation">0dp</dimen>
+    <dimen name="toolbar_height">?attr/actionBarSize</dimen>
+    <dimen name="toolbar_title_text_size">14sp</dimen>
+    <dimen name="toolbar_subtitle_text_size">14sp</dimen>
+
+    <!-- activity -->
     <dimen name="activity_horizontal_margin">16dp</dimen>
     <dimen name="activity_vertical_margin">16dp</dimen>
     <dimen name="tab_max_width">264dp</dimen>
@@ -17,6 +23,8 @@
     <dimen name="custom_tab_layout_height">72dp</dimen>
     <dimen name="fragment_margin_top">105dp</dimen>
     <dimen name="nav_drawer_width">260dp</dimen>
+
+    <!-- user avatar -->
     <dimen name="user_avatar_padding_bottom">18dp</dimen>
     <dimen name="user_avatar_width">70dp</dimen>
     <dimen name="user_avatar_height">70dp</dimen>
@@ -31,10 +39,12 @@
     <dimen name="user_avatar_primary_height">20dp</dimen>
     <dimen name="user_avatar_secondary_height">20dp</dimen>
 
+    <!-- fab -->
     <dimen name="fab_elevation">6dp</dimen>
     <dimen name="fab_pressed_translation_z">12dp</dimen>
     <dimen name="fab_border_width">0dp</dimen>
 
+    <!-- circular avatar menu -->
     <dimen name="avatar_menu_size">70dp</dimen>
     <dimen name="avatar_menu_radius_large">120dp</dimen>
     <dimen name="avatar_menu_radius_small">30dp</dimen>
@@ -42,10 +52,12 @@
     <dimen name="light_sub_action_button_size">68dp</dimen>
     <dimen name="light_sub_action_button_content_margin">16dp</dimen>
 
+    <!-- map marker -->
     <dimen name="marker_avatar_width">35dp</dimen>
     <dimen name="marker_avatar_height">35dp</dimen>
     <dimen name="marker_margin">3dp</dimen>
 
+    <!-- card items -->
     <dimen name="card_padding">8dp</dimen>
     <dimen name="card_corner_radius">4dp</dimen>
     <dimen name="card_margin">5dp</dimen>
@@ -70,10 +82,10 @@
     <dimen name="chat_text_size_large">20sp</dimen>
     <dimen name="card_progress_bar_size">4dp</dimen>
 
-    <dimen name="content_inset">16dp</dimen>
-
+    <!-- notification bar -->
     <dimen name="notification_text_size">15sp</dimen>
 
+    <!-- bottom sheet -->
     <dimen name="bottom_sheet_margin_top">16dp</dimen>
     <dimen name="bottom_sheet_margin_bottom">24dp</dimen>
     <dimen name="bottom_sheet_margin_side">24dp</dimen>
@@ -81,8 +93,8 @@
     <dimen name="bottom_sheet_icon_size">48dp</dimen>
     <dimen name="bottom_sheet_label_size">16sp</dimen>
 
-    <dimen name="toolbar_title_text_size">14sp</dimen>
-    <dimen name="toolbar_subtitle_text_size">14sp</dimen>
+    <!-- others -->
+    <dimen name="content_inset">16dp</dimen>
 
     <dimen name="dialog_edit_text_vertical_margin">20dp</dimen>
     <dimen name="dialog_edit_text_horizontal_margin">24dp</dimen>

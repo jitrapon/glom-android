@@ -9,8 +9,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.abborg.glom.adapters.BoardItemAction;
-import com.abborg.glom.adapters.BoardItemActionClickListener;
+import com.abborg.glom.adapters.MenuActionItemClickListener;
+import com.abborg.glom.model.MenuActionItem;
 
 import java.util.List;
 
@@ -19,9 +19,9 @@ public class BoardItemIconAdapter extends RecyclerView.Adapter<RecyclerView.View
     private static final String TAG = "BoardItemIconAdapter";
 
     private Context context;
-    private BoardItemActionClickListener listener;
+    private MenuActionItemClickListener listener;
 
-    private List<BoardItemAction> items;
+    private List<MenuActionItem> items;
 
     /**************************************************
      * VIEW HOLDERS
@@ -39,7 +39,7 @@ public class BoardItemIconAdapter extends RecyclerView.Adapter<RecyclerView.View
             label = (TextView) itemView.findViewById(R.id.label);
         }
 
-        public void bind(final BoardItemAction item, final BoardItemActionClickListener listener) {
+        public void bind(final MenuActionItem item, final MenuActionItemClickListener listener) {
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
                     listener.onItemClicked(item);
@@ -48,7 +48,7 @@ public class BoardItemIconAdapter extends RecyclerView.Adapter<RecyclerView.View
         }
     }
 
-    public BoardItemIconAdapter(Context context, List<BoardItemAction> items, BoardItemActionClickListener listener) {
+    public BoardItemIconAdapter(Context context, List<MenuActionItem> items, MenuActionItemClickListener listener) {
         this.listener = listener;
         this.items = items;
         this.context = context;
@@ -63,7 +63,7 @@ public class BoardItemIconAdapter extends RecyclerView.Adapter<RecyclerView.View
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-        BoardItemAction item = items.get(position);
+        MenuActionItem item = items.get(position);
         BoardItemActionViewHolder viewHolder = (BoardItemActionViewHolder) holder;
 
         viewHolder.bind(item, listener);

@@ -16,13 +16,13 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:theme="@style/AppMaterialTheme.AppBarOverlay"
-            app:elevation="0dp" >
+            app:elevation="@dimen/toolbar_elevation" >
 
             <android.support.v7.widget.Toolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                android:background="?attr/colorPrimary"
+                android:background="@color/colorPrimary"
                 app:layout_scrollFlags="scroll|enterAlways"
                 app:popupTheme="@style/AppMaterialTheme.PopupOverlay" />
 
@@ -63,9 +63,9 @@
             style="@style/FabStyle"/>
 
         <RelativeLayout
+            android:id="@+id/circle_menu_layout"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:id="@+id/overlayLayout">
+            android:layout_height="match_parent" >
         </RelativeLayout>
 
     </android.support.design.widget.CoordinatorLayout>

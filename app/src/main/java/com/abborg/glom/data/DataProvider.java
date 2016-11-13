@@ -22,7 +22,6 @@ import android.util.Log;
 import com.abborg.glom.ApplicationState;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
-import com.abborg.glom.adapters.BoardItemAction;
 import com.abborg.glom.di.ComponentInjector;
 import com.abborg.glom.interfaces.FileDownloadListener;
 import com.abborg.glom.interfaces.ResponseListener;
@@ -39,6 +38,7 @@ import com.abborg.glom.model.FeedAction;
 import com.abborg.glom.model.FileItem;
 import com.abborg.glom.model.LinkItem;
 import com.abborg.glom.model.ListItem;
+import com.abborg.glom.model.MenuActionItem;
 import com.abborg.glom.model.Movie;
 import com.abborg.glom.model.NoteItem;
 import com.abborg.glom.model.User;
@@ -576,11 +576,12 @@ public class DataProvider {
         return Const.TEST_USER_ID;
     }
 
-    public List<BoardItemAction> getFavoriteBoardItemActions() {
+    public List<MenuActionItem> getFavoriteBoardItemActions() {
         return Arrays.asList(
-                BoardItemAction.EVENT,
-                BoardItemAction.DRAW,
-                BoardItemAction.LIST
+                MenuActionItem.EVENT,
+                MenuActionItem.DRAW,
+                MenuActionItem.LIST,
+                MenuActionItem.OTHERS
         );
     }
 

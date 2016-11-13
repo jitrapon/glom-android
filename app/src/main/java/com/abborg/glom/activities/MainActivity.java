@@ -1,18 +1,13 @@
 package com.abborg.glom.activities;
 
 import android.Manifest;
-import android.app.Activity;
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
-import android.content.ClipboardManager;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
-import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Build;
@@ -20,11 +15,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.NonNull;
-import android.support.customtabs.CustomTabsCallback;
-import android.support.customtabs.CustomTabsClient;
-import android.support.customtabs.CustomTabsIntent;
-import android.support.customtabs.CustomTabsServiceConnection;
-import android.support.customtabs.CustomTabsSession;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.BottomSheetDialog;
 import android.support.design.widget.CoordinatorLayout;
@@ -37,7 +27,6 @@ import android.support.v4.view.ViewCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.ActionMode;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
@@ -51,12 +40,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.CompoundButton;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -67,11 +53,8 @@ import com.abborg.glom.ApplicationState;
 import com.abborg.glom.BoardItemIconAdapter;
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
-import com.abborg.glom.adapters.BoardItemAction;
-import com.abborg.glom.adapters.BoardItemActionClickListener;
+import com.abborg.glom.adapters.MenuActionItemClickListener;
 import com.abborg.glom.adapters.ViewPagerAdapter;
-import com.abborg.glom.data.DataProvider;
-import com.abborg.glom.di.ComponentInjector;
 import com.abborg.glom.fragments.BoardFragment;
 import com.abborg.glom.fragments.CircleFragment;
 import com.abborg.glom.fragments.DiscoverFragment;
@@ -82,6 +65,7 @@ import com.abborg.glom.interfaces.BoardItemChangeListener;
 import com.abborg.glom.interfaces.BroadcastLocationListener;
 import com.abborg.glom.interfaces.CircleChangeListener;
 import com.abborg.glom.interfaces.CircleListListener;
+import com.abborg.glom.interfaces.CircleMenuListener;
 import com.abborg.glom.interfaces.DiscoverItemChangeListener;
 import com.abborg.glom.interfaces.UsersChangeListener;
 import com.abborg.glom.model.BoardItem;
@@ -94,17 +78,16 @@ import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.FileItem;
 import com.abborg.glom.model.LinkItem;
 import com.abborg.glom.model.ListItem;
+import com.abborg.glom.model.MenuActionItem;
 import com.abborg.glom.model.NoteItem;
 import com.abborg.glom.model.User;
 import com.abborg.glom.service.CirclePushService;
 import com.abborg.glom.service.RegistrationIntentService;
 import com.abborg.glom.utils.BottomSheetItemDecoration;
-import com.abborg.glom.utils.CircleTransform;
-import com.bumptech.glide.Glide;
+import com.abborg.glom.utils.TaskUtils;
+import com.abborg.glom.views.CircleMenu;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.youtube.player.YouTubeStandalonePlayer;
-import com.oguzdev.circularfloatingactionmenu.library.FloatingActionMenu;
-import com.oguzdev.circularfloatingactionmenu.library.SubActionButton;
 
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
@@ -112,13 +95,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import javax.inject.Inject;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
@@ -129,93 +108,46 @@ import pub.devrel.easypermissions.EasyPermissions;
  *
  * @author jitrapon
  */
-public class MainActivity extends AppCompatActivity implements
+public class MainActivity extends BaseActivity implements
         DrawerFragment.FragmentDrawerListener,
         Handler.Callback,
         AdapterView.OnItemClickListener,
         ActionMode.Callback,
-        BoardItemActionClickListener,
-        EasyPermissions.PermissionCallbacks {
+        MenuActionItemClickListener,
+        EasyPermissions.PermissionCallbacks,
+        CircleMenuListener {
 
     protected static final String TAG = "MainActivity";
 
-    /**
-     * The global class at the application context level
-     */
-    @Inject
-    ApplicationState appState;
-
-    /**
-     * Abstracts data management via SQLite and network operations
-     */
-    @Inject
-    DataProvider dataProvider;
-
-    /**
-     * A receiver for incoming location updates and other various GCM push updates
-     */
     private BroadcastReceiver localBroadcastReceiver;
-
-    /**
-     * A receiver for Android OS broadcasts
-     */
     private BroadcastReceiver globalBroadcastReceiver;
 
-    /**
-     * Adapter for the tab view
-     */
     private ViewPagerAdapter adapter;
 
-    /**
-     * Handler that indicates when asynchronous events are completed to update UI
-     */
+    private ActionMode actionMode;
+
     private Handler handler;
 
-    /**
-     * Listener callbacks
-     */
+    // Callbacks
     private List<CircleListListener> circleListListeners;
     private List<UsersChangeListener> usersChangeListeners;
     private List<CircleChangeListener> circleChangeListeners;
     private List<BoardItemChangeListener> boardItemChangeListeners;
     private List<BroadcastLocationListener> broadcastLocationListeners;
     private List<DiscoverItemChangeListener> discoverItemChangeListeners;
-
-    /**
-     * Action mode callbacks
-     */
     private ActionModeCallbacks actionModeCallbacks;
 
-    /**
-     * Custom tab browser client to connect
-     */
-    private CustomTabsClient browserServiceClient;
-    private CustomTabsServiceConnection browserServiceConnection;
-    private boolean browserServiceIsBound;
-    private boolean willLaunchBrowser;
-
     // UI elements
+    private CircleMenu circleMenu;
+    private RelativeLayout circleMenuLayout;
     private DrawerFragment drawerFragment;
     private TabLayout tabLayout;
-    private FloatingActionMenu avatarActionMenu;
-    private Animation fadeInAnim;
-    private Animation fadeOutAnim;
-    private RelativeLayout overlayLayout;
-    private ImageView menuOverlay;
-    private ImageView avatarIcon;
-    private SubActionButton.Builder lCSubBuilder;
-    private FrameLayout.LayoutParams actionButtonContentParams;
     private ViewPager viewPager;
     private Toolbar toolbar;
-    private android.support.design.widget.FloatingActionButton fab;
-    private boolean isRadialMenuOptionsOpening;
-    private ActionMode actionMode;
-    private boolean isActionMenuOpened;
-
+    private FloatingActionButton fab;
     private View notificationBar;
     private TextView notificationText;
     private boolean firstLaunch;
-
     private BottomSheetDialog boardItemBottomSheet;
     private BottomSheetDialog broadcastLocationBottomSheet;
     private View boardItemActionSheetLayout;
@@ -223,7 +155,6 @@ public class MainActivity extends AppCompatActivity implements
     private SwitchCompat broadcastLocationToggle;
     private CoordinatorLayout mainCoordinatorLayout;
 
-    private static final int MENU_OVERLAY_ANIM_TIME = 150;
     private static final boolean START_YOUTUBE_VIDEO_LIGHTBOX = false;
 
     // permission
@@ -237,9 +168,7 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.d(TAG, "OnCreate()");
         super.onCreate(savedInstanceState);
-        ComponentInjector.INSTANCE.getApplicationComponent().inject(this);
 
         firstLaunch = true;
 
@@ -257,19 +186,12 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     protected void onStart() {
-        Log.d(TAG, "onStart()");
         super.onStart();
-
-        // connect to the Google Play API
-        appState.connectGoogleApiClient();
-        appState.setKeepGoogleApiClientAlive(false);
 
         // register local broadcast receiver
         registerBroadcastReceivers();
 
-        dataProvider.openDB();
-
-        willLaunchBrowser = false;
+        appState.setKeepGoogleApiClientAlive(false);
     }
 
     @Override
@@ -277,22 +199,9 @@ public class MainActivity extends AppCompatActivity implements
         // unregister the broadcast receivers
         unregisterBroadcastReceivers();
 
-        // disconnect google api client
-        if (appState != null)
-            if (!appState.shouldKeepGoogleApiAlive()) appState.disconnectGoogleApiClient();
-
         // closeDB database and cancells all network operations
-        if (dataProvider != null) {
-            dataProvider.cancelAllNetworkRequests();
-            dataProvider.closeDB();
-        }
-
-        // unbind services
-        if (!willLaunchBrowser && browserServiceIsBound && browserServiceConnection != null) {
-            Log.d(TAG, "Unbinding browser service connection");
-            unbindService(browserServiceConnection);
-            browserServiceIsBound = false;
-        }
+        dataProvider.cancelAllNetworkRequests();
+        dataProvider.closeDB();
 
         super.onStop();
     }
@@ -309,6 +218,7 @@ public class MainActivity extends AppCompatActivity implements
         super.onPause();
     }
 
+    @SuppressLint("InflateParams")
     private void setupView() {
         setContentView(R.layout.activity_main);
 
@@ -317,7 +227,7 @@ public class MainActivity extends AppCompatActivity implements
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         viewPager = (ViewPager) findViewById(R.id.viewpager);
         fab = (FloatingActionButton) findViewById(R.id.fab);
-        overlayLayout = (RelativeLayout) findViewById(R.id.overlayLayout);
+        circleMenuLayout = (RelativeLayout) findViewById(R.id.circle_menu_layout);
         boardItemActionSheetLayout = getLayoutInflater().inflate(R.layout.bottom_sheet_board_items, null);
         broadcastLocationSheetLayout = getLayoutInflater().inflate(R.layout.bottom_sheet_broadcast_location, null);
 
@@ -369,20 +279,20 @@ public class MainActivity extends AppCompatActivity implements
         drawerFragment.setDrawerListener(this);
 
         // set up the bottom sheets
-        List<BoardItemAction> boardItemActions = Arrays.asList(
-                BoardItemAction.IMAGE,
-                BoardItemAction.AUDIO,
-                BoardItemAction.VIDEO,
-                BoardItemAction.ALARM,
-                BoardItemAction.DRAW,
-                BoardItemAction.NOTE,
-                BoardItemAction.EVENT,
-                BoardItemAction.LINK,
-                BoardItemAction.LOCATION,
-                BoardItemAction.LIST
+        List<MenuActionItem> boardMenuItems = Arrays.asList(
+                MenuActionItem.IMAGE,
+                MenuActionItem.AUDIO,
+                MenuActionItem.VIDEO,
+                MenuActionItem.ALARM,
+                MenuActionItem.DRAW,
+                MenuActionItem.NOTE,
+                MenuActionItem.EVENT,
+                MenuActionItem.LINK,
+                MenuActionItem.LOCATION,
+                MenuActionItem.LIST
         );
 
-        BoardItemIconAdapter iconAdapter = new BoardItemIconAdapter(this, boardItemActions, this);
+        BoardItemIconAdapter iconAdapter = new BoardItemIconAdapter(this, boardMenuItems, this);
         RecyclerView recyclerView = (RecyclerView) boardItemActionSheetLayout.findViewById(R.id.board_item_actions_recyclerview);
         if (recyclerView != null) {
             recyclerView.setHasFixedSize(true);
@@ -496,7 +406,6 @@ public class MainActivity extends AppCompatActivity implements
                     appState.getActiveCircle().setBroadcastingLocation(true);
 
                     // update DB about broadcast location change to this circle
-                    //TODO update time of broadcast to in DB
                     dataProvider.updateCircleLocationBroadcast(appState.getActiveCircle().getId(), true);
 
                     // start the push service, telling it to add the user's current circle to start broadcasting location to it
@@ -528,6 +437,18 @@ public class MainActivity extends AppCompatActivity implements
             }
         });
 
+        // set up circular menu
+        circleMenu = CircleMenu.init()
+                .setMenuItems(dataProvider.getFavoriteBoardItemActions())
+                .setHandler(handler)
+                .setMenuOptionsClickedListener(this)
+                .setActivity(this)
+                .setCenterImageSource(appState.getActiveUser().getAvatar())
+                .setLayout(circleMenuLayout)
+                .setRadiusSize(CircleMenu.Size.LARGE)
+                .setStartEndAngle(0, 360)
+                .create();
+
         // set up the floating action button for all fragments
         if (fab != null) {
             fab.show();
@@ -535,100 +456,26 @@ public class MainActivity extends AppCompatActivity implements
 
                 @Override
                 public void onClick(View v) {
-
-                    // click event for circle fragment
-                    if (adapter.getItem(viewPager.getCurrentItem()) instanceof CircleFragment) {
-
-                    }
-                    else if (adapter.getItem(viewPager.getCurrentItem()) instanceof LocationFragment) {
-
-                    }
-                    else if (adapter.getItem(viewPager.getCurrentItem()) instanceof BoardFragment) {
-                        if (!isRadialMenuOptionsOpening) {
-                            float rotationDeg;
-                            if (isActionMenuOpened) {
-                                hideRadialMenuOptions(true);
-                                rotationDeg = 0f;
-                            } else {
-                                showRadialMenuOptions(appState.getActiveUser());
-                                rotationDeg = 45f;
-                            }
-
-                            // rotate the FAB accordingly
-                            ViewCompat.animate(fab)
-                                    .rotation(rotationDeg)
-                                    .withLayer()
-                                    .setDuration(300L)
-                                    .start();
+                    if (adapter.getItem(viewPager.getCurrentItem()) instanceof BoardFragment) {
+                        if (circleMenu.isOpened()) {
+                            circleMenu.close(true);
+                        }
+                        else {
+                            circleMenu.open(true);
                         }
                     }
                 }
             });
         }
+    }
 
-        // initialize the overlay imageview
-        menuOverlay = new ImageView(this);
-        RelativeLayout.LayoutParams menuOverlayParams = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.MATCH_PARENT,
-                RelativeLayout.LayoutParams.MATCH_PARENT);
-        menuOverlay.setLayoutParams(menuOverlayParams);
-        menuOverlay.setBackgroundColor(getResources().getColor(R.color.menuOverlay));
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
 
-        // initialize the overlay avatar icon with radial menu
-        avatarIcon = new ImageView(this);
-        RelativeLayout.LayoutParams avatarIconParams = new RelativeLayout.LayoutParams(
-                getResources().getDimensionPixelSize(R.dimen.avatar_menu_size),
-                getResources().getDimensionPixelSize(R.dimen.avatar_menu_size));
-        avatarIconParams.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
-        avatarIcon.setLayoutParams(avatarIconParams);
-
-        // add fade-in / fade-out animation when visibilty changes
-        fadeInAnim = AnimationUtils.loadAnimation(this, android.R.anim.fade_in);
-        fadeOutAnim = AnimationUtils.loadAnimation(this, android.R.anim.fade_out);
-        fadeInAnim.setDuration(MENU_OVERLAY_ANIM_TIME);
-        fadeOutAnim.setDuration(MENU_OVERLAY_ANIM_TIME);
-
-        menuOverlay.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-                if (!isRadialMenuOptionsOpening) {
-                    hideRadialMenuOptions(true);
-
-                    // rotate the FAB accordingly
-                    ViewCompat.animate(fab)
-                            .rotation(0f)
-                            .withLayer()
-                            .setDuration(300L)
-                            .start();
-                }
-            }
-        });
-
-        // add the overlay and avatar icon to the layout
-        overlayLayout.addView(menuOverlay, 0);
-        overlayLayout.addView(avatarIcon, 1);
-
-        // hide the layout for now until an avatar is clicked
-        overlayLayout.setVisibility(RelativeLayout.GONE);
-
-        int subActionButtonSize = getResources().getDimensionPixelSize(R.dimen.light_sub_action_button_size);
-        int subActionButtonContentMargin = getResources().getDimensionPixelSize(R.dimen.light_sub_action_button_content_margin);
-
-        lCSubBuilder = new SubActionButton.Builder(this);
-        lCSubBuilder.setBackgroundDrawable(ContextCompat.getDrawable(this, R.drawable.button_action_light_selector));
-
-        actionButtonContentParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT);
-        actionButtonContentParams.setMargins(subActionButtonContentMargin,
-                subActionButtonContentMargin,
-                subActionButtonContentMargin,
-                subActionButtonContentMargin);
-        lCSubBuilder.setLayoutParams(actionButtonContentParams);
-
-        // Set custom layout params
-        FrameLayout.LayoutParams subActionButtonParams = new FrameLayout.LayoutParams(subActionButtonSize, subActionButtonSize);
-        lCSubBuilder.setLayoutParams(subActionButtonParams);
+        if (circleMenu != null) {
+            circleMenu.destroy();
+        }
     }
 
     /**********************************************************
@@ -902,11 +749,11 @@ public class MainActivity extends AppCompatActivity implements
      **************************************************/
 
     @Override
-    public void onItemClicked(BoardItemAction item) {
+    public void onItemClicked(MenuActionItem item) {
         if (boardItemBottomSheet != null) {
             boardItemBottomSheet.dismiss();
 
-            handleBoardItemAction(appState.getActiveUser(), item);
+            handleMenuActionItem(item);
         }
     }
 
@@ -914,39 +761,35 @@ public class MainActivity extends AppCompatActivity implements
      * Circular Menu
      **************************************************/
 
-    public void showRadialMenuOptions(User user) {
-        if (user != null) {
-            if (user.getId().equals(appState.getActiveUser().getId())) {
-                showMenuOverlay(true);
-
-                // load the avatar picture
-                Glide.with(this)
-                        .load(user.getAvatar()).fitCenter()
-                        .transform(new CircleTransform(this))
-                        .override((int) getResources().getDimension(R.dimen.user_avatar_width),
-                                (int) getResources().getDimension(R.dimen.user_avatar_height))
-                        .placeholder(R.drawable.ic_profile)
-                        .error(R.drawable.ic_profile)
-                        .crossFade(1000)
-                        .into(avatarIcon);
-
-                // load the menu based on user permission list
-                avatarActionMenu = setupAvatarOptionMenu(this, lCSubBuilder, actionButtonContentParams, user, avatarIcon);
-                handler.postDelayed(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        if (!avatarActionMenu.isOpen())
-                            avatarActionMenu.open(true);
-                    }
-                }, 50);
-            }
-        }
+    @Override
+    public void onCircleMenuOptionsClicked(MenuActionItem item) {
+        handleMenuActionItem(item);
     }
 
-    private void handleBoardItemAction(User user, BoardItemAction action) {
-        hideRadialMenuOptions(false);
+    @Override
+    public void onOtherCircleMenuOptionClicked() {
+        showBoardItemBottomSheet();
+    }
 
+    @Override
+    public void onCircleMenuOptionsOpening() {
+        ViewCompat.animate(fab)
+                .rotation(45f)
+                .withLayer()
+                .setDuration(300L)
+                .start();
+    }
+
+    @Override
+    public void onCircleMenuOptionsClosing() {
+        ViewCompat.animate(fab)
+                .rotation(0f)
+                .withLayer()
+                .setDuration(300L)
+                .start();
+    }
+
+    private void handleMenuActionItem(MenuActionItem action) {
         switch(action) {
             case IMAGE: {
                 openImageBrowser();
@@ -957,19 +800,13 @@ public class MainActivity extends AppCompatActivity implements
                 break;
             }
             case LOCATION: {
-                if (user.getId().equals(appState.getActiveUser().getId())) {
-                    showBroadcastLocationMenuOptions();
-                }
-                else {
-                    Toast.makeText(getApplicationContext(), "Location request sent to " + user.getName(), Toast.LENGTH_SHORT).show();
-                }
+                showBroadcastLocationMenuOptions();
                 break;
             }
             case EVENT: {
                 Intent intent = new Intent(this, EventActivity.class);
                 intent.setAction(getResources().getString(R.string.ACTION_CREATE_EVENT));
 
-                // make sure to not disconnect Google Api just yet
                 appState.setKeepGoogleApiClientAlive(true);
                 startActivityForResult(intent, Const.CREATE_EVENT_RESULT_CODE);
                 break;
@@ -996,11 +833,9 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    private void copyToClipboard(String text) {
-        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-        ClipData clip = ClipData.newPlainText(text, text);
-        clipboard.setPrimaryClip(clip);
-    }
+    /**************************************************
+     * Helpers
+     **************************************************/
 
     private void showLinkDialog(final LinkItem link) {
         View contentView = getLayoutInflater().inflate(R.layout.dialog_save_link, null);
@@ -1029,7 +864,7 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onClick(View v) {
                 try {
-                    String url = validateUrl(urlField.getText().toString());
+                    String url = TaskUtils.validateUrl(urlField.getText().toString());
                     if (url == null) {
                         urlField.setError(getString(R.string.warning_no_url));
                     }
@@ -1053,12 +888,12 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onClick(View v) {
                 try {
-                    String url = validateUrl(urlField.getText().toString());
+                    String url = TaskUtils.validateUrl(urlField.getText().toString());
                     if (url == null) {
                         urlField.setError(getString(R.string.warning_no_url));
                     }
                     else {
-                        launchUrl(url);
+                        launchThirdPartyUrlApp(url);
                     }
                 }
                 catch (Exception ex) {
@@ -1066,72 +901,6 @@ public class MainActivity extends AppCompatActivity implements
                 }
             }
         });
-    }
-
-    private String validateUrl(String urlString) throws MalformedURLException {
-        if (!TextUtils.isEmpty(urlString)) {
-            urlString = urlString.trim();
-            if (!urlString.toLowerCase().matches("^\\w+://.*")) {
-                urlString = "http://" + urlString;
-            }
-            return new URL(urlString).toString();
-        }
-        return null;
-    }
-
-    private FloatingActionMenu setupAvatarOptionMenu(final Activity activity, SubActionButton.Builder builder,
-                                                     FrameLayout.LayoutParams params, final User user, ImageView avatarIcon) {
-        FloatingActionMenu.Builder menuBuilder =  new FloatingActionMenu.Builder(activity);
-        List<BoardItemAction> availableActions = dataProvider.getFavoriteBoardItemActions();
-        for (final BoardItemAction action : availableActions) {
-            ImageView icon = new ImageView(activity);
-            icon.setImageDrawable(ContextCompat.getDrawable(this, action.getIcon()));
-            SubActionButton actionButton = builder.setContentView(icon, params).build();
-            actionButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    handleBoardItemAction(user, action);
-                }
-            });
-            menuBuilder.addSubActionView(actionButton);
-        }
-        ImageView icon = new ImageView(activity);
-        icon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_vector_more));
-        SubActionButton moreButton = builder.setContentView(icon, params).build();
-        moreButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showBoardItemMenu();
-                hideRadialMenuOptions(false);
-            }
-        });
-        menuBuilder.addSubActionView(moreButton);
-
-        menuBuilder.setStateChangeListener(new FloatingActionMenu.MenuStateChangeListener() {
-            @Override
-            public void onMenuOpened(FloatingActionMenu floatingActionMenu) {
-                isRadialMenuOptionsOpening = true;
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        isRadialMenuOptionsOpening = false;
-                        isActionMenuOpened = true;
-                    }
-                }, 700);
-            }
-
-            @Override
-            public void onMenuClosed(FloatingActionMenu floatingActionMenu) {
-                isRadialMenuOptionsOpening = false;
-                isActionMenuOpened = false;
-            }
-        });
-
-        return menuBuilder.setRadius(getResources().getDimensionPixelSize(R.dimen.avatar_menu_radius_large))
-                .setStartAngle(0)
-                .setEndAngle(360)
-                .attachTo(avatarIcon)
-                .build();
     }
 
     @AfterPermissionGranted(PERMISSION_WRITE_STORAGE)
@@ -1168,7 +937,6 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    //TODO broadcast location dialog setting interval and duration of updates
     @AfterPermissionGranted(PERMISSION_LOCATION)
     private void showBroadcastLocationMenuOptions() {
         String[] perms = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
@@ -1198,90 +966,7 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    /**
-     *  launch the default application that the user has chosen for links (e.g. Youtube app for Youtube links)
-        otherwise, for other url, launch the built-in browser */
-    private void launchUrl(String url) {
-        try {
-            final Uri uri = Uri.parse(url);
-
-            // figure out which activity (in the list of installed third-party applications) can handle
-            // this intent. If the activity is not that of a browser's, use the default app to launch.
-            // Otherwise, use the Chrome custom tabs service for in-app browsing experience.
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setData(uri);
-            PackageManager packageManager = getPackageManager();
-            List<ResolveInfo> matchedActivities = packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
-            if (matchedActivities.size() > 0) {
-                boolean isBrowserIntent = false;
-                for (ResolveInfo activity : matchedActivities) {
-                    if (activity.activityInfo.packageName.contains("sbrowser") ||
-                            activity.activityInfo.packageName.contains("chrome")) {
-                        isBrowserIntent = true;
-                        break;
-                    }
-                }
-                if (isBrowserIntent) {
-                    if (browserServiceClient == null) {
-                        browserServiceConnection = new CustomTabsServiceConnection() {
-
-                            @Override
-                            public void onServiceDisconnected(ComponentName name) {
-                                browserServiceClient = null;
-                            }
-
-                            @Override
-                            public void onCustomTabsServiceConnected(ComponentName componentName,
-                                                                     CustomTabsClient customTabsClient) {
-                                browserServiceClient = customTabsClient;
-                                launchBrowserSession(uri);
-                            }
-                        };
-                        boolean serviceAvailable = CustomTabsClient.bindCustomTabsService(this, getString(R.string.chrome_package_name),
-                                browserServiceConnection);
-                        if (!serviceAvailable) {
-                            browserServiceIsBound = false;
-                            startActivity(intent);
-                        }
-                        else {
-                            browserServiceIsBound = true;
-                        }
-                    }
-                    else {
-                        launchBrowserSession(uri);
-                    }
-                }
-                else {
-                    startActivity(intent);
-                }
-            }
-        }
-        catch (Exception ex) {
-            Log.e(TAG, ex.getMessage());
-        }
-    }
-
-    private void launchBrowserSession(Uri uri) {
-        willLaunchBrowser = true;
-        CustomTabsSession session = browserServiceClient.newSession(new CustomTabsCallback() {
-
-            @Override
-            public void onNavigationEvent(int navigationEvent, Bundle extras) {
-                super.onNavigationEvent(navigationEvent, extras);
-            }
-        });
-        CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder(session)
-                .setToolbarColor(ContextCompat.getColor(this, R.color.colorAccent))
-                .setSecondaryToolbarColor(ContextCompat.getColor(this, R.color.colorPrimaryDark))
-                .setCloseButtonIcon(BitmapFactory.decodeResource(getResources(), R.drawable.ic_action_close))
-                .enableUrlBarHiding()
-                .addDefaultShareMenuItem()
-                .setShowTitle(true);
-        CustomTabsIntent launchIntent = builder.build();
-        launchIntent.launchUrl(this, uri);
-    }
-
-    private void showBoardItemMenu() {
+    private void showBoardItemBottomSheet() {
         if (broadcastLocationBottomSheet != null) {
             broadcastLocationBottomSheet.dismiss();
             broadcastLocationBottomSheet = null;
@@ -1295,68 +980,21 @@ public class MainActivity extends AppCompatActivity implements
             ((ViewGroup)boardItemActionSheetLayout.getParent()).removeView(boardItemActionSheetLayout);
         }
 
-        boardItemBottomSheet = new BottomSheetDialog(this);
-        boardItemBottomSheet.setContentView(boardItemActionSheetLayout);
-        BottomSheetBehavior behavior = BottomSheetBehavior.from((View) boardItemActionSheetLayout.getParent());
-        behavior.setPeekHeight(550);
+        if (boardItemBottomSheet == null) {
+            boardItemBottomSheet = new BottomSheetDialog(this);
+            boardItemBottomSheet.setContentView(boardItemActionSheetLayout);
 
+            BottomSheetBehavior behavior = BottomSheetBehavior.from((View) boardItemActionSheetLayout.getParent());
+            behavior.setPeekHeight(550);
+
+            boardItemBottomSheet.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                @Override
+                public void onDismiss(DialogInterface dialog) {
+                    boardItemBottomSheet = null;
+                }
+            });
+        }
         boardItemBottomSheet.show();
-
-        boardItemBottomSheet.setOnDismissListener(new DialogInterface.OnDismissListener() {
-            @Override
-            public void onDismiss(DialogInterface dialog) {
-                boardItemBottomSheet = null;
-            }
-        });
-    }
-
-    private void showMenuOverlay(boolean animated) {
-        fadeInAnim.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {
-                Log.d(TAG, "Opening avatar menu");
-            }
-
-            @Override
-            public void onAnimationRepeat(Animation animation) {
-            }
-
-            @Override
-            public void onAnimationEnd(Animation animation) {
-
-            }
-        });
-        overlayLayout.setVisibility(RelativeLayout.VISIBLE);
-        menuOverlay.startAnimation(fadeInAnim);
-    }
-
-    private void hideRadialMenuOptions(boolean animated) {
-        fadeOutAnim.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {
-                Log.d(TAG, "Closing avatar action menu");
-            }
-
-            @Override
-            public void onAnimationRepeat(Animation animation) {
-            }
-
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                overlayLayout.setVisibility(RelativeLayout.GONE);
-            }
-        });
-        if (animated) menuOverlay.startAnimation(fadeOutAnim);
-        else overlayLayout.setVisibility(RelativeLayout.GONE);
-
-        if (avatarActionMenu != null) avatarActionMenu.close(animated);
-
-        if (fab != null)
-            ViewCompat.animate(fab)
-                .rotation(0f)
-                .withLayer()
-                .setDuration(300L)
-                .start();
     }
 
     public void setFloatingActionButtonVisible(boolean visible) {
@@ -2091,7 +1729,7 @@ public class MainActivity extends AppCompatActivity implements
             /* Opening a link */
             case Const.MSG_OPEN_LINK: {
                 String url = (String) msg.obj;
-                launchUrl(url);
+                launchThirdPartyUrlApp(url);
 
                 break;
             }
@@ -2211,7 +1849,7 @@ public class MainActivity extends AppCompatActivity implements
                 final LinkItem item = msg.obj == null ? null : (LinkItem) msg.obj;
 
                 if (item != null) {
-                    copyToClipboard(item.getUrl());
+                    TaskUtils.copyToClipboard(this, item.getUrl());
                     Toast.makeText(getApplicationContext(), getString(R.string.notification_copy_link), Toast.LENGTH_SHORT).show();
                 }
 
@@ -2624,8 +2262,6 @@ public class MainActivity extends AppCompatActivity implements
      **********************************************************/
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        User user = appState.getActiveCircle().getUsers().get(position);
-        showRadialMenuOptions(user);
     }
 
     /**********************************************************

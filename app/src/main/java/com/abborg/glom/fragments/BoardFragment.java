@@ -44,6 +44,7 @@ import com.abborg.glom.model.FileItem;
 import com.abborg.glom.model.LinkItem;
 import com.abborg.glom.model.ListItem;
 import com.abborg.glom.model.NoteItem;
+import com.abborg.glom.utils.TaskUtils;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
@@ -53,7 +54,6 @@ import com.google.android.gms.location.places.Places;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 import javax.inject.Inject;
 
@@ -173,7 +173,6 @@ public class BoardFragment extends Fragment implements
             adapter.update(null);
 
             // send request to server to get board items
-            //TODO delay by some timer for request
             if (dataProvider != null) {
                 if (!firstView && appState.getConnectionStatus() == ApplicationState.ConnectivityStatus.CONNECTED) {
                     if (refreshView != null) {
@@ -200,7 +199,7 @@ public class BoardFragment extends Fragment implements
     }
 
     /**********************************************************
-     * Other callbacks
+     * Circle Change Callback
      **********************************************************/
 
     @Override
@@ -314,13 +313,13 @@ public class BoardFragment extends Fragment implements
                                         double lng = place.getLatLng().longitude;
                                         places.release();
 
-                                        launchGoogleMapsNavigation(lat, lng);
+                                        TaskUtils.launchGoogleMapsNavigation(getContext(), lat, lng);
                                     }
                                 });
                             }
                         }
                         else if (event.getLocation() != null) {
-                            launchGoogleMapsNavigation(event.getLocation().getLatitude(), event.getLocation().getLongitude());
+                            TaskUtils.launchGoogleMapsNavigation(getContext(), event.getLocation().getLatitude(), event.getLocation().getLongitude());
                         }
                     }
 
@@ -345,14 +344,6 @@ public class BoardFragment extends Fragment implements
                 default: break;
             }
         }
-    }
-
-    private void launchGoogleMapsNavigation(double lat, double lng) {
-        Uri gmmIntentUri = Uri.parse(
-                String.format(Locale.ENGLISH, "google.navigation:q=%1f,%2f", lat, lng));
-        Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
-        mapIntent.setPackage("com.google.android.apps.maps");
-        startActivity(mapIntent);
     }
 
     /**********************************************************

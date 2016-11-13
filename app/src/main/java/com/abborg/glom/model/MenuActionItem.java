@@ -1,8 +1,11 @@
-package com.abborg.glom.adapters;
+package com.abborg.glom.model;
+
+import android.support.annotation.DrawableRes;
+import android.support.annotation.StringRes;
 
 import com.abborg.glom.R;
 
-public enum BoardItemAction {
+public enum MenuActionItem {
 
     IMAGE(R.drawable.ic_vector_image, R.string.action_image),
     VIDEO(R.drawable.ic_vector_camera, R.string.action_video),
@@ -13,16 +16,20 @@ public enum BoardItemAction {
     LIST(R.drawable.ic_vector_list, R.string.action_list),
     DRAW(R.drawable.ic_vector_pencil, R.string.action_draw),
     LOCATION(R.drawable.ic_vector_location, R.string.action_location),
-    LINK(R.drawable.ic_vector_link, R.string.action_link);
+    LINK(R.drawable.ic_vector_link, R.string.action_link),
+    OTHERS(R.drawable.ic_vector_more, R.string.action_others);
 
-    private final int icon;
-    private final int label;
+    @DrawableRes private final int icon;
+    @StringRes private final int label;
 
-    BoardItemAction(int icon, int label) {
+    MenuActionItem(int icon, int label) {
         this.icon = icon;
         this.label = label;
     }
 
+    @DrawableRes
     public int getIcon() { return icon; }
+
+    @StringRes
     public int getLabel() { return label; }
 }

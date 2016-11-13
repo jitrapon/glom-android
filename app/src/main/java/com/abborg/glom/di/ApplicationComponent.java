@@ -1,10 +1,10 @@
 package com.abborg.glom.di;
 
+import com.abborg.glom.activities.BaseActivity;
 import com.abborg.glom.activities.ChatActivity;
 import com.abborg.glom.activities.DrawActivity;
 import com.abborg.glom.activities.EventActivity;
 import com.abborg.glom.activities.ListItemActivity;
-import com.abborg.glom.activities.MainActivity;
 import com.abborg.glom.activities.NoteActivity;
 import com.abborg.glom.adapters.BoardItemAdapter;
 import com.abborg.glom.adapters.UserAvatarAdapter;
@@ -27,7 +27,7 @@ import dagger.Component;
 @Component(modules = {ApplicationModule.class})
 public interface ApplicationComponent {
 
-    void inject(MainActivity activity);
+    void inject(BaseActivity activity);
 
     void inject(DataProvider provider);
 

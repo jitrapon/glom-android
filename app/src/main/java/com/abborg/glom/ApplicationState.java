@@ -70,7 +70,6 @@ public class ApplicationState implements
 
     /* Server connectivity state */
     private ConnectivityStatus connectivityStatus;
-
     private ConnectivityManager connectivityManager;
 
     public enum ConnectivityStatus {

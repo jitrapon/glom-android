@@ -271,6 +271,7 @@
     <string name="action_list">List</string>
     <string name="action_location">Send Location</string>
     <string name="action_link">Link</string>
+    <string name="action_others">Others</string>
 
     <!-- Permission messages -->
     <string name="dialog_permission_request_settings">Settings</string>
