@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v7.widget.Toolbar xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/toolbar"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/toolbar_height"
+    android:background="@drawable/bg_main_toolbar"
+    app:layout_scrollFlags="scroll|enterAlways"
+    app:popupTheme="@style/AppMaterialTheme.PopupOverlay"
+    android:contentInsetLeft="0dp"
+    android:contentInsetStart="0dp"
+    app:contentInsetLeft="0dp"
+    app:contentInsetStart="0dp"
+    android:contentInsetRight="0dp"
+    android:contentInsetEnd="0dp"
+    app:contentInsetRight="0dp"
+    app:contentInsetEnd="0dp" >
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" >
+
+        <ImageView
+            android:id="@+id/nav_icon"
+            android:layout_width="@dimen/toolbar_nav_icon_size"
+            android:layout_height="@dimen/toolbar_nav_icon_size"
+            android:layout_centerVertical="true"
+            android:src="@drawable/ic_profile"
+            android:layout_marginLeft="20dp"
+            android:layout_marginStart="20dp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:orientation="vertical"
+            android:layout_toRightOf="@id/nav_icon"
+            android:layout_toEndOf="@id/nav_icon"
+            android:layout_marginLeft="18dp"
+            android:layout_marginStart="18dp"
+            android:layout_toLeftOf="@+id/menu_icon_1"
+            android:layout_toStartOf="@+id/menu_icon_1" >
+
+            <TextView
+                android:id="@+id/title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="My Circle"
+                android:maxLines="1"
+                android:textColor="@color/textLightPrimary"
+                android:textSize="@dimen/toolbar_title_text_size"
+                android:ellipsize="end" />
+
+            <TextView
+                android:visibility="visible"
+                android:id="@+id/subtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="3 people"
+                android:maxLines="1"
+                android:textColor="@color/textLightSecondary"
+                android:textSize="@dimen/toolbar_subtitle_text_size"
+                android:ellipsize="end" />
+
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/menu_icon_1"
+            android:layout_width="32dp"
+            android:layout_height="match_parent"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="6dp"
+            android:layout_marginStart="6dp"
+            android:layout_toLeftOf="@+id/menu_icon_2"
+            android:layout_toStartOf="@+id/menu_icon_2" />
+
+        <ImageView
+            android:id="@+id/menu_icon_2"
+            android:layout_width="32dp"
+            android:layout_height="match_parent"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="12dp"
+            android:layout_marginStart="12dp"
+            android:layout_marginRight="12dp"
+            android:layout_marginEnd="12dp"
+            android:src="@drawable/ic_action_chat_2"/>
+
+    </RelativeLayout>
+
+</android.support.v7.widget.Toolbar>

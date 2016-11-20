@@ -35,6 +35,7 @@ import com.abborg.glom.di.ComponentInjector;
 import com.abborg.glom.interfaces.BoardItemChangeListener;
 import com.abborg.glom.interfaces.BroadcastLocationListener;
 import com.abborg.glom.interfaces.CircleChangeListener;
+import com.abborg.glom.interfaces.MainActivityCallbacks;
 import com.abborg.glom.interfaces.UsersChangeListener;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
@@ -120,6 +121,8 @@ public class LocationFragment extends SupportMapFragment implements
     /* Holds a temporary zoom level to detect zoom level change */
     private float zoomLevel = -1.0f;
 
+    private MainActivityCallbacks activityCallback;
+
     /*******************************************************************
      * CONSTANTS
      *******************************************************************/
@@ -150,8 +153,6 @@ public class LocationFragment extends SupportMapFragment implements
      * FRAGMENT LIFECYCLE
      *******************************************************************/
 
-    public LocationFragment() {}
-
     @Override
     public void onCreate(Bundle savedBundleState) {
         super.onCreate(savedBundleState);
@@ -173,10 +174,6 @@ public class LocationFragment extends SupportMapFragment implements
         FrameLayout mapView = (FrameLayout) super.onCreateView(inflater, container, savedInstanceState);
         if (mapView != null) {
             View overlay = inflater.inflate(R.layout.fragment_location_overlay, null);
-
-//        int marginTopDp = (int) TypedValue.applyDimension(
-//                TypedValue.COMPLEX_UNIT_DIP, getResources().getDimension(R.dimen.fragment_margin_top), getResources()
-//                        .getDisplayMetrics());
 
             // zoom-to-fit button
             if (overlay != null) {
@@ -212,20 +209,44 @@ public class LocationFragment extends SupportMapFragment implements
     }
 
     @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+
+        try {
+            activityCallback = (MainActivityCallbacks) context;
+            if (isFragmentVisible) {
+                activityCallback.onSetFabVisible(false);
+            }
+        }
+        catch (ClassCastException ex) {
+            Log.e(TAG, "Attached activity has to implement " + MainActivityCallbacks.class.getName());
+        }
+    }
+
+    @Override
     public void setUserVisibleHint(boolean isVisibleToUser) {
         super.setUserVisibleHint(isVisibleToUser);
         if (isVisibleToUser) {
             isFragmentVisible = true;
-            Log.i(TAG, "Map is now visible to user");
-
-            // TODO depending on settings, start CirclePushService to start tracking user location without broadcasting
 
             updateMarkersInfo();
+
+            activityCallback.onSetFabVisible(false);
+            setActivityToolbar();
         }
         else {
             isFragmentVisible = false;
-            // TODO depending on settings, stop CirclePushService
-            Log.i(TAG, "Map is now INVISIBLE to user");
+        }
+    }
+
+    private void setActivityToolbar() {
+        if (isFragmentVisible) {
+            activityCallback.onToolbarTitleChanged(appState.getActiveCircle().getTitle());
+
+            int eventCount = eventMarkers == null ? 0 : eventMarkers.size();
+            activityCallback.onToolbarSubtitleChanged(
+                    getContext().getResources().getQuantityString(R.plurals.subtitle_location_fragment,
+                            eventCount, eventCount));
         }
     }
 
@@ -356,6 +377,8 @@ public class LocationFragment extends SupportMapFragment implements
             if (newEvent == null) return;
 
             addMarker(newEvent);
+
+            setActivityToolbar();
         }
     }
 
@@ -402,6 +425,8 @@ public class LocationFragment extends SupportMapFragment implements
                 }
                 Log.d(TAG, "Marker for event " + id + " removed because a location is not provided");
             }
+
+            setActivityToolbar();
         }
     }
 
@@ -415,6 +440,8 @@ public class LocationFragment extends SupportMapFragment implements
                 eventMarkers.remove(id);
             }
             Log.d(TAG, "Marker for event " + id + " removed");
+
+            setActivityToolbar();
         }
     }
 
@@ -430,6 +457,8 @@ public class LocationFragment extends SupportMapFragment implements
     @Override
     public void onCircleChanged() {
         update();
+
+        setActivityToolbar();
     }
 
     @Override
@@ -534,8 +563,7 @@ public class LocationFragment extends SupportMapFragment implements
     }
 
     private void update() {
-        // initialize the default user's marker from sqlite
-        if (googleMap != null) {
+        if (googleMap != null && appState != null) {
             try {
                 if (userMarkers != null) {
                     for (Marker marker : userMarkers.values()) {
@@ -570,6 +598,8 @@ public class LocationFragment extends SupportMapFragment implements
             setupEventMarkers(circle);
 
             updateMarkersInfo();
+
+            setActivityToolbar();
         }
     }
 

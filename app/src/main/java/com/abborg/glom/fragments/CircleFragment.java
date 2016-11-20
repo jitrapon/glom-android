@@ -1,6 +1,5 @@
 package com.abborg.glom.fragments;
 
-import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -20,6 +19,7 @@ import com.abborg.glom.adapters.UserAvatarAdapter;
 import com.abborg.glom.di.ComponentInjector;
 import com.abborg.glom.interfaces.BroadcastLocationListener;
 import com.abborg.glom.interfaces.CircleChangeListener;
+import com.abborg.glom.interfaces.MainActivityCallbacks;
 import com.abborg.glom.interfaces.UsersChangeListener;
 import com.abborg.glom.model.User;
 import com.abborg.glom.utils.LayoutUtils;
@@ -29,35 +29,23 @@ import java.util.List;
 
 import javax.inject.Inject;
 
-/**
- * A simple {@link Fragment} subclass.
- * This fragment contains layout for the circle (group) in a circle.
- * The fragment can show group of users in grid style, circle style,
- * or a traditional scroll view style.
- * */
 public class CircleFragment extends Fragment implements
         BroadcastLocationListener,
         CircleChangeListener,
-        UsersChangeListener {
+        UsersChangeListener,
+        AdapterView.OnItemClickListener {
 
     @Inject
     ApplicationState appState;
-
-    private static final String TAG = "CIRCLE_FRAGMENT";
-
     private List<User> users;
 
-    /* Whether or not the fragment is visible */
     public boolean isFragmentVisible;
 
     private UserAvatarAdapter avatarAdapter;
-
-    // Required empty public constructor
-    public CircleFragment() {}
-
     private GridView gridView;
+    private MainActivityCallbacks activityCallback;
 
-    private AdapterView.OnItemClickListener listener;
+    private static final String TAG = "CIRCLE_FRAGMENT";
 
     /**********************************************************
      * View Initializations
@@ -68,11 +56,12 @@ public class CircleFragment extends Fragment implements
         super.setUserVisibleHint(isVisibleToUser);
         if (isVisibleToUser) {
             isFragmentVisible = true;
-            Log.i(TAG, "Circle is now visible to user");
+
+            activityCallback.onSetFabVisible(false);
+            setActivityToolbar();
         }
         else {
             isFragmentVisible = false;
-            Log.i(TAG, "Circle is now INVISIBLE to user");
         }
     }
 
@@ -115,7 +104,7 @@ public class CircleFragment extends Fragment implements
         // set callback for each avatar
         // here we display the radial menu for user and show overlay
         // show menu based on user permission
-        gridView.setOnItemClickListener(listener);
+        gridView.setOnItemClickListener(this);
 
         // add the layout
         rootView.addView(gridView, 0);
@@ -127,13 +116,14 @@ public class CircleFragment extends Fragment implements
     public void onAttach(Context context) {
         super.onAttach(context);
 
-        if (context instanceof Activity){
-            try {
-                listener = (AdapterView.OnItemClickListener) context;
+        try {
+            activityCallback = (MainActivityCallbacks) context;
+            if (isFragmentVisible) {
+                activityCallback.onSetFabVisible(false);
             }
-            catch (ClassCastException ex) {
-                Log.e(TAG, "The attached activity does not implement listener for GridView!");
-            }
+        }
+        catch (ClassCastException ex) {
+            Log.e(TAG, "Attached activity has to implement " + MainActivityCallbacks.class.getName());
         }
     }
 
@@ -154,11 +144,26 @@ public class CircleFragment extends Fragment implements
     @Override
     public void onCircleChanged() {
         update();
+
+        setActivityToolbar();
     }
 
     @Override
     public void onUsersChanged() {
         update();
+
+        setActivityToolbar();
+    }
+
+    private void setActivityToolbar() {
+        if (isFragmentVisible) {
+            activityCallback.onToolbarTitleChanged(appState.getActiveCircle().getTitle());
+
+            int memberCount = appState.getActiveCircle().getUsers().size();
+            activityCallback.onToolbarSubtitleChanged(
+                    getContext().getResources().getQuantityString(R.plurals.subtitle_circle_fragment,
+                            memberCount, memberCount));
+        }
     }
 
     /**********************************************************
@@ -195,4 +200,13 @@ public class CircleFragment extends Fragment implements
             return gridView.getChildAt(childIndex);
         }
     }
+
+    /**********************************************************
+     * User Grid Click Handler
+     **********************************************************/
+
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+    }
+
 }

@@ -17,6 +17,8 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="colorControlActivated">@color/colorPrimaryDark</item>
+        <item name="android:actionBarSize">@dimen/toolbar_height</item>
+        <item name="actionBarSize">@dimen/toolbar_height</item>
     </style>
 
     <!-- Alert Dialog -->
@@ -50,8 +52,8 @@
         <item name="tabIndicatorHeight">2dp</item>
     </style>
 
-    <!-- Toolbar Small Title -->
-    <style name="Toolbar.TitleText" parent="TextAppearance.Widget.AppCompat.Toolbar.Title">
+    <!-- Toolbar Title -->
+    <style name="Toolbar.TitleText" parent="@style/Base.TextAppearance.AppCompat.Title">
         <item name="android:textSize">@dimen/toolbar_title_text_size</item>
     </style>
     <style name="Toolbar.SubtitleText" parent="TextAppearance.Widget.AppCompat.Toolbar.Subtitle">

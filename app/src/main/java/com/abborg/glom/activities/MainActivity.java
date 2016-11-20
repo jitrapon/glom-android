@@ -30,7 +30,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewStub;
-import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -51,6 +50,7 @@ import com.abborg.glom.interfaces.CircleChangeListener;
 import com.abborg.glom.interfaces.CircleListListener;
 import com.abborg.glom.interfaces.CircleMenuListener;
 import com.abborg.glom.interfaces.DiscoverItemChangeListener;
+import com.abborg.glom.interfaces.MainActivityCallbacks;
 import com.abborg.glom.interfaces.UsersChangeListener;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.Circle;
@@ -66,8 +66,10 @@ import com.abborg.glom.model.MenuActionItem;
 import com.abborg.glom.model.NoteItem;
 import com.abborg.glom.model.User;
 import com.abborg.glom.service.RegistrationIntentService;
+import com.abborg.glom.utils.CircleTransform;
 import com.abborg.glom.utils.TaskUtils;
 import com.abborg.glom.views.CircleMenu;
+import com.bumptech.glide.Glide;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.youtube.player.YouTubeStandalonePlayer;
 
@@ -88,12 +90,13 @@ import pub.devrel.easypermissions.EasyPermissions;
  *
  * @author jitrapon
  */
+@SuppressWarnings("ConstantConditions")
 public class MainActivity extends BaseActivity implements
         DrawerFragment.FragmentDrawerListener,
         Handler.Callback,
-        AdapterView.OnItemClickListener,
         ActionMode.Callback,
-        CircleMenuListener {
+        CircleMenuListener,
+        MainActivityCallbacks {
 
     protected static final String TAG = "MainActivity";
 
@@ -121,6 +124,11 @@ public class MainActivity extends BaseActivity implements
     private TabLayout tabLayout;
     private ViewPager viewPager;
     private Toolbar toolbar;
+    private ImageView toolbarNavIcon;
+    private TextView toolbarTitle;
+    private TextView toolbarSubtitle;
+    private ImageView toolbarMenuButton1;
+    private ImageView toolbarMenuButton2;
     private FloatingActionButton fab;
     private View notificationBar;
     private TextView notificationText;
@@ -192,6 +200,11 @@ public class MainActivity extends BaseActivity implements
         mainCoordinatorLayout = (CoordinatorLayout) findViewById(R.id.coordinator_layout);
         tabLayout = (TabLayout) findViewById(R.id.tabs);
         toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbarNavIcon = (ImageView) findViewById(R.id.nav_icon);
+        toolbarTitle = (TextView) findViewById(R.id.title);
+        toolbarSubtitle = (TextView) findViewById(R.id.subtitle);
+        toolbarMenuButton1 = (ImageView) findViewById(R.id.menu_icon_1);
+        toolbarMenuButton2 = (ImageView) findViewById(R.id.menu_icon_2);
         viewPager = (ViewPager) findViewById(R.id.viewpager);
         fab = (FloatingActionButton) findViewById(R.id.fab);
         circleMenuLayout = (RelativeLayout) findViewById(R.id.circle_menu_layout);
@@ -232,16 +245,24 @@ public class MainActivity extends BaseActivity implements
                 });
 
         // set up the action bar
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle(appState.getActiveCircle().getTitle()
-                    + " (" + appState.getActiveCircle().getUsers().size() + ")");
-        }
+        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
+        onToolbarNavIconChanged(appState.getActiveCircle().getAvatar());
+        toolbarMenuButton1.setVisibility(View.GONE);
+        toolbarMenuButton2.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_action_chat_2));
+        toolbarMenuButton2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(v.getContext(), ChatActivity.class);
+                startActivity(intent);
+            }
+        });
 
         // set up the navigation drawer
         drawerFragment = (DrawerFragment)
                 getSupportFragmentManager().findFragmentById(R.id.fragment_drawer);
-        drawerFragment.init(R.id.fragment_drawer, (DrawerLayout) findViewById(R.id.drawer_layout), toolbar);
+        drawerFragment.init(R.id.fragment_drawer, (DrawerLayout) findViewById(R.id.drawer_layout), toolbar,
+                R.id.nav_icon);
         drawerFragment.setDrawerListener(this);
 
         // set up circular menu
@@ -257,23 +278,20 @@ public class MainActivity extends BaseActivity implements
                 .create();
 
         // set up the floating action button for all fragments
-        if (fab != null) {
-            fab.show();
-            fab.setOnClickListener(new View.OnClickListener() {
+        fab.setOnClickListener(new View.OnClickListener() {
 
-                @Override
-                public void onClick(View v) {
-                    if (adapter.getItem(viewPager.getCurrentItem()) instanceof BoardFragment) {
-                        if (circleMenu.isOpened()) {
-                            circleMenu.close(true);
-                        }
-                        else {
-                            circleMenu.open(true);
-                        }
+            @Override
+            public void onClick(View v) {
+                if (adapter.getItem(viewPager.getCurrentItem()) instanceof BoardFragment) {
+                    if (circleMenu.isOpened()) {
+                        circleMenu.close(true);
+                    }
+                    else {
+                        circleMenu.open(true);
                     }
                 }
-            });
-        }
+            }
+        });
     }
 
     @Override
@@ -536,83 +554,10 @@ public class MainActivity extends BaseActivity implements
                 .start();
     }
 
-    public void setFloatingActionButtonVisible(boolean visible) {
-        if (fab != null) {
-            if (visible) fab.show();
-            else fab.hide();
-        }
-    }
-
-    /**************************************************
-     * Notification Bar
-     **************************************************/
-
-    private void showNotificationBar(int bgColor, String text, long duration) {
-        if (notificationBar != null) {
-            notificationBar.setVisibility(View.VISIBLE);
-            notificationText.setText(text);
-            notificationText.setBackgroundColor(bgColor);
-
-            if (duration > 0L) {
-                notificationBar.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        notificationBar.setVisibility(View.GONE);
-                    }
-                }, duration);
-            }
-        }
-        else {
-            View view = findViewById(R.id.stub_notification_bar);
-            if (view != null && view instanceof ViewStub) {
-                if (notificationBar == null) {
-                    notificationBar = ((ViewStub) view).inflate();
-
-                    notificationText = (TextView) notificationBar.findViewById(R.id.notification_text);
-                    ImageView notificationCloseBtn = (ImageView) notificationBar.findViewById(R.id.notification_close_btn);
-
-                    notificationText.setText(text);
-                    notificationText.setBackgroundColor(bgColor);
-                    notificationCloseBtn.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            notificationBar.setVisibility(View.GONE);
-                        }
-                    });
-
-                    if (duration > 0L) {
-                        notificationBar.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                notificationBar.setVisibility(View.GONE);
-                            }
-                        }, duration);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Forces updates of all fragments and UI. Use only if selecting a new circle to display.
-     */
-    private void showCircle(Circle circle) {
-        if (getSupportActionBar() != null) getSupportActionBar().setTitle(circle.getTitle() + " (" + circle.getUsers().size() + ")");
-
-        updateBroadcastLocationSheet();
-
-        // refresh all fragments
-        if (circleChangeListeners != null) {
-            for (CircleChangeListener listener : circleChangeListeners) {
-                listener.onCircleChanged();
-            }
-        }
-    }
-
-
     /**********************************************************
      * Handler Callbacks
      **********************************************************/
+
     @Override
     public boolean handleMessage(Message msg) {
         switch (msg.what) {
@@ -663,9 +608,6 @@ public class MainActivity extends BaseActivity implements
                         }
                     }
 
-                    getSupportActionBar().setTitle(appState.getActiveCircle().getTitle()
-                            + " (" + appState.getActiveCircle().getUsers().size() + ")");
-
                     dataProvider.requestGetUsersInCircle(appState.getActiveCircle());
                 }
 
@@ -706,7 +648,7 @@ public class MainActivity extends BaseActivity implements
                     Log.d(TAG, "Done retrieving circle info with id: " + circle.getId() + ", name: " + circle.getTitle()
                             + ", " + circle.getUsers().size() + " users, " + circle.getItems().size() + " items");
                     appState.setActiveCircle(circle);
-                    showCircle(circle);
+                    invalidateViews();
 
                     // refresh users
                     dataProvider.requestGetUsersInCircle(appState.getActiveCircle());
@@ -734,7 +676,7 @@ public class MainActivity extends BaseActivity implements
                     dataProvider.cancelAllNetworkRequests();
                 }
 
-                showNotificationBar(ContextCompat.getColor(getApplicationContext(), R.color.notificationWarningBackground),
+                onShowNotificationBar(ContextCompat.getColor(getApplicationContext(), R.color.notificationWarningBackground),
                         getResources().getString(R.string.notification_offline), -1L);
 
                 break;
@@ -748,7 +690,7 @@ public class MainActivity extends BaseActivity implements
                     dataProvider.requestServerStatus();
                 }
 
-                showNotificationBar(ContextCompat.getColor(getApplicationContext(), R.color.notificationWarningBackground),
+                onShowNotificationBar(ContextCompat.getColor(getApplicationContext(), R.color.notificationWarningBackground),
                         getResources().getString(R.string.notification_connecting), -1L);
 
                 break;
@@ -758,7 +700,7 @@ public class MainActivity extends BaseActivity implements
             case Const.MSG_SERVER_CONNECTED: {
                 Log.d(TAG, "Connection established to server successfully!");
 
-                showNotificationBar(ContextCompat.getColor(getApplicationContext(), R.color.notificationSuccessBackground),
+                onShowNotificationBar(ContextCompat.getColor(getApplicationContext(), R.color.notificationSuccessBackground),
                         getResources().getString(R.string.notification_connected), 3000);
 
                 break;
@@ -766,9 +708,6 @@ public class MainActivity extends BaseActivity implements
 
             /* Request: get list of users in circle */
             case Const.MSG_GET_USERS:
-                Circle circle = appState.getActiveCircle();
-
-                if (getSupportActionBar() != null) getSupportActionBar().setTitle(circle.getTitle() + " (" + circle.getUsers().size() + ")");
                 if (usersChangeListeners != null) {
                     for (UsersChangeListener listener : usersChangeListeners) {
                         listener.onUsersChanged();
@@ -1637,47 +1576,127 @@ public class MainActivity extends BaseActivity implements
     public Handler getHandler() { return handler; }
 
     /**********************************************************
-     * Menu Handler
+     * Other View Callbacks from Fragment/etc
+     * (Toolbar, toolbar menu, notification, etc.
      **********************************************************/
+
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
+    public void onToolbarNavIconChanged(String imageUrl) {
+        Glide.with(this)
+                .load(imageUrl).fitCenter()
+                .transform(new CircleTransform(this))
+                .override(getResources().getDimensionPixelSize(R.dimen.toolbar_nav_icon_size),
+                        getResources().getDimensionPixelSize(R.dimen.toolbar_nav_icon_size))
+                .placeholder(R.drawable.ic_profile)
+                .error(R.drawable.ic_profile)
+                .crossFade(1000)
+                .into(toolbarNavIcon);
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
+    public void onToolbarTitleChanged(String title) {
+        toolbarTitle.setText(title);
+    }
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_search) {
-            return true;
+    @Override
+    public void onToolbarSubtitleChanged(String subtitle) {
+        toolbarSubtitle.setVisibility(TextUtils.isEmpty(subtitle) ? View.GONE : View.VISIBLE);
+        if (toolbarSubtitle.getVisibility() == View.VISIBLE) {
+            toolbarSubtitle.setText(subtitle);
         }
-        else if (id == R.id.action_chat) {
-            if (appState != null) {
-                Intent intent = new Intent(this, ChatActivity.class);
-                startActivity(intent);
+    }
+
+    @Override
+    public void onShowNotificationBar(int bgColor, String text, long duration) {
+        if (notificationBar != null) {
+            notificationBar.setVisibility(View.VISIBLE);
+            notificationText.setText(text);
+            notificationText.setBackgroundColor(bgColor);
+
+            if (duration > 0L) {
+                notificationBar.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        notificationBar.setVisibility(View.GONE);
+                    }
+                }, duration);
             }
-            return true;
         }
-        else if (id == R.id.action_settings) {
-            return true;
-        }
+        else {
+            View view = findViewById(R.id.stub_notification_bar);
+            if (view != null && view instanceof ViewStub) {
+                if (notificationBar == null) {
+                    notificationBar = ((ViewStub) view).inflate();
 
-        return super.onOptionsItemSelected(item);
+                    notificationText = (TextView) notificationBar.findViewById(R.id.notification_text);
+                    ImageView notificationCloseBtn = (ImageView) notificationBar.findViewById(R.id.notification_close_btn);
+
+                    notificationText.setText(text);
+                    notificationText.setBackgroundColor(bgColor);
+                    notificationCloseBtn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            notificationBar.setVisibility(View.GONE);
+                        }
+                    });
+
+                    if (duration > 0L) {
+                        notificationBar.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                notificationBar.setVisibility(View.GONE);
+                            }
+                        }, duration);
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onOpenCircleMenu() {
+        circleMenu.open(true);
+    }
+
+    @Override
+    public void onSetFabVisible(boolean visible) {
+        if (fab.isShown() && !visible) {
+            fab.hide();
+        }
+        else if (!fab.isShown() && visible) {
+            fab.show();
+        }
+    }
+
+    @Override
+    public Handler getThreadHandler() {
+        return handler;
     }
 
     /**********************************************************
      * Drawer Handler
      **********************************************************/
+
     @Override
     public void onDrawerItemSelected(View view, int position) {
         dataProvider.cancelAllNetworkRequests();
         dataProvider.getCircleByIdAsync(appState.getCircleList().get(position).id);
+    }
+
+    /**
+     * Forces updates of all fragments and UI. Use only if selecting a new circle to display.
+     */
+    private void invalidateViews() {
+        updateBroadcastLocationSheet();
+
+        onToolbarNavIconChanged(appState.getActiveCircle().getAvatar());
+
+        // refresh all fragments
+        if (circleChangeListeners != null) {
+            for (CircleChangeListener listener : circleChangeListeners) {
+                listener.onCircleChanged();
+            }
+        }
     }
 
     /**********************************************************
@@ -1793,13 +1812,6 @@ public class MainActivity extends BaseActivity implements
             ex.printStackTrace();
             Log.e(TAG, ex.getMessage());
         }
-    }
-
-    /**********************************************************
-     * User Grid Click Handler
-     **********************************************************/
-    @Override
-    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
     }
 
     /**********************************************************

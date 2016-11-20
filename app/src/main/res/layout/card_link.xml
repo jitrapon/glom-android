@@ -132,7 +132,7 @@
                     android:paddingEnd="@dimen/card_info_padding"
                     android:paddingBottom="@dimen/card_primary_text_padding_bottom"
                     android:text="@string/empty_placeholder"
-                    android:textColor="@color/mainSecondary"
+                    android:textColor="@color/darkTertiaryText"
                     android:maxLines="1"
                     android:ellipsize="end" />
 

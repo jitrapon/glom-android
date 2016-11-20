@@ -135,6 +135,7 @@ public class CircleMenu {
         FrameLayout.LayoutParams subActionButtonParams = new FrameLayout.LayoutParams(subActionButtonSize, subActionButtonSize);
         lCSubBuilder.setLayoutParams(subActionButtonParams);
 
+        // add menu items
         for (final MenuActionItem menuItem : items) {
             ImageView icon = new ImageView(activity);
             icon.setImageDrawable(ContextCompat.getDrawable(activity, menuItem.getIcon()));

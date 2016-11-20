@@ -640,9 +640,9 @@ public class BaseActivity extends AppCompatActivity implements
     public void onItemClicked(MenuActionItem item) {
         if (boardItemBottomSheet != null) {
             boardItemBottomSheet.dismiss();
-
-            handleMenuActionItem(item);
         }
+
+        handleMenuActionItem(item);
     }
 
     protected void updateBroadcastLocationSheet() {

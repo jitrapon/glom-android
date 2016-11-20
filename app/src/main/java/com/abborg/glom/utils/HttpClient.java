@@ -3,7 +3,7 @@ package com.abborg.glom.utils;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.support.v4.util.LruCache;
-import android.widget.Toast;
+import android.util.Log;
 
 import com.abborg.glom.ApplicationState;
 import com.abborg.glom.Const;
@@ -87,38 +87,26 @@ public class HttpClient {
      */
     public boolean handleError(VolleyError error) {
         if (error instanceof TimeoutError) {
-            Toast.makeText(context,
-                    context.getString(R.string.error_network_timeout),
-                    Toast.LENGTH_SHORT).show();
+            Log.e(TAG, context.getString(R.string.error_network_timeout));
             return true;
         }
 
         else if (error instanceof NoConnectionError) {
-            Toast.makeText(context,
-                    context.getString(R.string.error_no_connection),
-                    Toast.LENGTH_SHORT).show();
+            Log.e(TAG, context.getString(R.string.error_no_connection));
             return true;
         }
         else if (error instanceof AuthFailureError) {
-            Toast.makeText(context,
-                    context.getString(R.string.error_auth_failure),
-                    Toast.LENGTH_SHORT).show();
+            Log.e(TAG, context.getString(R.string.error_auth_failure));
         }
         else if (error instanceof ServerError) {
-            Toast.makeText(context,
-                    context.getString(R.string.error_server_generic),
-                    Toast.LENGTH_SHORT).show();
+            Log.e(TAG, context.getString(R.string.error_server_generic));
         }
         else if (error instanceof NetworkError) {
-            Toast.makeText(context,
-                    context.getString(R.string.error_network_generic),
-                    Toast.LENGTH_SHORT).show();
+            Log.e(TAG, context.getString(R.string.error_network_generic));
             return true;
         }
         else if (error instanceof ParseError) {
-            Toast.makeText(context,
-                    context.getString(R.string.error_parse_generic),
-                    Toast.LENGTH_SHORT).show();
+            Log.e(TAG, context.getString(R.string.error_parse_generic));
         }
 
         return false;

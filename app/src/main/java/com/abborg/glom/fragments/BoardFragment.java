@@ -1,7 +1,6 @@
 package com.abborg.glom.fragments;
 
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -28,7 +27,6 @@ import com.abborg.glom.Const;
 import com.abborg.glom.R;
 import com.abborg.glom.activities.EventActivity;
 import com.abborg.glom.activities.ListItemActivity;
-import com.abborg.glom.activities.MainActivity;
 import com.abborg.glom.activities.NoteActivity;
 import com.abborg.glom.adapters.BoardItemAdapter;
 import com.abborg.glom.data.DataProvider;
@@ -37,6 +35,7 @@ import com.abborg.glom.interfaces.ActionModeCallbacks;
 import com.abborg.glom.interfaces.BoardItemChangeListener;
 import com.abborg.glom.interfaces.BoardItemClickListener;
 import com.abborg.glom.interfaces.CircleChangeListener;
+import com.abborg.glom.interfaces.MainActivityCallbacks;
 import com.abborg.glom.model.BoardItem;
 import com.abborg.glom.model.DrawItem;
 import com.abborg.glom.model.EventItem;
@@ -73,33 +72,20 @@ public class BoardFragment extends Fragment implements
     @Inject
     DataProvider dataProvider;
 
-    private static final String TAG = "BoardFragment";
-
-    /* Whether or not this fragment is visible */
     public boolean isFragmentVisible;
-
-    /* The swipe refresh layout */
     private SwipeRefreshLayout refreshView;
-
-    /* Adapter to the recycler view */
     private BoardItemAdapter adapter;
-
-    /* The list of items in this circle */
-    private List<BoardItem> items;
-
     private ImageView emptyView;
     private boolean firstView;
-
-    private MainActivity activity;
-    private Handler handler;
-
     private boolean isActionModeEnabled;
 
-//    private static final int ITEM_APPEARANCE_ANIM_TIME = 650;
-//    private static final long ITEM_ADD_ANIM_TIME = 100;
-//    private static final long ITEM_REMOVE_ANIM_TIME = 100;
-//    private static final long ITEM_MOVE_ANIM_TIME = 100;
-//    private static final long ITEM_CHANGE_ANIM_TIME = 100;
+    private List<BoardItem> items;
+
+    private MainActivityCallbacks activityCallback;
+
+    private Handler handler;
+
+    private static final String TAG = "BoardFragment";
 
     /**********************************************************
      * View Initializations
@@ -120,8 +106,17 @@ public class BoardFragment extends Fragment implements
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        activity = context instanceof Activity ? (MainActivity) context : null;
-        if (activity != null) handler = activity.getHandler();
+
+        try {
+            activityCallback = (MainActivityCallbacks) context;
+            if (isFragmentVisible) {
+                activityCallback.onSetFabVisible(true);
+            }
+            handler = activityCallback.getThreadHandler();
+        }
+        catch (ClassCastException ex) {
+            Log.e(TAG, "Attached activity has to implement " + MainActivityCallbacks.class.getName());
+        }
     }
 
     @Override
@@ -148,13 +143,6 @@ public class BoardFragment extends Fragment implements
 
         // set up adapter and its appearance animation
         recyclerView.setAdapter(adapter);
-
-        // set up item animations
-//        recyclerView.setItemAnimator(new SlideInUpAnimator(new OvershootInterpolator(1f)));
-//        recyclerView.getItemAnimator().setAddDuration(ITEM_ADD_ANIM_TIME);
-//        recyclerView.getItemAnimator().setRemoveDuration(ITEM_REMOVE_ANIM_TIME);
-//        recyclerView.getItemAnimator().setMoveDuration(ITEM_MOVE_ANIM_TIME);
-//        recyclerView.getItemAnimator().setChangeDuration(ITEM_CHANGE_ANIM_TIME);
 
         // set up empty board icon
         emptyView = (ImageView) root.findViewById(R.id.board_empty_view);
@@ -189,12 +177,23 @@ public class BoardFragment extends Fragment implements
                 }
             }
 
+            activityCallback.onSetFabVisible(true);
+            setActivityToolbar();
             firstView = true;
-            Log.i(TAG, "EventItem is now visible to user");
         }
         else {
             isFragmentVisible = false;
-            Log.i(TAG, "EventItem is now INVISIBLE to user");
+        }
+    }
+
+    private void setActivityToolbar() {
+        if (isFragmentVisible) {
+            activityCallback.onToolbarTitleChanged(appState.getActiveCircle().getTitle());
+
+            int itemCount = appState.getActiveCircle().getItems().size();
+            activityCallback.onToolbarSubtitleChanged(
+                    getContext().getResources().getQuantityString(R.plurals.subtitle_board_fragment,
+                            itemCount, itemCount));
         }
     }
 
@@ -205,6 +204,8 @@ public class BoardFragment extends Fragment implements
     @Override
     public void onCircleChanged() {
         update();
+
+        setActivityToolbar();
     }
 
     /**********************************************************
@@ -217,7 +218,7 @@ public class BoardFragment extends Fragment implements
             if (selected != null) {
                 if (selected instanceof EventItem) {
                     EventItem event = (EventItem) selected;
-                    Intent intent = new Intent(activity, EventActivity.class);
+                    Intent intent = new Intent(getActivity(), EventActivity.class);
                     intent.putExtra(getResources().getString(R.string.EXTRA_EVENT_ID), event.getId());
                     intent.setAction(getResources().getString(R.string.ACTION_UPDATE_EVENT));
                     appState.setKeepGoogleApiClientAlive(true);
@@ -249,14 +250,14 @@ public class BoardFragment extends Fragment implements
                 }
                 else if (selected instanceof ListItem) {
                     ListItem item = (ListItem) selected;
-                    Intent intent = new Intent(activity, ListItemActivity.class);
+                    Intent intent = new Intent(getActivity(), ListItemActivity.class);
                     intent.putExtra(getString(R.string.EXTRA_LIST_ID), item.getId());
                     intent.setAction(getString(R.string.ACTION_UPDATE_LIST));
                     getActivity().startActivity(intent);
                 }
                 else if (selected instanceof NoteItem) {
                     NoteItem item = (NoteItem) selected;
-                    Intent intent = new Intent(activity, NoteActivity.class);
+                    Intent intent = new Intent(getActivity(), NoteActivity.class);
                     intent.putExtra(getString(R.string.EXTRA_NOTE_ID), item.getId());
                     intent.setAction(getString(R.string.ACTION_UPDATE_NOTE));
                     getActivity().startActivity(intent);
@@ -361,9 +362,7 @@ public class BoardFragment extends Fragment implements
 
     @Override
     public void onItemAdded(String id) {
-        if (activity != null && id != null) {
-            adapter.addItem(id);
-        }
+        adapter.addItem(id);
 
         if (refreshView != null) {
             if (refreshView.isRefreshing())
@@ -371,25 +370,25 @@ public class BoardFragment extends Fragment implements
         }
 
         showOrHideEmptyIcon();
+
+        setActivityToolbar();
     }
 
     @Override
     public void onItemModified(String id) {
-        if (activity != null && id != null) {
-            adapter.updateItem(id);
-        }
+        adapter.updateItem(id);
 
         if (refreshView != null) {
             if (refreshView.isRefreshing())
                 refreshView.setRefreshing(false);
         }
+
+        setActivityToolbar();
     }
 
     @Override
     public void onItemDeleted(String id) {
-        if (activity != null && id != null) {
-            adapter.deleteItem(id);
-        }
+        adapter.deleteItem(id);
 
         if (refreshView != null) {
             if (refreshView.isRefreshing())
@@ -397,11 +396,15 @@ public class BoardFragment extends Fragment implements
         }
 
         showOrHideEmptyIcon();
+
+        setActivityToolbar();
     }
 
     @Override
     public void onItemsChanged() {
         update();
+
+        setActivityToolbar();
     }
 
     /**********************************************************
@@ -467,15 +470,15 @@ public class BoardFragment extends Fragment implements
     }
 
     private void update() {
-        if (activity != null && adapter != null) {
+        if (appState != null) {
             items = appState.getActiveCircle().getItems();
             adapter.update(items);
             if (refreshView != null) {
                 if (refreshView.isRefreshing()) refreshView.setRefreshing(false);
             }
-        }
 
-        showOrHideEmptyIcon();
+            showOrHideEmptyIcon();
+        }
     }
 
     public void setActionModeEnabled(boolean enabled) {

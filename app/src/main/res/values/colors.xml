@@ -30,7 +30,7 @@
     <!-- text colors -->
     <color name="darkPrimaryText">@color/textDarkPrimary</color>
     <color name="darkSecondaryText">@color/textDarkSecondary</color>
-    <color name="cardActionButtonTextColor">@color/colorAccent</color>
+    <color name="cardActionButtonTextColor">@color/darkPrimary</color>
     <color name="movieCardReleaseDateBackground">#00e5ff</color>
     <color name="defaultIncomingTextBackground">#cfd8dc</color>
     <color name="defaultIncomingTextBackgroundPressed">#9e9e9e</color>
@@ -38,6 +38,7 @@
     <color name="defaultOutgoingTextBackgroundPressed">@color/colorPrimaryDark</color>
     <color name="defaultIncomingTextColor">#000000</color>
     <color name="defaultOutgoingTextColor">#FFFFFF</color>
+    <color name="darkTertiaryText">@color/darkTertiary</color>
 
     <!-- app-wide notification bar -->
     <color name="notificationTextColor">@color/textLightPrimary</color>

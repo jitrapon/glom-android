@@ -2,6 +2,7 @@ package com.abborg.glom.fragments;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.support.annotation.IdRes;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -9,6 +10,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.GestureDetector;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -63,7 +65,7 @@ public class DrawerFragment extends Fragment implements
         return layout;
     }
 
-    public void init(int fragmentId, DrawerLayout drawerLayout, final Toolbar toolbar) {
+    public void init(int fragmentId, DrawerLayout drawerLayout, final Toolbar toolbar, @IdRes int toolbarNavICon) {
         adapter = new NavigationDrawerAdapter(getActivity(), appState.getCircleList());
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
@@ -101,6 +103,14 @@ public class DrawerFragment extends Fragment implements
                 toolbar.setAlpha(1 - slideOffset / 2);
             }
         };
+        mDrawerToggle.setDrawerIndicatorEnabled(false);
+        View navIcon = toolbar.findViewById(toolbarNavICon);
+        navIcon.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mDrawerLayout.openDrawer(Gravity.LEFT);
+            }
+        });
 
         mDrawerLayout.addDrawerListener(mDrawerToggle);
         mDrawerLayout.post(new Runnable() {

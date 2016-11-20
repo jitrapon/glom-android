@@ -8,18 +8,13 @@
         android:title="@string/menu_item_search"
         android:orderInCategory="100"
         android:icon="@drawable/ic_action_search"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="always" />
 
     <item
         android:id="@+id/action_chat"
         android:title="@string/menu_item_chat"
         android:orderInCategory="200"
         android:icon="@drawable/ic_action_chat_2"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="always" />
 
-    <item
-        android:id="@+id/action_settings"
-        android:title="@string/menu_item_settings"
-        android:orderInCategory="100"
-        app:showAsAction="never" />
 </menu>

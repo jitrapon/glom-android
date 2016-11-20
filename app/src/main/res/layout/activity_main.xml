@@ -18,13 +18,9 @@
             android:theme="@style/AppMaterialTheme.AppBarOverlay"
             app:elevation="@dimen/toolbar_elevation" >
 
-            <android.support.v7.widget.Toolbar
+            <include
                 android:id="@+id/toolbar"
-                android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                android:background="@color/colorPrimary"
-                app:layout_scrollFlags="scroll|enterAlways"
-                app:popupTheme="@style/AppMaterialTheme.PopupOverlay" />
+                layout="@layout/toolbar" />
 
             <android.support.design.widget.TabLayout
                 style="@style/AppMaterialTheme.TabBarLayout"

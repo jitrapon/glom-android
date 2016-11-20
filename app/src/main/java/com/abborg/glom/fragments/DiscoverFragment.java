@@ -1,7 +1,6 @@
 package com.abborg.glom.fragments;
 
 
-import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
@@ -9,17 +8,18 @@ import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.abborg.glom.ApplicationState;
 import com.abborg.glom.R;
-import com.abborg.glom.activities.MainActivity;
 import com.abborg.glom.adapters.DiscoverRecyclerViewAdapter;
 import com.abborg.glom.data.DataProvider;
 import com.abborg.glom.di.ComponentInjector;
 import com.abborg.glom.interfaces.DiscoverItemChangeListener;
+import com.abborg.glom.interfaces.MainActivityCallbacks;
 import com.abborg.glom.model.DiscoverItem;
 
 import java.util.List;
@@ -38,24 +38,14 @@ public class DiscoverFragment extends Fragment implements
 
     private static final String TAG = "DiscoverFragment";
 
-    /* Whether or not this fragment is visible */
     public boolean isFragmentVisible;
-
-    /* The swipe refresh layout */
     private SwipeRefreshLayout refreshView;
-
-    /* The view to be used for listing event cards */
     private RecyclerView recyclerView;
-
-    /* Layout manager for the view */
     private RecyclerView.LayoutManager layoutManager;
-
-    /* Adapter to the recycler view */
     private DiscoverRecyclerViewAdapter adapter;
-
     private boolean firstView;
 
-    private MainActivity activity;
+    private MainActivityCallbacks activityCallback;
 
     private Handler handler;
 
@@ -68,8 +58,17 @@ public class DiscoverFragment extends Fragment implements
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        activity = context instanceof Activity ? (MainActivity) context : null;
-        if (activity != null) handler = activity.getHandler();
+
+        try {
+            activityCallback = (MainActivityCallbacks) context;
+            if (isFragmentVisible) {
+                activityCallback.onSetFabVisible(false);
+            }
+            handler = activityCallback.getThreadHandler();
+        }
+        catch (ClassCastException ex) {
+            Log.e(TAG, "Attached activity has to implement " + MainActivityCallbacks.class.getName());
+        }
     }
 
     @Override
@@ -127,14 +126,19 @@ public class DiscoverFragment extends Fragment implements
                 }
             }
 
-            if (activity != null) activity.setFloatingActionButtonVisible(false);
-
+            activityCallback.onSetFabVisible(false);
+            setActivityToolbar();
             firstView = true;
         }
         else {
             isFragmentVisible = false;
+        }
+    }
 
-            if (activity != null) activity.setFloatingActionButtonVisible(true);
+    private void setActivityToolbar() {
+        if (isFragmentVisible) {
+            activityCallback.onToolbarTitleChanged(appState.getActiveCircle().getTitle());
+            activityCallback.onToolbarSubtitleChanged(null);
         }
     }
 

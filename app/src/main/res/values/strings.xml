@@ -12,6 +12,33 @@
     <string name="menu_item_settings">Settings</string>
     <string name="loading">Loading…</string>
 
+    <!-- Location fragment strings -->
+    <string name="location_activity_label">My Location</string>
+    <string name="location_activity_title">Location</string>
+    <string name="zoom_to_fit_btn_label">Fit</string>
+    <string name="locate_me_btn_searching">Just a moment...</string>
+    <string name="marker_msg_placeholder">Online</string>
+    <string name="title_activity_main">MainActivity</string>
+    <plurals name="subtitle_location_fragment">
+        <item quantity="zero">No meetup</item>
+        <item quantity="one">1 pin</item>
+        <item quantity="other">%1$d pins</item>
+    </plurals>
+
+    <!-- Circle fragment -->
+    <plurals name="subtitle_circle_fragment">
+        <item quantity="zero">No one here</item>
+        <item quantity="one">Only you</item>
+        <item quantity="other">%1$d people</item>
+    </plurals>
+
+    <!-- Board fragment -->
+    <plurals name="subtitle_board_fragment">
+        <item quantity="zero">0 item</item>
+        <item quantity="one">1 item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+
     <!-- Error messages -->
     <string name="error_generic">Error</string>
     <string name="error_network_timeout">The request has timed out, please try again later</string>
@@ -83,14 +110,6 @@
     <string name="user_id_placeholder">ID</string>
     <string name="open_map_btn">Open Map</string>
     <string name="user_status_placeholder">This is a text status!</string>
-
-    <!-- Location fragment strings -->
-    <string name="location_activity_label">My Location</string>
-    <string name="location_activity_title">Location</string>
-    <string name="zoom_to_fit_btn_label">Fit</string>
-    <string name="locate_me_btn_searching">Just a moment...</string>
-    <string name="marker_msg_placeholder">Online</string>
-    <string name="title_activity_main">MainActivity</string>
 
     <!-- Card item -->
     <string name="card_host_name_placeholder">Undefined</string>
