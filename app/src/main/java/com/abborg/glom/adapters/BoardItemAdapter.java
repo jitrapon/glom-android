@@ -114,7 +114,7 @@ public class BoardItemAdapter
 
             googleLogo = (ImageView) itemView.findViewById(R.id.card_powered_by_google);
 
-            card = (CardView) itemView.findViewById(R.id.card_view);
+            card = (CardView) itemView.findViewById(R.id.root_view);
         }
 
         public void bind(final EventItem item, final BoardItemClickListener listener) {
@@ -165,7 +165,7 @@ public class BoardItemAdapter
 
             progressBar = (ProgressBar) itemView.findViewById(R.id.file_progress);
 
-            card = (CardView) itemView.findViewById(R.id.card_view);
+            card = (CardView) itemView.findViewById(R.id.root_view);
         }
 
         public void bind(final FileItem item, final BoardItemClickListener listener) {
@@ -206,7 +206,7 @@ public class BoardItemAdapter
 
             thumbnail = (ImageView) itemView.findViewById(R.id.note_thumbnail);
 
-            card = (CardView) itemView.findViewById(R.id.card_view);
+            card = (CardView) itemView.findViewById(R.id.root_view);
         }
 
         public void bind(final DrawItem item, final BoardItemClickListener listener) {
@@ -256,7 +256,7 @@ public class BoardItemAdapter
             title = (TextView) itemView.findViewById(R.id.link_title);
             description = (TextView) itemView.findViewById(R.id.link_description);
 
-            card = (CardView) itemView.findViewById(R.id.card_view);
+            card = (CardView) itemView.findViewById(R.id.root_view);
 
             thumbnailLayout = (RelativeLayout) itemView.findViewById(R.id.link_thumbnail_layout);
 
@@ -300,7 +300,7 @@ public class BoardItemAdapter
             postTime = (TextView) itemView.findViewById(R.id.card_user_post_time);
             syncStatus = (ImageView) itemView.findViewById(R.id.card_sync_status);
 
-            card = (InterceptTouchCardView) itemView.findViewById(R.id.card_view);
+            card = (InterceptTouchCardView) itemView.findViewById(R.id.root_view);
 
             title = (TextView) itemView.findViewById(R.id.list_title);
             list = (RecyclerView) itemView.findViewById(R.id.list_items);
@@ -342,7 +342,7 @@ public class BoardItemAdapter
             postTime = (TextView) itemView.findViewById(R.id.card_user_post_time);
             syncStatus = (ImageView) itemView.findViewById(R.id.card_sync_status);
 
-            card = (CardView) itemView.findViewById(R.id.card_view);
+            card = (CardView) itemView.findViewById(R.id.root_view);
 
             title = (TextView) itemView.findViewById(R.id.note_title);
             content = (TextView) itemView.findViewById(R.id.note_text);
@@ -382,7 +382,7 @@ public class BoardItemAdapter
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         if (viewType == BoardItem.TYPE_EVENT) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_event, parent, false);
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.board_item_event, parent, false);
             return new EventHolder(view);
         }
         else if (viewType == BoardItem.TYPE_FILE) {
