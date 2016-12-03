@@ -5,10 +5,19 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.support.annotation.NonNull;
 import android.text.TextUtils;
+
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.location.places.PlaceBuffer;
+import com.google.android.gms.location.places.Places;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -43,5 +52,37 @@ public class TaskUtils {
         return null;
     }
 
+    public static void getLocationFromPlaceId(GoogleApiClient apiClient, String placeId, final OnLocationReceivedListener listener) {
+        if (apiClient != null && apiClient.isConnected()) {
+            PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(apiClient, placeId);
+            placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {
 
+                @Override
+                public void onResult(@NonNull PlaceBuffer places) {
+                    if (!places.getStatus().isSuccess()) {
+                        places.release();
+                        if (listener != null) {
+                            listener.onLocationFailed();
+                        }
+                        return;
+                    }
+
+                    List<CharSequence> locations = new ArrayList<>();
+                    for (int i = 0; i < places.getCount(); i++) {
+                        locations.add(places.get(i).getName());
+                    }
+                    places.release();
+
+                    if (listener != null) {
+                        listener.onLocationReceived(locations);
+                    }
+                }
+            });
+        }
+    }
+
+    public interface OnLocationReceivedListener {
+        void onLocationReceived(List<CharSequence> locations);
+        void onLocationFailed();
+    }
 }

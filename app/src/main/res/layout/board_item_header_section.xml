@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/card_user_info"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content" >
+
+    <ImageView
+        android:id="@+id/card_user_avatar"
+        android:layout_width="@dimen/card_avatar_size"
+        android:layout_height="@dimen/card_avatar_size"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_margin="@dimen/card_avatar_margin"
+        android:layout_centerVertical="true" />
+
+    <TextView
+        android:id="@+id/card_user_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@+id/card_user_avatar"
+        android:layout_toEndOf="@+id/card_user_avatar"
+        android:paddingTop="@dimen/card_username_padding_top"
+        android:textSize="@dimen/card_supporting_text_size"
+        android:textColor="@color/darkPrimaryText"
+        android:text="@string/card_host_name_placeholder" />
+
+    <TextView
+        android:id="@+id/card_user_post_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/card_user_name"
+        android:layout_toRightOf="@+id/card_user_avatar"
+        android:layout_toEndOf="@+id/card_user_avatar"
+        android:paddingBottom="@dimen/card_post_time_padding_bottom"
+        android:text="@string/card_host_post_time_placeholder"
+        android:textSize="@dimen/card_supporting_text_size"/>
+
+    <ImageView
+        android:id="@+id/card_sync_status"
+        android:layout_width="@dimen/card_sync_status_size"
+        android:layout_height="@dimen/card_sync_status_size"
+        android:layout_marginEnd="@dimen/card_sync_status_margin"
+        android:layout_marginRight="@dimen/card_sync_status_margin"
+        android:layout_centerVertical="true"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"/>
+
+</RelativeLayout>

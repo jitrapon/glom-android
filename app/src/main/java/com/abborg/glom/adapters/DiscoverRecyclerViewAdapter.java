@@ -45,8 +45,8 @@ public class DiscoverRecyclerViewAdapter
 
     private DateTimeFormatter dateFormatter;
 
-    /** the main model in this adapter, maps the item type to list of the items so we can easily
-     * retrieve the item list based on their types
+    /** the main model in this adapter, maps the item type to listView of the items so we can easily
+     * retrieve the item listView based on their types
      */
     private Map<Integer, List<DiscoverItem>> items;
 
@@ -65,8 +65,8 @@ public class DiscoverRecyclerViewAdapter
         this.context = context;
         this.handler = handler;
 
-        // initialize with empty item object in each list
-        // the section will not be visible if there is no object in the list
+        // initialize with empty item object in each listView
+        // the section will not be visible if there is no object in the listView
         items = new HashMap<>(sections.length);
         for (Integer type : sections) {
             List<DiscoverItem> list = new ArrayList<>();

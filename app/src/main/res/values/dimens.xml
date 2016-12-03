@@ -59,9 +59,10 @@
     <dimen name="marker_margin">3dp</dimen>
 
     <!-- card items -->
+    <dimen name="card_elevation">1dp</dimen>
     <dimen name="card_padding">8dp</dimen>
-    <dimen name="card_corner_radius">4dp</dimen>
-    <dimen name="card_margin">5dp</dimen>
+    <dimen name="card_corner_radius">0dp</dimen>
+    <dimen name="card_margin">8dp</dimen>
     <dimen name="card_content_padding">10dp</dimen>
     <dimen name="card_avatar_size">40dp</dimen>
     <dimen name="card_avatar_margin">16dp</dimen>
@@ -73,6 +74,7 @@
     <dimen name="card_sync_status_margin">14dp</dimen>
     <dimen name="card_primary_text_padding_top">24dp</dimen>
     <dimen name="card_info_padding">16dp</dimen>
+    <dimen name="card_info_padding_negative">-16dp</dimen>
     <dimen name="card_primary_text_padding_bottom">12dp</dimen>
     <dimen name="card_action_padding">8dp</dimen>
     <dimen name="card_info_height">150dp</dimen>

@@ -35,22 +35,14 @@ import com.abborg.glom.model.LinkItem;
 import com.abborg.glom.model.ListItem;
 import com.abborg.glom.model.NoteItem;
 import com.abborg.glom.utils.CircleTransform;
+import com.abborg.glom.utils.DateUtils;
+import com.abborg.glom.utils.TaskUtils;
 import com.abborg.glom.views.InterceptTouchCardView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.signature.StringSignature;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.location.places.Place;
-import com.google.android.gms.location.places.PlaceBuffer;
-import com.google.android.gms.location.places.Places;
 
 import org.joda.time.DateTime;
-import org.joda.time.Days;
 import org.joda.time.Duration;
-import org.joda.time.Period;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -82,42 +74,29 @@ public class BoardItemAdapter
      * VIEW HOLDERS
      **************************************************/
 
-    public static class EventHolder extends RecyclerView.ViewHolder {
-        Button getDirectionsButton;
+    private static class EventHolder extends RecyclerView.ViewHolder {
 
-        ImageView posterAvatar;
-        TextView posterName;
-        TextView postTime;
-        ImageView syncStatus;
+        Button mapButton;
+        TextView nameText;
+        TextView timeText;
+        TextView locationText;
+        TextView noteText;
+        ImageView googleAttrImage;
+        CardView cardView;
 
-        TextView eventName;
-        TextView eventVenue;
-        TextView eventNote;
-
-        ImageView googleLogo;
-
-        CardView card;
-
-        public EventHolder(View itemView) {
+        private EventHolder(View itemView) {
             super(itemView);
 
-            getDirectionsButton = (Button) itemView.findViewById(R.id.action_get_directions);
-
-            posterAvatar = (ImageView) itemView.findViewById(R.id.card_user_avatar);
-            posterName = (TextView) itemView.findViewById(R.id.card_user_name);
-            postTime = (TextView) itemView.findViewById(R.id.card_user_post_time);
-            syncStatus = (ImageView) itemView.findViewById(R.id.card_sync_status);
-
-            eventName = (TextView) itemView.findViewById(R.id.card_event_name);
-            eventVenue = (TextView) itemView.findViewById(R.id.card_event_venue);
-            eventNote = (TextView) itemView.findViewById(R.id.card_event_note);
-
-            googleLogo = (ImageView) itemView.findViewById(R.id.card_powered_by_google);
-
-            card = (CardView) itemView.findViewById(R.id.root_view);
+            mapButton = (Button) itemView.findViewById(R.id.action_get_directions);
+            nameText = (TextView) itemView.findViewById(R.id.event_name);
+            timeText = (TextView) itemView.findViewById(R.id.event_time);
+            locationText = (TextView) itemView.findViewById(R.id.event_location);
+            noteText = (TextView) itemView.findViewById(R.id.event_info);
+            googleAttrImage = (ImageView) itemView.findViewById(R.id.card_powered_by_google);
+            cardView = (CardView) itemView.findViewById(R.id.card_view);
         }
 
-        public void bind(final EventItem item, final BoardItemClickListener listener) {
+        private void setClickListener(final EventItem item, final BoardItemClickListener listener) {
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
                     listener.onItemClicked(item, getAdapterPosition());
@@ -133,42 +112,25 @@ public class BoardItemAdapter
         }
     }
 
-    public static class FileHolder extends RecyclerView.ViewHolder {
+    private static class FileHolder extends RecyclerView.ViewHolder {
+
         Button viewButton;
-
-        ImageView posterAvatar;
-        TextView posterName;
-        TextView postTime;
-        ImageView syncStatus;
-
         TextView fileName;
         TextView fileNote;
         ImageView fileThumbnail;
+        CardView cardView;
 
-        ProgressBar progressBar;
-
-        CardView card;
-
-        public FileHolder(View itemView) {
+        private FileHolder(View itemView) {
             super(itemView);
 
             viewButton = (Button) itemView.findViewById(R.id.action_view_file);
-
-            posterAvatar = (ImageView) itemView.findViewById(R.id.card_user_avatar);
-            posterName = (TextView) itemView.findViewById(R.id.card_user_name);
-            postTime = (TextView) itemView.findViewById(R.id.card_user_post_time);
-            syncStatus = (ImageView) itemView.findViewById(R.id.card_sync_status);
-
             fileName = (TextView) itemView.findViewById(R.id.file_name);
             fileNote = (TextView) itemView.findViewById(R.id.file_note);
             fileThumbnail = (ImageView) itemView.findViewById(R.id.file_thumbnail);
-
-            progressBar = (ProgressBar) itemView.findViewById(R.id.file_progress);
-
-            card = (CardView) itemView.findViewById(R.id.root_view);
+            cardView = (CardView) itemView.findViewById(R.id.card_view);
         }
 
-        public void bind(final FileItem item, final BoardItemClickListener listener) {
+        private void setClickListener(final FileItem item, final BoardItemClickListener listener) {
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
                     listener.onItemClicked(item, getAdapterPosition());
@@ -184,32 +146,19 @@ public class BoardItemAdapter
         }
     }
 
-    public static class DrawingHolder extends RecyclerView.ViewHolder {
-        ImageView posterAvatar;
-        TextView posterName;
-        TextView postTime;
-        ImageView syncStatus;
-        ProgressBar progressBar;
+    private static class DrawingHolder extends RecyclerView.ViewHolder {
 
         ImageView thumbnail;
+        CardView cardView;
 
-        CardView card;
-
-        public DrawingHolder(View itemView) {
+        private DrawingHolder(View itemView) {
             super(itemView);
 
-            posterAvatar = (ImageView) itemView.findViewById(R.id.card_user_avatar);
-            posterName = (TextView) itemView.findViewById(R.id.card_user_name);
-            postTime = (TextView) itemView.findViewById(R.id.card_user_post_time);
-            syncStatus = (ImageView) itemView.findViewById(R.id.card_sync_status);
-            progressBar = (ProgressBar) itemView.findViewById(R.id.file_progress);
-
-            thumbnail = (ImageView) itemView.findViewById(R.id.note_thumbnail);
-
-            card = (CardView) itemView.findViewById(R.id.root_view);
+            thumbnail = (ImageView) itemView.findViewById(R.id.drawing_thumbnail);
+            cardView = (CardView) itemView.findViewById(R.id.card_view);
         }
 
-        public void bind(final DrawItem item, final BoardItemClickListener listener) {
+        private void setOnClickListener(final DrawItem item, final BoardItemClickListener listener) {
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
                     listener.onItemClicked(item, getAdapterPosition());
@@ -225,46 +174,31 @@ public class BoardItemAdapter
         }
     }
 
-    public static class LinkHolder extends RecyclerView.ViewHolder {
+    private static class LinkHolder extends RecyclerView.ViewHolder {
+
         Button editButton;
         Button copyButton;
-
-        ImageView posterAvatar;
-        TextView posterName;
-        TextView postTime;
-        ImageView syncStatus;
-
         TextView url;
         ImageView thumbnail;
         TextView title;
         TextView description;
-
-        CardView card;
-
+        CardView cardView;
         RelativeLayout thumbnailLayout;
 
-        public LinkHolder(View itemView) {
+        private LinkHolder(View itemView) {
             super(itemView);
-
-            posterAvatar = (ImageView) itemView.findViewById(R.id.card_user_avatar);
-            posterName = (TextView) itemView.findViewById(R.id.card_user_name);
-            postTime = (TextView) itemView.findViewById(R.id.card_user_post_time);
-            syncStatus = (ImageView) itemView.findViewById(R.id.card_sync_status);
 
             url = (TextView) itemView.findViewById(R.id.link_url);
             thumbnail = (ImageView) itemView.findViewById(R.id.link_thumbnail);
             title = (TextView) itemView.findViewById(R.id.link_title);
             description = (TextView) itemView.findViewById(R.id.link_description);
-
-            card = (CardView) itemView.findViewById(R.id.root_view);
-
+            cardView = (CardView) itemView.findViewById(R.id.card_view);
             thumbnailLayout = (RelativeLayout) itemView.findViewById(R.id.link_thumbnail_layout);
-
             editButton = (Button) itemView.findViewById(R.id.action_edit_link);
             copyButton = (Button) itemView.findViewById(R.id.action_copy_link);
         }
 
-        public void bind(final LinkItem item, final BoardItemClickListener listener) {
+        private void setClickListener(final LinkItem item, final BoardItemClickListener listener) {
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
                     listener.onItemClicked(item, getAdapterPosition());
@@ -280,33 +214,21 @@ public class BoardItemAdapter
         }
     }
 
-    public static class ListHolder extends RecyclerView.ViewHolder {
+    private static class ListHolder extends RecyclerView.ViewHolder {
 
-        ImageView posterAvatar;
-        TextView posterName;
-        TextView postTime;
-        ImageView syncStatus;
+        InterceptTouchCardView cardView;
+        TextView titleView;
+        RecyclerView listView;
 
-        InterceptTouchCardView card;
-
-        TextView title;
-        RecyclerView list;
-
-        public ListHolder(View itemView) {
+        private ListHolder(View itemView) {
             super(itemView);
 
-            posterAvatar = (ImageView) itemView.findViewById(R.id.card_user_avatar);
-            posterName = (TextView) itemView.findViewById(R.id.card_user_name);
-            postTime = (TextView) itemView.findViewById(R.id.card_user_post_time);
-            syncStatus = (ImageView) itemView.findViewById(R.id.card_sync_status);
-
-            card = (InterceptTouchCardView) itemView.findViewById(R.id.root_view);
-
-            title = (TextView) itemView.findViewById(R.id.list_title);
-            list = (RecyclerView) itemView.findViewById(R.id.list_items);
+            cardView = (InterceptTouchCardView) itemView.findViewById(R.id.card_view);
+            titleView = (TextView) itemView.findViewById(R.id.list_title);
+            listView = (RecyclerView) itemView.findViewById(R.id.list_items);
         }
 
-        public void bind(final ListItem item, final BoardItemClickListener listener) {
+        private void setClickListener(final ListItem item, final BoardItemClickListener listener) {
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
                     listener.onItemClicked(item, getAdapterPosition());
@@ -322,33 +244,21 @@ public class BoardItemAdapter
         }
     }
 
-    public static class NoteHolder extends RecyclerView.ViewHolder {
+    private static class NoteHolder extends RecyclerView.ViewHolder {
 
-        ImageView posterAvatar;
-        TextView posterName;
-        TextView postTime;
-        ImageView syncStatus;
+        CardView cardView;
+        TextView titleText;
+        TextView contentText;
 
-        CardView card;
-
-        TextView title;
-        TextView content;
-
-        public NoteHolder(View itemView) {
+        private NoteHolder(View itemView) {
             super(itemView);
 
-            posterAvatar = (ImageView) itemView.findViewById(R.id.card_user_avatar);
-            posterName = (TextView) itemView.findViewById(R.id.card_user_name);
-            postTime = (TextView) itemView.findViewById(R.id.card_user_post_time);
-            syncStatus = (ImageView) itemView.findViewById(R.id.card_sync_status);
-
-            card = (CardView) itemView.findViewById(R.id.root_view);
-
-            title = (TextView) itemView.findViewById(R.id.note_title);
-            content = (TextView) itemView.findViewById(R.id.note_text);
+            cardView = (CardView) itemView.findViewById(R.id.card_view);
+            titleText = (TextView) itemView.findViewById(R.id.note_title);
+            contentText = (TextView) itemView.findViewById(R.id.note_text);
         }
 
-        public void bind(final NoteItem item, final BoardItemClickListener listener) {
+        private void setClickListener(final NoteItem item, final BoardItemClickListener listener) {
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
                     listener.onItemClicked(item, getAdapterPosition());
@@ -386,32 +296,32 @@ public class BoardItemAdapter
             return new EventHolder(view);
         }
         else if (viewType == BoardItem.TYPE_FILE) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_file, parent, false);
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.board_item_file, parent, false);
             return new FileHolder(view);
         }
         else if (viewType == BoardItem.TYPE_DRAWING) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_drawing, parent, false);
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.board_item_drawing, parent, false);
             return new DrawingHolder(view);
         }
         else if (viewType == BoardItem.TYPE_LINK) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_link, parent, false);
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.board_item_link, parent, false);
             return new LinkHolder(view);
         }
         else if (viewType == BoardItem.TYPE_LIST) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_list, parent, false);
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.board_item_list, parent, false);
             ListHolder holder = new ListHolder(view);
 
             RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false);
             layoutManager.setAutoMeasureEnabled(true);
-            holder.list.setLayoutManager(layoutManager);
+            holder.listView.setLayoutManager(layoutManager);
 
             SimpleListItemAdapter adapter = new SimpleListItemAdapter(context, new ArrayList<CheckedItem>());
-            holder.list.setAdapter(adapter);
+            holder.listView.setAdapter(adapter);
 
             return holder;
         }
         else if (viewType == BoardItem.TYPE_NOTE) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_note, parent, false);
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.board_item_note, parent, false);
             return new NoteHolder(view);
         }
         else return null;
@@ -526,7 +436,7 @@ public class BoardItemAdapter
     }
 
     public void update(List<BoardItem> items) {
-        // update from specific list of items
+        // update from specific listView of items
         if (items != null) {
             this.items = items;
             notifyDataSetChanged();
@@ -643,18 +553,12 @@ public class BoardItemAdapter
 
     private void setFileViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {
         FileItem file = (FileItem) items.get(position);
-        final String id = file.getId();
         final FileHolder holder = (FileHolder) recyclerViewHolder;
 
-        holder.bind(file, listener);
+        holder.setClickListener(file, listener);
 
-        // attach the last feed info about this post
-        attachPostInfo(file.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);
+        attachSelectionOverlay(position, holder.cardView);
 
-        // set activation change
-        attachSelectionOverlay(position, holder.card);
-
-        // set action buttons
         if (file.getLocalCache() == null || !file.getLocalCache().exists()) {
             holder.viewButton.setText(context.getResources().getString(R.string.card_action_download));
             holder.viewButton.setOnClickListener(new View.OnClickListener() {
@@ -674,10 +578,6 @@ public class BoardItemAdapter
             });
         }
 
-        // set sync status and progress bar
-        attachSyncStatusWithProgress(file, holder.syncStatus, holder.progressBar);
-
-        // update file info and thumbnail
         String name = !TextUtils.isEmpty(file.getName()) ? file.getName()
                 : context.getResources().getString(R.string.file_name_placeholder);
         holder.fileName.setText(name);
@@ -685,7 +585,6 @@ public class BoardItemAdapter
                 : "";
         holder.fileNote.setText(note);
 
-        // set up image icons
         int icon;
         if (file.isImage() && file.getLocalCache() != null && file.getLocalCache().exists()) {
             icon = R.drawable.ic_placeholder_image;
@@ -718,256 +617,95 @@ public class BoardItemAdapter
     }
 
     private void setEventViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {
-        final EventItem event = (EventItem) items.get(position);
-        final String id = event.getId();
-        EventHolder holder = (EventHolder) recyclerViewHolder;
+        final EventItem item = (EventItem) items.get(position);
+        final EventHolder holder = (EventHolder) recyclerViewHolder;
 
-        holder.bind(event, listener);
+        holder.setClickListener(item, listener);
 
-        // attach the last feed info about this post
-        attachPostInfo(event.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);
+        attachSelectionOverlay(position, holder.cardView);
 
-        // set activation change
-        attachSelectionOverlay(position, holder.card);
-
-        // if the hosts contains the user, set action and text accordingly (Edit, Share)
-        // if the hosts doesn't contain the user, set action to (Attend, Miss)
-        if (event.getPlace() != null || event.getLocation() != null) {
-            holder.getDirectionsButton.setVisibility(View.VISIBLE);
-            holder.getDirectionsButton.setText(context.getResources().getString(R.string.card_action_get_directions));
-            holder.getDirectionsButton.setOnClickListener(new View.OnClickListener() {
+        if (item.getPlace() != null || item.getLocation() != null) {
+            holder.mapButton.setVisibility(View.VISIBLE);
+            holder.mapButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (listener != null) listener.onActionButtonClicked(event, R.id.action_get_directions);
+                    if (listener != null) listener.onActionButtonClicked(item, R.id.action_get_directions);
                 }
             });
         }
         else {
-            holder.getDirectionsButton.setVisibility(View.GONE);
+            holder.mapButton.setVisibility(View.GONE);
         }
 
-        // set sync status
-        attachSyncStatus(event, holder.syncStatus);
+        holder.nameText.setText(item.getName());
 
-        // update event info
-        // always show time if available
-        // if place is specified, show place, otherwise show coordinates
-        holder.eventName.setText(event.getName());
-        String time = "";
-        String duration = "";
-        if (event.getStartTime() != null) {
-            DateTimeFormatter formatter = DateTimeFormat.forPattern(context.getResources().getString(R.string.card_event_datetime_format));
-            DateTimeFormatter timeFormatter = DateTimeFormat.forPattern(context.getResources().getString(R.string.card_event_time_format));
-            DateTime now = new DateTime();
-            Period period = new Period(now, event.getStartTime());
-
-            int years = period.getYears() * -1;
-            int months = period.getMonths() * -1;
-            int weeks = period.getWeeks() * -1;
-            int hours = period.getHours() * -1;
-            int days = period.getDays() * -1;
-            int minutes = period.getMinutes() * -1;
-
-            // positive periods
-            if (period.getYears() >= 1)
-                duration = period.getYears() + " " + context.getResources().getString(R.string.time_unit_year) + " " +
-                        context.getResources().getString(R.string.time_unit_and_seperator) + " " +
-                        period.getMonths() + " " + context.getResources().getString(R.string.time_unit_month);
-            else if (period.getMonths() >= 1)
-                duration = period.getMonths() + " " + context.getResources().getString(R.string.time_unit_month) + " " +
-                        context.getResources().getString(R.string.time_unit_and_seperator) + " " +
-                        period.getDays() + " " + context.getResources().getString(R.string.time_unit_day);
-            else if (period.getWeeks() >= 1)
-                duration = period.getWeeks() + " " + context.getResources().getString(R.string.time_unit_week) + " " +
-                        context.getResources().getString(R.string.time_unit_and_seperator) + " " +
-                        period.getDays() + " " + context.getResources().getString(R.string.time_unit_day);
-            else if (period.getDays() >= 1)
-                duration = period.getDays() + " " + context.getResources().getString(R.string.time_unit_day) + " " +
-                        context.getResources().getString(R.string.time_unit_and_seperator) + " " +
-                        period.getHours() + " " + context.getResources().getString(R.string.time_unit_hour);
-            else if (period.getHours() >= 1)
-                duration = period.getHours() + " " + context.getResources().getString(R.string.time_unit_hour) + " " +
-                        context.getResources().getString(R.string.time_unit_and_seperator) + " " +
-                        period.getMinutes() + " " + context.getResources().getString(R.string.time_unit_minute);
-            else if (period.getMinutes() >= 0)
-                duration = period.getMinutes() + " " + context.getResources().getString(R.string.time_unit_minute);
-
-                // negative periods (already passed)
-            else if (period.getYears() <= -1) {
-                duration = years + " " + context.getResources().getString(R.string.time_unit_year) + " " +
-                        context.getResources().getString(R.string.time_unit_and_seperator) + " " +
-                        months + " " + context.getResources().getString(R.string.time_unit_month) + " " +
-                        context.getResources().getString(R.string.time_suffix_ago);
-            }
-            else if (period.getMonths() <= -1) {
-                duration = months + " " + context.getResources().getString(R.string.time_unit_month) + " " +
-                        context.getResources().getString(R.string.time_unit_and_seperator) + " " +
-                        days + " " + context.getResources().getString(R.string.time_unit_day) + " " +
-                        context.getResources().getString(R.string.time_suffix_ago);
-            }
-            else if (period.getWeeks() <= -1) {
-                duration = weeks + " " + context.getResources().getString(R.string.time_unit_week) + " " +
-                        context.getResources().getString(R.string.time_unit_and_seperator) + " " +
-                        days + " " + context.getResources().getString(R.string.time_unit_day) + " " +
-                        context.getResources().getString(R.string.time_suffix_ago);
-            }
-            else if (period.getDays() <= -1) {
-                duration = days + " " + context.getResources().getString(R.string.time_unit_day) + " " +
-                        context.getResources().getString(R.string.time_unit_and_seperator) + " " +
-                        hours + " " + context.getResources().getString(R.string.time_unit_hour) + " " +
-                        context.getResources().getString(R.string.time_suffix_ago);
-            }
-            else if (period.getHours() <= -1) {
-                duration = hours + " " + context.getResources().getString(R.string.time_unit_hour) + " " +
-                        context.getResources().getString(R.string.time_unit_and_seperator) + " " +
-                        minutes + " " + context.getResources().getString(R.string.time_unit_minute) + " " +
-                        context.getResources().getString(R.string.time_suffix_ago);
-            }
-            else {
-                duration = minutes + " " + context.getResources().getString(R.string.time_unit_minute) + " " +
-                        context.getResources().getString(R.string.time_suffix_ago);
-            }
-
-            String formattedStartDateTime = "";
-            String formattedEndDateTime = "";
-            int daysBetween = Days.daysBetween(now.withTimeAtStartOfDay(), event.getStartTime().withTimeAtStartOfDay()).getDays();
-            DateTimeFormatter dayWithTimeFormatter = DateTimeFormat.forPattern("EEEE, " +
-                    context.getResources().getString(R.string.card_event_time_format));
-            if (daysBetween == -1) {
-                formattedStartDateTime = context.getResources().getString(R.string.time_yesterday)
-                        + ", " + timeFormatter.print(event.getStartTime());
-            }
-            else if (daysBetween == 0) {
-                formattedStartDateTime = context.getResources().getString(R.string.time_today)
-                        + ", " + timeFormatter.print(event.getStartTime());
-            }
-            else if (daysBetween == 1) {
-                formattedStartDateTime = context.getResources().getString(R.string.time_tomorrow)
-                        + ", " + timeFormatter.print(event.getStartTime());
-            }
-            else if (daysBetween < 7 && daysBetween > 0) {
-                formattedStartDateTime = dayWithTimeFormatter.print(event.getStartTime());
-            }
-            else {
-                formattedStartDateTime = formatter.print(event.getStartTime());
-            }
-
-            if (event.getEndTime() != null) {
-                daysBetween = Days.daysBetween(now.withTimeAtStartOfDay(), event.getEndTime().withTimeAtStartOfDay()).getDays();
-                int daysDuration = Days.daysBetween(event.getStartTime().withTimeAtStartOfDay(),
-                        event.getEndTime().withTimeAtStartOfDay()).getDays();
-                if (daysDuration == 0) {
-                    formattedEndDateTime = " - " + timeFormatter.print(event.getEndTime()) + " ";
-                }
-                else {
-                    if (daysBetween == -1) {
-                        formattedEndDateTime = " - " + context.getResources().getString(R.string.time_yesterday)
-                                + ", " + timeFormatter.print(event.getEndTime()) + " ";
-                    }
-                    else if (daysBetween == 0) {
-                        formattedEndDateTime = " - " + context.getResources().getString(R.string.time_today)
-                                + ", " + timeFormatter.print(event.getEndTime()) + " ";
-                    }
-                    else if (daysBetween == 1) {
-                        formattedEndDateTime = " - " + context.getResources().getString(R.string.time_tomorrow)
-                                + ", " + timeFormatter.print(event.getEndTime()) + " ";
-                    }
-                    else if (daysBetween < 7 && daysBetween > 0) {
-                        formattedEndDateTime = " - " + dayWithTimeFormatter.print(event.getEndTime()) + " ";
-                    }
-                    else {
-                        formattedEndDateTime = " - " + formatter.print(event.getEndTime()) + " ";
-                    }
-                }
-            }
-
-            String durationPrefix = period.getMillis() > 0 ? context.getResources().getString(R.string.duration_incoming_prefix) :
-                    context.getResources().getString(R.string.duration_started_prefix);
-            time = formattedStartDateTime + formattedEndDateTime + " (" + durationPrefix + " " + duration + ")\n";
+        if (item.getStartTime() != null) {
+            String formattedDateTime = DateUtils.getFormattedDate(context, item.getStartTime(), item.getEndTime());
+            String formattedDuration = DateUtils.getFormattedTimeFromNow(context, item.getStartTime());
+            holder.timeText.setText(String.format(context.getResources().getString(R.string.card_event_time),
+                    formattedDateTime, formattedDuration));
+        }
+        else {
+            holder.timeText.setText(context.getResources().getString(R.string.date_to_be_determined));
         }
 
-        if (!TextUtils.isEmpty(event.getPlace())) {
-
-            // retrieve place from its ID
-            final EventHolder viewHolder = holder;
-            final String placeTime = time;
-            String placeName = event.getLocation()!=null ?
-                    event.getLocation().getLatitude() + ", " + event.getLocation().getLongitude() :
+        if (!TextUtils.isEmpty(item.getPlace())) {
+            String placeName = item.getLocation() != null ?
+                    item.getLocation().getLatitude() + ", " + item.getLocation().getLongitude() :
                     context.getResources().getString(R.string.notify_retrieving_place_info);
-            GoogleApiClient apiClient = appState.getGoogleApiClient();
-            if (apiClient != null && apiClient.isConnected()) {
-                PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(apiClient, event.getPlace());
-                placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {
+            TaskUtils.getLocationFromPlaceId(appState.getGoogleApiClient(), item.getPlace(), new TaskUtils.OnLocationReceivedListener() {
+                @Override
+                public void onLocationReceived(List<CharSequence> locations) {
+                    if (!locations.isEmpty()) {
+                        holder.locationText.setText(locations.get(0));
+                        holder.googleAttrImage.setVisibility(View.VISIBLE);
 
-                    @Override
-                    public void onResult(PlaceBuffer places) {
-                        if (!places.getStatus().isSuccess()) {
-                            Log.e(TAG, "Place query did not complete. Error: " + places.getStatus().toString());
-                            places.release();
-                            return;
-                        }
-
-                        // display the first place in the list
-                        final Place place = places.get(0);
-                        viewHolder.eventVenue.setText(placeTime + Html.fromHtml(place.getName() + ""));
-                        Log.d(TAG, "Place query succeeded for " + place.getName());
-
-                        int updatedEventIndex = staleItems.indexOf(viewHolder.getAdapterPosition());
+                        int updatedEventIndex = staleItems.indexOf(holder.getAdapterPosition());
                         if (updatedEventIndex >= 0 && updatedEventIndex < staleItems.size())
                             staleItems.remove(updatedEventIndex);
-
-                        places.release();
                     }
-                });
-            }
-            else {
-                Log.e(TAG, "Google API client is not connected, error retrieving place info");
-            }
+                    else {
+                        holder.locationText.setText(context.getResources().getString(R.string.date_to_be_determined));
+                        holder.googleAttrImage.setVisibility(View.GONE);
+                    }
+                }
 
-            holder.eventVenue.setText(time + placeName);
-            holder.googleLogo.setVisibility(View.VISIBLE);
+                @Override
+                public void onLocationFailed() {
+                    holder.locationText.setText(context.getResources().getString(R.string.date_to_be_determined));
+                    holder.googleAttrImage.setVisibility(View.GONE);
+                }
+            });
+            holder.locationText.setText(placeName);
+            holder.googleAttrImage.setVisibility(View.GONE);
 
-            // add to list of items that contain places info to be refreshed
+            // add to listView of items that contain places info to be refreshed
             staleItems.add(holder.getAdapterPosition());
         }
         else {
-            if (event.getLocation() != null) {
-                holder.eventVenue.setText(time + event.getLocation().getLatitude() + ", " +
-                        event.getLocation().getLongitude());
+            if (item.getLocation() != null) {
+                holder.locationText.setText(item.getLocation().getLatitude() + ", " +
+                        item.getLocation().getLongitude());
             }
             else {
-                holder.eventVenue.setText(time);
+                holder.locationText.setText(context.getResources().getString(R.string.date_to_be_determined));
             }
-
-            holder.googleLogo.setVisibility(View.INVISIBLE);
+            holder.googleAttrImage.setVisibility(View.GONE);
         }
 
-        holder.eventNote.setText(event.getNote());
-
-        if (TextUtils.isEmpty(holder.eventVenue.getText())) holder.eventVenue.setVisibility(View.GONE);
-        else holder.eventVenue.setVisibility(View.VISIBLE);
-
-        if (TextUtils.isEmpty(event.getNote())) holder.eventNote.setVisibility(View.GONE);
-        else holder.eventNote.setVisibility(View.VISIBLE);
+        holder.noteText.setText(item.getNote());
+        if (TextUtils.isEmpty(item.getNote())) holder.noteText.setVisibility(View.GONE);
+        else holder.noteText.setVisibility(View.VISIBLE);
     }
 
     private void setDrawingViewHolder(int position, RecyclerView.ViewHolder recyclerViewHolder) {
         DrawItem drawing = (DrawItem) items.get(position);
-        final String id = drawing.getId();
         final DrawingHolder holder = (DrawingHolder) recyclerViewHolder;
 
-        holder.bind(drawing, listener);
+        holder.setOnClickListener(drawing, listener);
 
-        // attach the last feed info about this post
-        attachPostInfo(drawing.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);
+        attachSelectionOverlay(position, holder.cardView);
 
-        // set activation change
-        attachSelectionOverlay(position, holder.card);
-
-        // set sync status and progress bar
-        attachSyncStatusWithProgress(drawing, holder.syncStatus, holder.progressBar);
-
-        // update drawing thumbnail
         File file = drawing.getLocalCache();
         if (file != null && file.exists()) {
             Glide.with(context)
@@ -984,18 +722,10 @@ public class BoardItemAdapter
         final LinkItem link = (LinkItem) items.get(position);
         final LinkHolder holder = (LinkHolder) recyclerViewHolder;
 
-        holder.bind(link, listener);
+        holder.setClickListener(link, listener);
 
-        // attach the last feed info about this post
-        attachPostInfo(link.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);
+        attachSelectionOverlay(position, holder.cardView);
 
-        // set activation change
-        attachSelectionOverlay(position, holder.card);
-
-        // set sync status and progress bar
-        attachSyncStatus(link, holder.syncStatus);
-
-        // update the info
         holder.url.setText(trimUrl(link.getUrl()));
         if (TextUtils.isEmpty(link.getTitle()) || link.getTitle().equals("null")) {
             holder.title.setVisibility(View.GONE);
@@ -1026,7 +756,6 @@ public class BoardItemAdapter
                     .into(holder.thumbnail);
         }
 
-        // set up the action button
         holder.editButton.setText(context.getString(R.string.card_action_edit_link));
         holder.editButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -1047,21 +776,13 @@ public class BoardItemAdapter
         final ListItem list = (ListItem) items.get(position);
         final ListHolder holder = (ListHolder) recyclerViewHolder;
 
-        holder.bind(list, listener);
+        holder.setClickListener(list, listener);
 
-        // attach the last feed info about this post
-        attachPostInfo(list.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);
+        attachSelectionOverlay(position, holder.cardView);
 
-        // set activation change
-        attachSelectionOverlay(position, holder.card);
-
-        // set sync status and progress bar
-        attachSyncStatus(list, holder.syncStatus);
-
-        // set list items and title
-        holder.title.setVisibility(TextUtils.isEmpty(list.getTitle()) ? View.GONE : View.VISIBLE);
-        holder.title.setText(list.getTitle());
-        SimpleListItemAdapter adapter = (SimpleListItemAdapter) holder.list.getAdapter();
+        holder.titleView.setVisibility(TextUtils.isEmpty(list.getTitle()) ? View.GONE : View.VISIBLE);
+        holder.titleView.setText(list.getTitle());
+        SimpleListItemAdapter adapter = (SimpleListItemAdapter) holder.listView.getAdapter();
         adapter.setItems(list.getItems());
         adapter.notifyDataSetChanged();
     }
@@ -1070,21 +791,14 @@ public class BoardItemAdapter
         final NoteItem note = (NoteItem) items.get(position);
         final NoteHolder holder = (NoteHolder) recyclerViewHolder;
 
-        holder.bind(note, listener);
+        holder.setClickListener(note, listener);
 
-        // attach the last feed info about this post
-        attachPostInfo(note.getLastAction(), holder.posterName, holder.posterAvatar, holder.postTime);
+        attachSelectionOverlay(position, holder.cardView);
 
-        // set activation change
-        attachSelectionOverlay(position, holder.card);
-
-        // set sync status and progress bar
-        attachSyncStatus(note, holder.syncStatus);
-
-        holder.title.setVisibility(TextUtils.isEmpty(note.getTitle()) ? View.GONE : View.VISIBLE);
-        holder.title.setText(note.getTitle());
-        holder.content.setVisibility(TextUtils.isEmpty(note.getText()) ? View.GONE : View.VISIBLE);
-        holder.content.setText(note.getText());
+        holder.titleText.setVisibility(TextUtils.isEmpty(note.getTitle()) ? View.GONE : View.VISIBLE);
+        holder.titleText.setText(note.getTitle());
+        holder.contentText.setVisibility(TextUtils.isEmpty(note.getText()) ? View.GONE : View.VISIBLE);
+        holder.contentText.setText(note.getText());
     }
 
     private String trimUrl(String url) {

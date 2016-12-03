@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.abborg.glom.views.InterceptTouchCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:cardView="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/card_view"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginLeft="@dimen/card_margin"
+    android:layout_marginStart="@dimen/card_margin"
+    android:layout_marginRight="@dimen/card_margin"
+    android:layout_marginEnd="@dimen/card_margin"
+    cardView:cardCornerRadius="@dimen/card_corner_radius"
+    cardView:cardElevation="@dimen/card_elevation"
+    cardView:cardUseCompatPadding="true"
+    android:clickable="true"
+    android:foreground="?android:attr/selectableItemBackground" >
+
+    <ImageView
+        android:id="@+id/selectionOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/selectItemOverlay"
+        android:contentDescription="@null"
+        android:visibility="gone"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" >
+
+        <TextView
+            android:id="@+id/list_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="@dimen/card_primary_text_size"
+            android:layout_marginLeft="@dimen/card_info_padding"
+            android:layout_marginRight="@dimen/card_info_padding"
+            android:layout_marginTop="@dimen/card_primary_text_padding_top"
+            android:layout_marginBottom="@dimen/card_primary_text_padding_bottom"
+            android:textColor="@color/darkPrimaryText"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:text="@string/card_text_placeholder"/>
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/list_items"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/card_info_padding" />
+
+    </LinearLayout>
+
+</com.abborg.glom.views.InterceptTouchCardView>

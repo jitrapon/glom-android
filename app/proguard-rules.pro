@@ -19,3 +19,9 @@
 -keepnames class com.abborg.glom.utils.GlideConfiguration
 # or more generally:
 #-keep public class * implements com.bumptech.glide.module.GlideModule
+
+-dontwarn com.nhaarman.listviewanimations.** { *; }
+-keep class com.amazonaws.** { *; }
+-keepnames class com.amazonaws.** { *; }
+-dontwarn com.amazonaws.**
+-dontwarn com.fasterxml.**

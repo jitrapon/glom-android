@@ -2,145 +2,180 @@
 <android.support.v7.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:cardView="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/root_view"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/card_view"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="@dimen/card_margin"
+    android:layout_marginLeft="@dimen/card_margin"
+    android:layout_marginStart="@dimen/card_margin"
+    android:layout_marginRight="@dimen/card_margin"
+    android:layout_marginEnd="@dimen/card_margin"
     cardView:cardCornerRadius="@dimen/card_corner_radius"
-    cardView:cardUseCompatPadding="true" >
+    cardView:cardElevation="@dimen/card_elevation"
+    cardView:cardUseCompatPadding="true"
+    android:clickable="true"
+    android:foreground="?android:attr/selectableItemBackground" >
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="?android:attr/selectableItemBackground" >
+        android:orientation="vertical" >
 
         <RelativeLayout
-            android:id="@+id/card_user_info"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" >
-
-            <ImageView
-                android:id="@+id/card_user_avatar"
-                android:layout_width="@dimen/card_avatar_size"
-                android:layout_height="@dimen/card_avatar_size"
-                android:layout_alignParentLeft="true"
-                android:layout_margin="@dimen/card_avatar_margin"
-                android:layout_centerVertical="true" />
-
-            <TextView
-                android:id="@+id/card_user_name"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_toRightOf="@+id/card_user_avatar"
-                android:paddingTop="@dimen/card_username_padding_top"
-                android:textSize="@dimen/card_supporting_text_size"
-                android:textColor="@color/darkPrimaryText"
-                android:text="@string/card_host_name_placeholder"/>
-
-            <TextView
-                android:id="@+id/card_user_post_time"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/card_user_name"
-                android:layout_toRightOf="@+id/card_user_avatar"
-                android:paddingBottom="@dimen/card_post_time_padding_bottom"
-                android:text="@string/card_host_post_time_placeholder"
-                android:textSize="@dimen/card_supporting_text_size"/>
-
-            <ImageView
-                android:id="@+id/card_sync_status"
-                android:layout_width="@dimen/card_sync_status_size"
-                android:layout_height="@dimen/card_sync_status_size"
-                android:layout_marginEnd="@dimen/card_sync_status_margin"
-                android:layout_marginRight="@dimen/card_sync_status_margin"
-                android:layout_centerVertical="true"
-                android:layout_alignParentEnd="true"
-                android:layout_alignParentRight="true"/>
-
-        </RelativeLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/lineDivider"/>
-
-        <RelativeLayout
-            android:id="@+id/card_event_info"
+            android:layout_marginTop="@dimen/card_primary_text_padding_top"
+            android:layout_marginLeft="@dimen/card_info_padding"
+            android:layout_marginStart="@dimen/card_info_padding"
+            android:layout_marginRight="@dimen/card_info_padding"
+            android:layout_marginEnd="@dimen/card_info_padding"
+            android:id="@+id/content_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" >
 
             <TextView
-                android:id="@+id/card_event_name"
+                android:id="@+id/event_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingLeft="@dimen/card_info_padding"
-                android:paddingRight="@dimen/card_info_padding"
-                android:paddingTop="@dimen/card_primary_text_padding_top"
-                android:paddingBottom="@dimen/card_primary_text_padding_bottom"
+                android:layout_marginBottom="@dimen/card_primary_text_padding_bottom"
                 android:textSize="@dimen/card_primary_text_size"
                 android:textColor="@color/darkPrimaryText"
-                android:text="@string/card_text_placeholder"
+                android:text="Meetup on Sunday for planning new app design"
                 android:maxLines="2"
                 android:ellipsize="end" />
 
-            <TextView
-                android:id="@+id/card_event_venue"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/card_event_name"
-                android:paddingLeft="@dimen/card_info_padding"
-                android:paddingRight="@dimen/card_info_padding"
-                android:paddingBottom="@dimen/card_info_padding"
-                android:textSize="@dimen/card_supporting_text_size"
-                android:text="@string/card_event_venue_placeholder"
-                android:maxLines="3"
-                android:ellipsize="end" />
+            <ImageView
+                android:id="@+id/event_time_icon"
+                app:srcCompat="@drawable/ic_vector_calendar"
+                android:layout_width="21dp"
+                android:layout_height="21dp"
+                android:layout_below="@id/event_name" />
 
             <TextView
-                android:id="@+id/card_event_note"
+                android:id="@+id/event_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_below="@+id/card_event_venue"
-                android:paddingLeft="@dimen/card_info_padding"
-                android:paddingRight="@dimen/card_info_padding"
-                android:paddingBottom="@dimen/card_info_padding"
+                android:layout_below="@+id/event_name"
+                android:layout_toRightOf="@+id/event_time_icon"
+                android:layout_toEndOf="@+id/event_time_icon"
+                android:layout_marginTop="2dp"
+                android:layout_marginLeft="7dp"
+                android:layout_marginStart="7dp"
+                android:layout_marginBottom="@dimen/card_info_padding"
                 android:textSize="@dimen/card_supporting_text_size"
-                android:textColor="@android:color/secondary_text_light"
-                android:text="@string/card_event_note_placeholder"
-                android:maxLines="4"
+                android:textColor="@color/darkSecondaryText"
+                android:text="Today at 3.35 PM"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <RelativeLayout
+                android:id="@+id/event_location_section"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/event_time_icon"
+                android:layout_marginBottom="@dimen/card_info_padding" >
+
+                <ImageView
+                    android:id="@+id/event_location_icon"
+                    app:srcCompat="@drawable/ic_marker"
+                    android:layout_width="21dp"
+                    android:layout_height="21dp"
+                    android:layout_marginTop="4dp" />
+
+                <TextView
+                    android:id="@+id/event_location"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toRightOf="@+id/event_location_icon"
+                    android:layout_toEndOf="@+id/event_location_icon"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginLeft="7dp"
+                    android:layout_marginStart="7dp"
+                    android:textSize="@dimen/card_supporting_text_size"
+                    android:textColor="@color/darkSecondaryText"
+                    android:text="Central World"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+
+                <ImageView
+                    android:visibility="visible"
+                    android:id="@+id/card_powered_by_google"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/event_location_icon"
+                    android:layout_marginTop="6dp"
+                    android:layout_alignLeft="@+id/event_location"
+                    android:layout_alignStart="@+id/event_location"
+                    android:src="@drawable/powered_by_google_light" />
+
+            </RelativeLayout>
+
+            <TextView
+                android:visibility="visible"
+                android:id="@+id/event_info"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/event_location_section"
+                android:layout_marginBottom="@dimen/card_info_padding"
+                android:textSize="@dimen/card_supporting_text_size"
+                android:textColor="@color/darkPrimaryText"
+                android:text="We need to meet to design the new screens and discuss basic functionality of them screens. Does anyone have any suggestions?"
+                android:maxLines="6"
                 android:ellipsize="end" />
 
         </RelativeLayout>
 
         <RelativeLayout
-            android:id="@+id/card_actions"
+            android:layout_marginLeft="@dimen/card_info_padding"
+            android:layout_marginStart="@dimen/card_info_padding"
+            android:layout_marginRight="@dimen/card_info_padding"
+            android:layout_marginEnd="@dimen/card_info_padding"
+            android:visibility="visible"
+            android:id="@+id/action_layout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp" >
+
+            <View
+                android:id="@+id/line_divider"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/lightBackground"
+                android:layout_marginBottom="8dp" />
+
+            <Button
+                android:id="@+id/action_yes"
+                android:focusable="false"
+                android:focusableInTouchMode="false"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:background="@drawable/ic_action_yes"
+                android:foreground="?android:selectableItemBackground"
+                android:layout_below="@+id/line_divider" />
+
+            <Button
+                android:id="@+id/action_no"
+                android:focusable="false"
+                android:focusableInTouchMode="false"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:layout_toRightOf="@+id/action_yes"
+                android:layout_marginLeft="18dp"
+                android:background="@drawable/ic_action_no"
+                android:foreground="?android:selectableItemBackground"
+                android:layout_below="@+id/line_divider"/>
 
             <Button
                 android:id="@+id/action_get_directions"
                 android:focusable="false"
                 android:focusableInTouchMode="false"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:padding="@dimen/card_action_padding"
-                android:background="?android:attr/selectableItemBackground"
-                android:textColor="@color/cardActionButtonTextColor"
-                android:text="@string/card_action_get_directions"/>
-
-            <ImageView
-                android:id="@+id/card_powered_by_google"
-                android:visibility="invisible"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentRight="true"
-                android:paddingRight="@dimen/card_info_padding"
-                android:layout_marginTop="@dimen/card_powered_by_google_margin"
-                android:src="@drawable/powered_by_google_light"/>
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:layout_toRightOf="@+id/action_no"
+                android:layout_marginLeft="18dp"
+                android:background="@drawable/ic_action_google_maps"
+                android:foreground="?android:selectableItemBackground"
+                android:layout_below="@+id/line_divider"/>
 
         </RelativeLayout>
-
 
     </LinearLayout>
 

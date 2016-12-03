@@ -25,7 +25,7 @@ android {
         }
         debug {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules-debug.pro'
             buildConfigField "String", "SERVER_URL", "\"http://192.168.1.35:8080\""
             buildConfigField "String", "AWS_COGNITO_IDENTITY_POOL", "\"us-east-1:e2e96c7b-f9cd-4e94-a4c6-4345fb289c83\""
             buildConfigField "String", "AWS_S3_BUCKET", "\"betec-glom\""
@@ -65,7 +65,9 @@ dependencies {
     compile "com.android.support:customtabs:${supportLibraryVersion}"
 
     // google services
-    compile "com.google.android.gms:play-services:${playServicesVersion}"
+    compile "com.google.android.gms:play-services-location:${playServicesVersion}"
+    compile "com.google.android.gms:play-services-maps:${playServicesVersion}"
+    compile "com.google.android.gms:play-services-gcm:${playServicesVersion}"
     compile 'com.google.maps.android:android-maps-utils:0.4.1'
 
     // networking
@@ -84,7 +86,6 @@ dependencies {
     compile 'com.nhaarman.listviewanimations:lib-core-slh:3.1.0@aar'
     compile 'com.nineoldandroids:library:2.4.0'
     compile 'me.himanshusoni.chatmessageview:chat-message-view:1.0.3'
-    //    compile 'jp.wasabeef:recyclerview-animators:2.2.0'    // commented out for now due to incompatible with new support lib
     compile files('libs/YouTubeAndroidPlayerApi.jar')
     compile('com.github.afollestad:sectioned-recyclerview:0.2.1') {
         transitive = true
@@ -95,9 +96,7 @@ dependencies {
 
     // aws
     compile "com.amazonaws:aws-android-sdk-core:${awsVersion}"
-    compile "com.amazonaws:aws-android-sdk-cognito:${awsVersion}"
     compile "com.amazonaws:aws-android-sdk-s3:${awsVersion}"
-    compile "com.amazonaws:aws-android-sdk-ddb:${awsVersion}"
 
     // Android M permission request
     compile 'pub.devrel:easypermissions:0.1.9'
