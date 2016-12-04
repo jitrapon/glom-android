@@ -3,11 +3,9 @@ package com.abborg.glom.fragments;
 
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.IdRes;
-import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.view.ActionMode;
@@ -43,13 +41,8 @@ import com.abborg.glom.model.FileItem;
 import com.abborg.glom.model.LinkItem;
 import com.abborg.glom.model.ListItem;
 import com.abborg.glom.model.NoteItem;
+import com.abborg.glom.model.PlaceInfo;
 import com.abborg.glom.utils.TaskUtils;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.location.places.Place;
-import com.google.android.gms.location.places.PlaceBuffer;
-import com.google.android.gms.location.places.Places;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -233,9 +226,8 @@ public class BoardFragment extends Fragment implements
                             handler.sendMessage(handler.obtainMessage(Const.MSG_DOWNLOAD_ITEM, item));
                     }
                     else {
-                        Intent intent = new Intent(Intent.ACTION_VIEW);
-                        intent.setDataAndType(Uri.fromFile(item.getLocalCache()), item.getMimetype());
-                        getActivity().startActivity(Intent.createChooser(intent, getString(R.string.card_select_app_to_launch)));
+                        if (handler != null)
+                            handler.sendMessage(handler.obtainMessage(Const.MSG_VIEW_FILE, item));
                     }
                 }
                 else if (selected instanceof DrawItem) {
@@ -295,29 +287,21 @@ public class BoardFragment extends Fragment implements
                         EventItem event = (EventItem) item;
                         final String placeId = event.getPlace();
                         if (!TextUtils.isEmpty(placeId)) {
-                            GoogleApiClient apiClient = appState.getGoogleApiClient();
-                            if (apiClient != null && apiClient.isConnected()) {
-                                PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(apiClient, placeId);
-                                placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {
-
-                                    @Override
-                                    public void onResult(@NonNull PlaceBuffer places) {
-                                        if (!places.getStatus().isSuccess()) {
-                                            Log.e(TAG, "Place query did not complete. Error: " + places.getStatus().toString());
-                                            places.release();
-                                            return;
-                                        }
-
-                                        final Place place = places.get(0);
-                                        Log.d(TAG, "Place query succeeded for " + place.getName());
-                                        double lat = place.getLatLng().latitude;
-                                        double lng = place.getLatLng().longitude;
-                                        places.release();
-
+                            TaskUtils.getLocationFromPlaceId(appState.getGoogleApiClient(), placeId, new TaskUtils.OnLocationReceivedListener() {
+                                @Override
+                                public void onLocationReceived(List<PlaceInfo> locations) {
+                                    if (locations != null && !locations.isEmpty()) {
+                                        double lat = locations.get(0).getLat();
+                                        double lng = locations.get(0).getLng();
                                         TaskUtils.launchGoogleMapsNavigation(getContext(), lat, lng);
                                     }
-                                });
-                            }
+                                }
+
+                                @Override
+                                public void onLocationFailed() {
+
+                                }
+                            });
                         }
                         else if (event.getLocation() != null) {
                             TaskUtils.launchGoogleMapsNavigation(getContext(), event.getLocation().getLatitude(), event.getLocation().getLongitude());

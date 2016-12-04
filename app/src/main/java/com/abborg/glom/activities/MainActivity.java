@@ -71,7 +71,6 @@ import com.abborg.glom.utils.TaskUtils;
 import com.abborg.glom.views.CircleMenu;
 import com.bumptech.glide.Glide;
 import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.youtube.player.YouTubeStandalonePlayer;
 
 import org.joda.time.DateTime;
 import org.json.JSONArray;
@@ -134,8 +133,6 @@ public class MainActivity extends BaseActivity implements
     private TextView notificationText;
     private boolean firstLaunch;
     private CoordinatorLayout mainCoordinatorLayout;
-
-    private static final boolean START_YOUTUBE_VIDEO_LIGHTBOX = false;
 
     /**********************************************************
      * VIEW INITIALIZATIONS
@@ -921,9 +918,8 @@ public class MainActivity extends BaseActivity implements
             /* Play Youtube video */
             case Const.MSG_PLAY_YOUTUBE_VIDEO: {
                 String videoId = (String) msg.obj;
-                Intent intent = YouTubeStandalonePlayer.createVideoIntent(
-                        this, appState.getGoogleApiKey(), videoId, 0, true, START_YOUTUBE_VIDEO_LIGHTBOX);
-                startActivity(intent);
+                playYoutubeVideo(videoId);
+
                 break;
             }
 
@@ -1022,9 +1018,21 @@ public class MainActivity extends BaseActivity implements
                         }
                     }
 
+                    openFileViewer(item.getLocalCache(), item.getMimetype());
+
                     Toast.makeText(getApplicationContext(),
                             String.format(getResources().getString(R.string.notification_download_item_success), item.getName()),
                             Toast.LENGTH_LONG).show();
+                }
+
+                break;
+            }
+
+            case Const.MSG_VIEW_FILE: {
+                final FileItem item = msg.obj == null ? null : (FileItem) msg.obj;
+
+                if (item != null) {
+                    openFileViewer(item.getLocalCache(), item.getMimetype());
                 }
 
                 break;

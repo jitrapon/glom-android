@@ -202,6 +202,7 @@ public class Const {
     public static final int MSG_NOTE_UPDATED_FAILED = 5072;
     public static final int MSG_GOOGLE_PLAY_SERVICES_UNAVAILABLE = 5073;
     public static final int MSG_GET_CIRCLES = 5074;
+    public static final int MSG_VIEW_FILE = 5075;
 
     /************************
      * Mimetypes

@@ -49,10 +49,12 @@ import com.abborg.glom.model.MenuActionItem;
 import com.abborg.glom.service.CirclePushService;
 import com.abborg.glom.utils.BottomSheetItemDecoration;
 import com.abborg.glom.utils.TaskUtils;
+import com.google.android.youtube.player.YouTubeStandalonePlayer;
 
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -90,6 +92,8 @@ public class BaseActivity extends AppCompatActivity implements
     protected SwitchCompat broadcastLocationToggle;
 
     protected List<BroadcastLocationListener> broadcastLocationListeners;
+
+    private static final boolean START_YOUTUBE_VIDEO_LIGHTBOX = false;
 
     // permission
     protected static final int PERMISSION_LOCATION = 1;
@@ -586,6 +590,18 @@ public class BaseActivity extends AppCompatActivity implements
             });
         }
         boardItemBottomSheet.show();
+    }
+
+    protected void openFileViewer(File file, String mimetype) {
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setDataAndType(Uri.fromFile(file), mimetype);
+        startActivity(Intent.createChooser(intent, getString(R.string.card_select_app_to_launch)));
+    }
+
+    protected void playYoutubeVideo(String videoId) {
+        Intent intent = YouTubeStandalonePlayer.createVideoIntent(
+                this, appState.getGoogleApiKey(), videoId, 0, true, START_YOUTUBE_VIDEO_LIGHTBOX);
+        startActivity(intent);
     }
 
     protected void handleMenuActionItem(MenuActionItem action) {

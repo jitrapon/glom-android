@@ -83,29 +83,8 @@
                     android:paddingEnd="@dimen/card_info_padding"
                     android:paddingBottom="@dimen/card_primary_text_padding_bottom"
                     android:text="This is where to put a brief description about this file. You know what it is. Some more long long text"
-                    android:maxLines="3"
+                    android:maxLines="4"
                     android:ellipsize="end" />
-
-                <RelativeLayout
-                    android:id="@+id/file_card_actions"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentBottom="true"
-                    android:layout_alignParentLeft="true"
-                    android:layout_alignParentStart="true">
-
-                    <Button
-                        android:id="@+id/action_view_file"
-                        android:focusable="false"
-                        android:focusableInTouchMode="false"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:padding="@dimen/card_action_padding"
-                        android:background="?android:attr/selectableItemBackground"
-                        android:textColor="@color/cardActionButtonTextColor"
-                        android:text="@string/card_action_view"/>
-
-                </RelativeLayout>
 
             </RelativeLayout>
 

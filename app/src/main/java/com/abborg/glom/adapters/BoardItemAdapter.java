@@ -17,7 +17,6 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.abborg.glom.ApplicationState;
@@ -34,6 +33,7 @@ import com.abborg.glom.model.FileItem;
 import com.abborg.glom.model.LinkItem;
 import com.abborg.glom.model.ListItem;
 import com.abborg.glom.model.NoteItem;
+import com.abborg.glom.model.PlaceInfo;
 import com.abborg.glom.utils.CircleTransform;
 import com.abborg.glom.utils.DateUtils;
 import com.abborg.glom.utils.TaskUtils;
@@ -114,7 +114,6 @@ public class BoardItemAdapter
 
     private static class FileHolder extends RecyclerView.ViewHolder {
 
-        Button viewButton;
         TextView fileName;
         TextView fileNote;
         ImageView fileThumbnail;
@@ -123,7 +122,6 @@ public class BoardItemAdapter
         private FileHolder(View itemView) {
             super(itemView);
 
-            viewButton = (Button) itemView.findViewById(R.id.action_view_file);
             fileName = (TextView) itemView.findViewById(R.id.file_name);
             fileNote = (TextView) itemView.findViewById(R.id.file_note);
             fileThumbnail = (ImageView) itemView.findViewById(R.id.file_thumbnail);
@@ -183,7 +181,6 @@ public class BoardItemAdapter
         TextView title;
         TextView description;
         CardView cardView;
-        RelativeLayout thumbnailLayout;
 
         private LinkHolder(View itemView) {
             super(itemView);
@@ -193,7 +190,6 @@ public class BoardItemAdapter
             title = (TextView) itemView.findViewById(R.id.link_title);
             description = (TextView) itemView.findViewById(R.id.link_description);
             cardView = (CardView) itemView.findViewById(R.id.card_view);
-            thumbnailLayout = (RelativeLayout) itemView.findViewById(R.id.link_thumbnail_layout);
             editButton = (Button) itemView.findViewById(R.id.action_edit_link);
             copyButton = (Button) itemView.findViewById(R.id.action_copy_link);
         }
@@ -559,25 +555,6 @@ public class BoardItemAdapter
 
         attachSelectionOverlay(position, holder.cardView);
 
-        if (file.getLocalCache() == null || !file.getLocalCache().exists()) {
-            holder.viewButton.setText(context.getResources().getString(R.string.card_action_download));
-            holder.viewButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    holder.itemView.performClick();
-                }
-            });
-        }
-        else {
-            holder.viewButton.setText(context.getResources().getString(R.string.card_action_view));
-            holder.viewButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    holder.itemView.performClick();
-                }
-            });
-        }
-
         String name = !TextUtils.isEmpty(file.getName()) ? file.getName()
                 : context.getResources().getString(R.string.file_name_placeholder);
         holder.fileName.setText(name);
@@ -655,9 +632,9 @@ public class BoardItemAdapter
                     context.getResources().getString(R.string.notify_retrieving_place_info);
             TaskUtils.getLocationFromPlaceId(appState.getGoogleApiClient(), item.getPlace(), new TaskUtils.OnLocationReceivedListener() {
                 @Override
-                public void onLocationReceived(List<CharSequence> locations) {
+                public void onLocationReceived(List<PlaceInfo> locations) {
                     if (!locations.isEmpty()) {
-                        holder.locationText.setText(locations.get(0));
+                        holder.locationText.setText(locations.get(0).getName());
                         holder.googleAttrImage.setVisibility(View.VISIBLE);
 
                         int updatedEventIndex = staleItems.indexOf(holder.getAdapterPosition());
@@ -744,10 +721,10 @@ public class BoardItemAdapter
             holder.description.setText(link.getDescription());
         }
         if (TextUtils.isEmpty(link.getThumbnail()) || link.getThumbnail().equals("null")) {
-            holder.thumbnailLayout.setVisibility(View.GONE);
+            holder.thumbnail.setVisibility(View.GONE);
         }
         else {
-            holder.thumbnailLayout.setVisibility(View.VISIBLE);
+            holder.thumbnail.setVisibility(View.VISIBLE);
             Glide.with(context)
                     .load(link.getThumbnail()).centerCrop()
                     .crossFade(1000)
@@ -756,14 +733,12 @@ public class BoardItemAdapter
                     .into(holder.thumbnail);
         }
 
-        holder.editButton.setText(context.getString(R.string.card_action_edit_link));
         holder.editButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (listener != null) listener.onActionButtonClicked(link, R.id.action_edit_link);
             }
         });
-        holder.copyButton.setText(context.getString(R.string.card_action_copy_link));
         holder.copyButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
+import com.abborg.glom.model.PlaceInfo;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
@@ -67,9 +68,10 @@ public class TaskUtils {
                         return;
                     }
 
-                    List<CharSequence> locations = new ArrayList<>();
+                    List<PlaceInfo> locations = new ArrayList<>();
                     for (int i = 0; i < places.getCount(); i++) {
-                        locations.add(places.get(i).getName());
+                        locations.add(new PlaceInfo(places.get(i).getName(), places.get(i).getLatLng().latitude,
+                                places.get(i).getLatLng().longitude));
                     }
                     places.release();
 
@@ -82,7 +84,7 @@ public class TaskUtils {
     }
 
     public interface OnLocationReceivedListener {
-        void onLocationReceived(List<CharSequence> locations);
+        void onLocationReceived(List<PlaceInfo> locations);
         void onLocationFailed();
     }
 }
