@@ -60,4 +60,12 @@
         <item name="android:textSize">@dimen/toolbar_subtitle_text_size</item>
     </style>
 
+    <!-- Splash screen -->
+    <style name="SplashTheme" parent="Theme.AppCompat.NoActionBar" >
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowBackground">@drawable/bg_splash</item>
+    </style>
+
 </resources>

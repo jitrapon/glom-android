@@ -6,6 +6,7 @@ import com.abborg.glom.activities.DrawActivity;
 import com.abborg.glom.activities.EventActivity;
 import com.abborg.glom.activities.ListItemActivity;
 import com.abborg.glom.activities.NoteActivity;
+import com.abborg.glom.activities.SplashActivity;
 import com.abborg.glom.adapters.BoardItemAdapter;
 import com.abborg.glom.adapters.UserAvatarAdapter;
 import com.abborg.glom.data.DataProvider;
@@ -26,6 +27,8 @@ import dagger.Component;
 @Singleton
 @Component(modules = {ApplicationModule.class})
 public interface ApplicationComponent {
+
+    void inject(SplashActivity activiy);
 
     void inject(BaseActivity activity);
 

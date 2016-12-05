@@ -153,7 +153,20 @@ public class MainActivity extends BaseActivity implements
 
         // begin loading and fetching data
         dataProvider.setHandler(handler);
-        dataProvider.loadDataAsync();
+        dataProvider.openDB();
+
+        updateView();
+
+        setupCallbackListeners();
+
+        setupService();
+
+        if (appState.getConnectionStatus() == ApplicationState.ConnectivityStatus.DISCONNECTED) {
+            handler.sendEmptyMessage(Const.MSG_SERVER_DISCONNECTED);
+        }
+        else {
+            dataProvider.requestGetCirclesInfo();
+        }
     }
 
     @Override
@@ -558,27 +571,6 @@ public class MainActivity extends BaseActivity implements
     @Override
     public boolean handleMessage(Message msg) {
         switch (msg.what) {
-
-            /* On first load */
-            case Const.MSG_INIT_SUCCESS: {
-
-                dataProvider.openDB();
-
-                updateView();
-
-                setupCallbackListeners();
-
-                setupService();
-
-                if (appState.getConnectionStatus() == ApplicationState.ConnectivityStatus.DISCONNECTED) {
-                    handler.sendEmptyMessage(Const.MSG_SERVER_DISCONNECTED);
-                }
-                else {
-                    dataProvider.requestGetCirclesInfo();
-                }
-
-                break;
-            }
 
             /* On circle list populated */
             case Const.MSG_GET_CIRCLES: {
