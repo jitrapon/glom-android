@@ -24,6 +24,9 @@ import org.joda.time.format.DateTimeFormatter;
 import java.io.File;
 import java.util.List;
 
+import static android.os.Environment.DIRECTORY_DOWNLOADS;
+import static android.os.Environment.DIRECTORY_PICTURES;
+
 /**
  * Class that handles objects that are to be used for the entire application
  * so long as the OS does not kill the application context, this class and fields will
@@ -62,11 +65,12 @@ public class ApplicationState implements
     /* Cached and downloaded file paths */
     private File cacheDir;
 
-    /* Internal storage memory */
+    /* Internal storage memory within app's package */
     private File internalFilesDir;
 
-    /* External storage memory */
-    private File externalFilesDir;
+    /* External storage for pictures */
+    private File externalMediaDir;
+    private File externalDownloadDir;
 
     /* Server connectivity state */
     private ConnectivityStatus connectivityStatus;
@@ -97,8 +101,11 @@ public class ApplicationState implements
 
         // initialize the paths to store cached and internal files
         cacheDir = context.getCacheDir();
-        internalFilesDir = context.getFilesDir();
-        externalFilesDir = new File(Environment.getExternalStorageDirectory() + "/" + Environment.DIRECTORY_DOWNLOADS + "/");
+        internalFilesDir = context.getExternalFilesDir(null);
+        externalMediaDir = new File(Environment.getExternalStoragePublicDirectory(DIRECTORY_PICTURES)
+                + File.separator + context.getResources().getString(R.string.app_name) + File.separator);
+        externalDownloadDir = new File(Environment.getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS)
+                + File.separator + context.getResources().getString(R.string.app_name) + File.separator);
 
         // make sure the phone has installed required Google Play Services version
         // if it's available, connect to Google API services
@@ -191,7 +198,21 @@ public class ApplicationState implements
 
     public File getInternalFilesDir() { return internalFilesDir; }
 
-    public File getExternalFilesDir() { return externalFilesDir; }
+    public File getExternalMediaDir() {
+        if (!externalMediaDir.exists() || !externalMediaDir.isDirectory()) {
+            boolean exists = externalMediaDir.mkdir();
+            return exists ? externalMediaDir : null;
+        }
+        else return externalMediaDir;
+    }
+
+    public File getExternalDownloadDir() {
+        if (!externalDownloadDir.exists() || !externalDownloadDir.isDirectory()) {
+            boolean exists = externalDownloadDir.mkdir();
+            return exists ? externalDownloadDir : null;
+        }
+        else return externalDownloadDir;
+    }
 
     public ConnectivityStatus getConnectionStatus() { return connectivityStatus; }
 

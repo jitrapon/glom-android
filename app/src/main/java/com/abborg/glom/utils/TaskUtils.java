@@ -22,7 +22,8 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Any generic task that can be shared between classes are here
+ * Any generic task that can be shared between classes are here. Methods here can be started independent
+ * of application state and permission issues.
  *
  * Created by Jitrapon on 13/11/2559.
  */

@@ -214,6 +214,8 @@ public class Const {
     public static final String FILE_TYPE_BMP = "image/x-ms-bmp";
     public static final String FILE_TYPE_WBMP = "image/vnd.wap.wbmp";
     public static final String FILE_TYPE_WEBP = "image/webp";
+    public static final String FILE_TYPE_3GP = "video/3gp";
+    public static final String FILE_TYPE_MP4 = "video/mp4";
 
     /************************
      * WEB RELATED

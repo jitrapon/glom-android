@@ -1689,6 +1689,16 @@ public class DataProvider {
                                 public void run() {
                                     deleteItemDB(item);
 
+                                    // delete local copy
+                                    if (item.getType() == BoardItem.TYPE_DRAWING) {
+                                        File file = ((DrawItem) item).getLocalFile();
+                                        if (file != null && file.exists()) {
+                                            if (file.delete()) {
+                                                Log.d(TAG, "Deleted local copy at " + file.getPath());
+                                            }
+                                        }
+                                    }
+
                                     if (handler != null) {
                                         handler.sendMessage(handler.obtainMessage(Const.MSG_ITEM_DELETED_SUCCESS, -1, -1, item));
                                     }
@@ -1762,6 +1772,7 @@ public class DataProvider {
                             final FileItem item = FileItem.createFile(circle);
                             File file = FileUtils.getFile(context, uri);
                             if (file != null) {
+                                Log.d(TAG, "File found... retrieving file from " + file.getPath());
                                 item.setName(file.getName());
                                 item.setSize(file.length());
                                 item.setPath(file.getPath());
@@ -1783,6 +1794,7 @@ public class DataProvider {
                                 }
                             }
                             else {
+                                Log.d(TAG, "File not found... retrieving file");
                                 retrieveFile(uri, new FileDownloadListener() {
                                     @Override
                                     public void onDownloadStarted(String path) {}
@@ -1794,6 +1806,7 @@ public class DataProvider {
                                     public void onDownloadCompleted(String path) {
                                         File tempFile = new File(path);
                                         if (tempFile.exists()) {
+                                            Log.d(TAG, "File retrieved successfully...at " + tempFile.getPath());
                                             item.setName(tempFile.getName());
                                             item.setSize(tempFile.length());
                                             item.setPath(tempFile.getPath());
@@ -1848,7 +1861,7 @@ public class DataProvider {
     }
 
     public void retrieveFile(final Uri uri, final FileDownloadListener listener) throws FileNotFoundException {
-        String mimeType = context.getContentResolver().getType(uri);
+        final String mimeType = context.getContentResolver().getType(uri);
         Cursor cursor = context.getContentResolver().query(uri, null, null, null, null);
         if (cursor != null) {
             int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
@@ -1862,7 +1875,14 @@ public class DataProvider {
                 public void run() {
                     try {
                         InputStream in = context.getContentResolver().openInputStream(uri);
-                        final File tempFile = new File(appState.getExternalFilesDir().getPath() + "/" + name);
+                        String path;
+                        if (FileUtils.isImage(mimeType) || FileUtils.isVideo(mimeType)) {
+                            path = appState.getExternalMediaDir().getPath();
+                        }
+                        else {
+                            path = appState.getExternalDownloadDir().getPath();
+                        }
+                        final File tempFile = new File(path + File.separator + name);
                         listener.onDownloadStarted(tempFile.getPath());
                         OutputStream out = new FileOutputStream(tempFile);
                         byte[] buf = new byte[1024];
@@ -1967,7 +1987,7 @@ public class DataProvider {
 
             values.put(DBHelper.FILE_COLUMN_NAME, file.getName());
             values.put(DBHelper.FILE_COLUMN_SIZE, file.getSize());
-            values.put(DBHelper.FILE_COLUMN_PATH, file.getLocalCache()==null ? null : file.getLocalCache().getPath());
+            values.put(DBHelper.FILE_COLUMN_PATH, file.getLocalFile()==null ? null : file.getLocalFile().getPath());
             values.put(DBHelper.FILE_COLUMN_MIMETYPE, file.getMimetype());
             values.put(DBHelper.FILE_COLUMN_NOTE, file.getNote());
             rows = database.update(DBHelper.TABLE_FILES, values,
@@ -2004,7 +2024,7 @@ public class DataProvider {
             values.put(DBHelper.FILE_COLUMN_ID, item.getId());
             values.put(DBHelper.FILE_COLUMN_NAME, item.getName());
             values.put(DBHelper.FILE_COLUMN_SIZE, item.getSize());
-            values.put(DBHelper.FILE_COLUMN_PATH, item.getLocalCache()==null ? null : item.getLocalCache().getPath());
+            values.put(DBHelper.FILE_COLUMN_PATH, item.getLocalFile()==null ? null : item.getLocalFile().getPath());
             values.put(DBHelper.FILE_COLUMN_MIMETYPE, item.getMimetype());
             values.put(DBHelper.FILE_COLUMN_NOTE, item.getNote());
             insertId = database.insert(DBHelper.TABLE_FILES, null, values);
@@ -2256,7 +2276,7 @@ public class DataProvider {
             values.clear();
             values.put(DBHelper.DRAWING_COLUMN_ID, item.getId());
             values.put(DBHelper.DRAWING_COLUMN_NAME, item.getName());
-            values.put(DBHelper.DRAWING_COLUMN_PATH, item.getLocalCache()==null ? null : item.getLocalCache().getPath());
+            values.put(DBHelper.DRAWING_COLUMN_PATH, item.getLocalFile()==null ? null : item.getLocalFile().getPath());
             insertId = database.insert(DBHelper.TABLE_DRAWINGS, null, values);
             Log.d(TAG, "[" + insertId + "] Inserted new drawing successfully");
 
@@ -2284,7 +2304,7 @@ public class DataProvider {
             values.clear();
 
             values.put(DBHelper.DRAWING_COLUMN_NAME, item.getName());
-            values.put(DBHelper.DRAWING_COLUMN_PATH, item.getLocalCache()==null ? null : item.getLocalCache().getPath());
+            values.put(DBHelper.DRAWING_COLUMN_PATH, item.getLocalFile()==null ? null : item.getLocalFile().getPath());
             rows = database.update(DBHelper.TABLE_DRAWINGS, values,
                     DBHelper.DRAWING_COLUMN_ID + "='" + item.getId() + "'", null);
             Log.d(TAG, "Updated drawing id: " + item.getId() + ", name: " +

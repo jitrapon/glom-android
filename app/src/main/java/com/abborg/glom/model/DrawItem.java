@@ -36,5 +36,5 @@ public class DrawItem extends BoardItem {
 
     public void setName(String name) { this.name = name; }
 
-    public File getLocalCache() { return file; }
+    public File getLocalFile() { return file; }
 }

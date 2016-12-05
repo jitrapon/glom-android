@@ -875,6 +875,10 @@ public class MainActivity extends BaseActivity implements
                                     //TODO
                                 }
                             }).show();
+
+                    if (item.getType() == BoardItem.TYPE_DRAWING) {
+                        refreshSystemGallery(((DrawItem) item).getLocalFile());
+                    }
                 }
 
                 break;
@@ -972,6 +976,8 @@ public class MainActivity extends BaseActivity implements
                     }
                 }
 
+                refreshSystemGallery(file.getLocalFile());
+
                 Toast.makeText(getApplicationContext(), getResources().getString(R.string.notification_created_item_success),
                         Toast.LENGTH_LONG).show();
                 break;
@@ -1018,7 +1024,7 @@ public class MainActivity extends BaseActivity implements
                         }
                     }
 
-                    openFileViewer(item.getLocalCache(), item.getMimetype());
+                    openFileViewer(item.getLocalFile(), item.getMimetype());
 
                     Toast.makeText(getApplicationContext(),
                             String.format(getResources().getString(R.string.notification_download_item_success), item.getName()),
@@ -1032,7 +1038,7 @@ public class MainActivity extends BaseActivity implements
                 final FileItem item = msg.obj == null ? null : (FileItem) msg.obj;
 
                 if (item != null) {
-                    openFileViewer(item.getLocalCache(), item.getMimetype());
+                    openFileViewer(item.getLocalFile(), item.getMimetype());
                 }
 
                 break;
@@ -1065,6 +1071,8 @@ public class MainActivity extends BaseActivity implements
                             listener.onItemAdded(item.getId());
                         }
                     }
+
+                    refreshSystemGallery(item.getLocalFile());
                 }
 
                 break;
@@ -1185,8 +1193,8 @@ public class MainActivity extends BaseActivity implements
                         }
                     }
 
-                    String path = (item.getLocalCache() == null) ? null :
-                            new File(item.getLocalCache().getPath()).exists() ? item.getLocalCache().getPath() : null;
+                    String path = (item.getLocalFile() == null) ? null :
+                            new File(item.getLocalFile().getPath()).exists() ? item.getLocalFile().getPath() : null;
                     Intent intent = new Intent(this, DrawActivity.class);
                     intent.setAction(getString(R.string.ACTION_JOIN_DRAWING));
                     intent.putExtra(getString(R.string.EXTRA_DRAWING_ID), item.getId());

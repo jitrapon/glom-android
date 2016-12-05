@@ -14,12 +14,16 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 
+import com.abborg.glom.Const;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 
 public class FileUtils {
 
@@ -31,8 +35,30 @@ public class FileUtils {
     public static final String MIME_TYPE_IMAGE = "image/*";
     public static final String MIME_TYPE_VIDEO = "video/*";
     public static final String MIME_TYPE_APP = "application/*";
-
     public static final String HIDDEN_PREFIX = ".";
+
+    private static List<String> imageFileTypes = Arrays.asList(
+            Const.FILE_TYPE_JPEG,
+            Const.FILE_TYPE_JPG,
+            Const.FILE_TYPE_GIF,
+            Const.FILE_TYPE_PNG,
+            Const.FILE_TYPE_BMP,
+            Const.FILE_TYPE_WBMP,
+            Const.FILE_TYPE_WEBP
+    );
+
+    private static List<String> videoFileTypes = Arrays.asList(
+            Const.FILE_TYPE_3GP,
+            Const.FILE_TYPE_MP4
+    );
+
+    public static boolean isImage(String mimetype) {
+        return !TextUtils.isEmpty(mimetype) && imageFileTypes.contains(mimetype);
+    }
+
+    public static boolean isVideo(String mimetype) {
+        return !TextUtils.isEmpty(mimetype) && videoFileTypes.contains(mimetype);
+    }
 
     /**
      * Gets the extension of a file name, like ".png" or ".jpg".

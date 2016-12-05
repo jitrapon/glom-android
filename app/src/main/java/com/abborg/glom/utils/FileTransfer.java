@@ -41,27 +41,22 @@ public class FileTransfer {
     private static final String TAG = "FileTransfer";
 
     private Context context;
-
-    /* The cloud to which the operation will be done from */
-    private CloudProvider cloudProvider;
-
-    /* Main thread handler */
     private Handler handler;
 
+    private CloudProvider cloudProvider;
     private List<String> downloadList;
-
-    private File downloadDir;
+    private ApplicationState appState;
 
     /********** AMAZON S3 ************/
     private TransferUtility s3Transfer;
     private AmazonS3Client s3Client;
 
-    public FileTransfer(Context ctx, ApplicationState appState, DataProvider dp) {
+    public FileTransfer(Context ctx, ApplicationState applicationState, DataProvider dp) {
         dataProvider = dp;
         context = ctx;
         handler = dataProvider.getHandler();
         downloadList = Collections.synchronizedList(new ArrayList<String>());
-        downloadDir = appState.getExternalFilesDir();
+        appState = applicationState;
     }
 
     public void setHandler(Handler h) {
@@ -74,11 +69,11 @@ public class FileTransfer {
                 case AMAZON_S3: {
                     if (s3Transfer == null) createAmazonS3Client();
 
-                    Log.d(TAG, "Begin uploading " + item.getLocalCache().getName() + " to Amazon S3...");
+                    Log.d(TAG, "Begin uploading " + item.getLocalFile().getName() + " to Amazon S3...");
                     s3Transfer.upload(
                             Const.AWS_S3_BUCKET,
-                            circle.getId() + "/" + item.getLocalCache().getName(),
-                            item.getLocalCache()
+                            circle.getId() + "/" + item.getLocalFile().getName(),
+                            item.getLocalFile()
                     ).setTransferListener(new TransferListener() {
                         @Override
                         public void onStateChanged(int id, TransferState state) {
@@ -131,6 +126,7 @@ public class FileTransfer {
         catch (Exception ex) {
             Log.e(TAG, ex.getMessage());
             dataProvider.setSyncStatus(item, Const.MSG_DRAWING_POST_FAILED, BoardItem.SYNC_ERROR);
+            ex.printStackTrace();
         }
     }
 
@@ -144,7 +140,7 @@ public class FileTransfer {
                     s3Transfer.upload(
                             Const.AWS_S3_BUCKET,
                             circle.getId() + "/" + item.getName(),
-                            item.getLocalCache()
+                            item.getLocalFile()
                     ).setTransferListener(new TransferListener() {
                         @Override
                         public void onStateChanged(int id, TransferState state) {
@@ -195,6 +191,7 @@ public class FileTransfer {
         catch (Exception ex) {
             Log.e(TAG, ex.getMessage());
             dataProvider.setSyncStatus(item, Const.MSG_FILE_POST_FAILED, BoardItem.SYNC_ERROR);
+            ex.printStackTrace();
         }
     }
 
@@ -209,7 +206,7 @@ public class FileTransfer {
                 case AMAZON_S3: {
                     if (s3Transfer == null) createAmazonS3Client();
                     String name = TextUtils.isEmpty(item.getName()) ? item.getId() : item.getName();
-                    final File tempFile = new File(downloadDir.getPath() + "/" + name + ".png");
+                    final File tempFile = new File(appState.getExternalMediaDir().getPath() + "/" + name + ".png");
 
                     Log.d(TAG, "Begin downloading " + name + " from Amazon S3...to " + tempFile.getPath());
                     downloadList.add(item.getId());
@@ -261,6 +258,7 @@ public class FileTransfer {
         catch (Exception ex) {
             downloadList.remove(item.getId());
             Log.e(TAG, ex.getMessage());
+            ex.printStackTrace();
         }
     }
 
@@ -274,7 +272,14 @@ public class FileTransfer {
             switch (provider) {
                 case AMAZON_S3: {
                     if (s3Transfer == null) createAmazonS3Client();
-                    final File tempFile = new File(downloadDir.getPath() + "/" + item.getName());
+                    String path;
+                    if (item.isImage() || item.isVideo()) {
+                        path = appState.getExternalMediaDir().getPath();
+                    }
+                    else {
+                        path = appState.getExternalDownloadDir().getPath();
+                    }
+                    final File tempFile = new File(path + "/" + item.getName());
 
                     Log.d(TAG, "Begin downloading " + item.getName() + " from Amazon S3...to " + tempFile.getPath());
                     downloadList.add(item.getId());
@@ -329,6 +334,7 @@ public class FileTransfer {
         catch (Exception ex) {
             downloadList.remove(item.getId());
             Log.e(TAG, ex.getMessage());
+            ex.printStackTrace();
         }
     }
 
@@ -361,6 +367,7 @@ public class FileTransfer {
             if (handler != null) {
                 handler.sendMessage(handler.obtainMessage(Const.MSG_ITEM_DELETED_FAILED, item));
             }
+            ex.printStackTrace();
         }
     }
 
@@ -394,6 +401,7 @@ public class FileTransfer {
             if (handler != null) {
                 handler.sendMessage(handler.obtainMessage(Const.MSG_ITEM_DELETED_FAILED, item));
             }
+            ex.printStackTrace();
         }
     }
 

@@ -366,7 +366,7 @@ public class BoardItemAdapter
                 String note = TextUtils.isEmpty(file.getNote()) ? "" : file.getNote();
                 String mimetype = TextUtils.isEmpty(file.getMimetype()) ? "" : file.getMimetype();
                 long size = file.getSize();
-                String path = file.getLocalCache()==null? "" : file.getLocalCache().getPath();
+                String path = file.getLocalFile()==null? "" : file.getLocalFile().getPath();
                 long created = file.getCreatedTime() == null ? 0L : file.getCreatedTime().getMillis();
                 long updated = file.getUpdatedTime() == null ? 0L : file.getUpdatedTime().getMillis();
                 id = (name + note + mimetype + size + path + created + updated + + file.getSyncStatus()).hashCode();
@@ -563,12 +563,12 @@ public class BoardItemAdapter
         holder.fileNote.setText(note);
 
         int icon;
-        if (file.isImage() && file.getLocalCache() != null && file.getLocalCache().exists()) {
+        if (file.isImage() && file.getLocalFile() != null && file.getLocalFile().exists()) {
             icon = R.drawable.ic_placeholder_image;
             if (file.isGif()) {
                 Glide.with(context)
-                        .load(file.getLocalCache()).asGif().centerCrop()
-                        .signature(new StringSignature(String.valueOf(file.getLocalCache().lastModified())))
+                        .load(file.getLocalFile()).asGif().centerCrop()
+                        .signature(new StringSignature(String.valueOf(file.getLocalFile().lastModified())))
                         .placeholder(icon)
                         .error(icon)
                         .crossFade(1000)
@@ -576,8 +576,8 @@ public class BoardItemAdapter
             }
             else {
                 Glide.with(context)
-                        .load(file.getLocalCache()).centerCrop()
-                        .signature(new StringSignature(String.valueOf(file.getLocalCache().lastModified())))
+                        .load(file.getLocalFile()).centerCrop()
+                        .signature(new StringSignature(String.valueOf(file.getLocalFile().lastModified())))
                         .placeholder(icon)
                         .error(icon)
                         .crossFade(1000)
@@ -683,7 +683,7 @@ public class BoardItemAdapter
 
         attachSelectionOverlay(position, holder.cardView);
 
-        File file = drawing.getLocalCache();
+        File file = drawing.getLocalFile();
         if (file != null && file.exists()) {
             Glide.with(context)
                     .load(file).centerCrop()

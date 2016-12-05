@@ -221,7 +221,7 @@ public class BoardFragment extends Fragment implements
                     FileItem item = (FileItem) selected;
 
                     // if file does not exist, download, otherwise view it
-                    if (item.getLocalCache() == null || !item.getLocalCache().exists()) {
+                    if (item.getLocalFile() == null || !item.getLocalFile().exists()) {
                         if (handler != null)
                             handler.sendMessage(handler.obtainMessage(Const.MSG_DOWNLOAD_ITEM, item));
                     }

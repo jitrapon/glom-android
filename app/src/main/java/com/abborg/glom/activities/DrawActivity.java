@@ -48,6 +48,7 @@ import com.abborg.glom.views.ColorPickerDialog;
 import org.joda.time.DateTime;
 import org.joda.time.Instant;
 
+import java.io.File;
 import java.io.InputStream;
 
 import javax.inject.Inject;
@@ -170,7 +171,7 @@ public class DrawActivity extends AppCompatActivity implements
         if (drawItem == null) super.onBackPressed();
         else {
             String name = TextUtils.isEmpty(drawItem.getName()) ? drawItem.getId() : drawItem.getName();
-            final String savedFile = appState.getExternalFilesDir().getPath() + "/" + name + ".png";
+            final String savedFile = appState.getExternalMediaDir().getPath() + File.separator + name + ".png";
 
             final Snackbar snackbar = Snackbar.make(
                     rootView, getString(R.string.notification_saving_bitmap), Snackbar.LENGTH_INDEFINITE);

@@ -3,12 +3,11 @@ package com.abborg.glom.model;
 import android.text.TextUtils;
 
 import com.abborg.glom.Const;
+import com.abborg.glom.utils.FileUtils;
 
 import org.joda.time.DateTime;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Class to model a file.
@@ -31,16 +30,6 @@ public class FileItem extends BoardItem {
 
     /* Reference to file */
     private File file;
-
-    private static List<String> imageFileTypes = Arrays.asList(
-            Const.FILE_TYPE_JPEG,
-            Const.FILE_TYPE_JPG,
-            Const.FILE_TYPE_GIF,
-            Const.FILE_TYPE_PNG,
-            Const.FILE_TYPE_BMP,
-            Const.FILE_TYPE_WBMP,
-            Const.FILE_TYPE_WEBP
-    );
 
     public static FileItem createFile(Circle circle) {
         return new FileItem(generateId(), circle, null);
@@ -66,7 +55,7 @@ public class FileItem extends BoardItem {
         file = new File(path);
     }
 
-    public File getLocalCache() {
+    public File getLocalFile() {
         return file;
     }
 
@@ -75,7 +64,11 @@ public class FileItem extends BoardItem {
     }
 
     public boolean isImage() {
-        return !TextUtils.isEmpty(mimetype) && imageFileTypes.contains(mimetype);
+        return FileUtils.isImage(mimetype);
+    }
+
+    public boolean isVideo() {
+        return FileUtils.isVideo(mimetype);
     }
 
     public void setNote(String note) {
