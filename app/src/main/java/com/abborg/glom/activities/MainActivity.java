@@ -1883,4 +1883,9 @@ public class MainActivity extends BaseActivity implements
     protected void showBroadcastLocationMenuOptions() {
         super.showBroadcastLocationMenuOptions();
     }
+
+    @AfterPermissionGranted(PERMISSION_CAMERA)
+    protected void launchCamera() {
+        super.launchCamera();
+    }
 }

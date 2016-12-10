@@ -282,7 +282,7 @@
 
     <!-- Board Item Actions -->
     <string name="action_image">Image</string>
-    <string name="action_video">Video</string>
+    <string name="action_camera">Camera</string>
     <string name="action_audio">Voice</string>
     <string name="action_event">Event</string>
     <string name="action_alarm">Alarm</string>
@@ -298,6 +298,7 @@
     <string name="dialog_permission_request_cancel">Cancel</string>
     <string name="permission_generic_rationale">Our app needs the permission to perform the operation. Allow?</string>
     <string name="permission_write_external_storage_rationale">Our app needs access to external storage to save files. Allow?</string>
+    <string name="permission_camera_rationale">Out app needs camera access and external storage. Allow?s</string>
     <string name="permission_read_external_storage_rationale">Our app needs access to external storage to upload files. Allow?</string>
     <string name="permission_location_rationale">Our app needs location permission to locate you. Allow?</string>
 

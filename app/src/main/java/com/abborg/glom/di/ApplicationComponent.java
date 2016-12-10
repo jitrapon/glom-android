@@ -15,6 +15,7 @@ import com.abborg.glom.fragments.CircleFragment;
 import com.abborg.glom.fragments.DiscoverFragment;
 import com.abborg.glom.fragments.DrawerFragment;
 import com.abborg.glom.fragments.LocationFragment;
+import com.abborg.glom.hardware.camera.CameraView;
 import com.abborg.glom.service.CirclePushService;
 import com.abborg.glom.service.MessageService;
 import com.abborg.glom.service.RegistrationIntentService;
@@ -65,4 +66,6 @@ public interface ApplicationComponent {
     void inject(MessageService service);
 
     void inject(RegistrationIntentService service);
+
+    void inject(CameraView view);
 }

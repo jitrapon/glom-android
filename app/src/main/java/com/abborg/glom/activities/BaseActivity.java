@@ -100,6 +100,7 @@ public class BaseActivity extends AppCompatActivity implements
     protected static final int PERMISSION_LOCATION = 1;
     protected static final int PERMISSION_READ_STORAGE = 2;
     protected static final int PERMISSION_WRITE_STORAGE = 3;
+    protected static final int PERMISSION_CAMERA = 4;
 
     private static final String TAG = "BaseAactivity";
 
@@ -129,6 +130,9 @@ public class BaseActivity extends AppCompatActivity implements
         }
         else if (requestCode == PERMISSION_WRITE_STORAGE) {
             rationale = getString(R.string.permission_write_external_storage_rationale);
+        }
+        else if (requestCode == PERMISSION_CAMERA) {
+            rationale = getString(R.string.permission_camera_rationale);
         }
         else {
             rationale = getString(R.string.permission_generic_rationale);
@@ -188,11 +192,10 @@ public class BaseActivity extends AppCompatActivity implements
     }
 
     protected void setupBroadcastLocationSheet() {
-        // set up the bottom sheets
         List<MenuActionItem> boardMenuItems = Arrays.asList(
                 MenuActionItem.IMAGE,
                 MenuActionItem.AUDIO,
-                MenuActionItem.VIDEO,
+                MenuActionItem.CAMERA,
                 MenuActionItem.ALARM,
                 MenuActionItem.DRAW,
                 MenuActionItem.NOTE,
@@ -201,6 +204,9 @@ public class BaseActivity extends AppCompatActivity implements
                 MenuActionItem.LOCATION,
                 MenuActionItem.LIST
         );
+        if (!TaskUtils.deviceHasCamera(this)) {
+            boardMenuItems.remove(MenuActionItem.CAMERA);
+        }
 
         BoardItemIconAdapter iconAdapter = new BoardItemIconAdapter(this, boardMenuItems, this);
         RecyclerView recyclerView = (RecyclerView) boardItemActionSheetLayout.findViewById(R.id.board_item_actions_recyclerview);
@@ -435,6 +441,19 @@ public class BaseActivity extends AppCompatActivity implements
      * Helpers
      **************************************************/
 
+    protected void launchCamera() {
+        String[] perm = {Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+
+        if (EasyPermissions.hasPermissions(this, perm)) {
+            Intent intent = new Intent(this, CameraActivity.class);
+            startActivity(intent);
+        }
+        else {
+            EasyPermissions.requestPermissions(this, getString(R.string.permission_camera_rationale),
+                    PERMISSION_CAMERA, perm);
+        }
+    }
+
     @SuppressLint("InflateParams")
     protected void showLinkDialog(final LinkItem link) {
         View contentView = getLayoutInflater().inflate(R.layout.dialog_save_link, null);
@@ -655,8 +674,11 @@ public class BaseActivity extends AppCompatActivity implements
                 startActivityForResult(intent, Const.CREATE_LIST_RESULT_CODE);
                 break;
             }
+            case CAMERA: {
+                launchCamera();
+                break;
+            }
             case ALARM:
-            case VIDEO:
             default:  Toast.makeText(getApplicationContext(), "Operation is not yet supported, coming soon!", Toast.LENGTH_SHORT).show();
         }
     }

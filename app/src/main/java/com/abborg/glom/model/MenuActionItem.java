@@ -8,7 +8,7 @@ import com.abborg.glom.R;
 public enum MenuActionItem {
 
     IMAGE(R.drawable.ic_vector_image, R.string.action_image),
-    VIDEO(R.drawable.ic_vector_camera, R.string.action_video),
+    CAMERA(R.drawable.ic_vector_camera, R.string.action_camera),
     AUDIO(R.drawable.ic_vector_audio, R.string.action_audio),
     EVENT(R.drawable.ic_vector_event, R.string.action_event),
     ALARM(R.drawable.ic_vector_alarm, R.string.action_alarm),

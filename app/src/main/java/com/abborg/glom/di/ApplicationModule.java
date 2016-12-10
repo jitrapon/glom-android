@@ -4,6 +4,8 @@ import android.app.Application;
 
 import com.abborg.glom.ApplicationState;
 import com.abborg.glom.data.DataProvider;
+import com.abborg.glom.hardware.camera.CameraCompat;
+import com.abborg.glom.hardware.camera.CameraOld;
 import com.abborg.glom.utils.HttpClient;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 
@@ -49,5 +51,11 @@ public class ApplicationModule {
     @Singleton
     public HttpClient provideHttpClient() {
         return new HttpClient(application);
+    }
+
+    @Provides
+    @Singleton
+    public CameraCompat providesCamera() {
+        return new CameraOld();
     }
 }
