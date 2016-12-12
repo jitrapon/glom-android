@@ -159,4 +159,15 @@ public class CameraOld implements CameraCompat {
         }
         return cameraID;
     }
+
+    @Override
+    public void takePicture() {
+        try {
+//            camera.takePicture(this, null, this, this);
+        }
+        catch (Exception ex) {
+            Log.e(TAG, ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
 }

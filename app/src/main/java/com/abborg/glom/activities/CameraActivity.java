@@ -38,6 +38,10 @@ public class CameraActivity extends AppCompatActivity implements
 
     private static final String TAG = "CameraActivity";
 
+    /**********************************************************
+     * Activity Callbacks
+     **********************************************************/
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,6 +74,10 @@ public class CameraActivity extends AppCompatActivity implements
         closeCamera();
     }
 
+    /**********************************************************
+     * View Callbacks
+     **********************************************************/
+
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
@@ -94,13 +102,15 @@ public class CameraActivity extends AppCompatActivity implements
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         if (v.getId() == R.id.capture_button) {
+            Drawable background = captureButton.getBackground();
+
             switch (event.getAction()) {
 
                 case MotionEvent.ACTION_DOWN:
-                    animateCaptureButtonDown();
+                    background.setAlpha(80);
                     break;
                 case MotionEvent.ACTION_UP:
-                    animateCaptureButtonUp();
+                    background.setAlpha(255);
                     break;
             }
 
@@ -108,16 +118,6 @@ public class CameraActivity extends AppCompatActivity implements
         }
 
         return false;
-    }
-
-    private void animateCaptureButtonDown() {
-        Drawable background = captureButton.getBackground();
-        background.setAlpha(80);
-    }
-
-    private void animateCaptureButtonUp() {
-        Drawable background = captureButton.getBackground();
-        background.setAlpha(255);
     }
 
     private void takePicture() {

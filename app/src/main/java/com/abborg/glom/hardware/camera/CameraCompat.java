@@ -31,4 +31,6 @@ public interface CameraCompat {
     int getFrontCameraId();
 
     int getBackCameraId();
+
+    void takePicture();
 }
