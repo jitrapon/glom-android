@@ -1,7 +1,7 @@
 package com.abborg.glom.hardware.camera;
 
+import android.graphics.SurfaceTexture;
 import android.os.Handler;
-import android.view.SurfaceHolder;
 
 /**
  * Abstracts Camera API differences from Camera1 and Camera2 classes
@@ -14,15 +14,21 @@ public interface CameraCompat {
 
     void setHandler(Handler handler);
 
+    void open();
+
     void open(int cameraId);
 
     void close();
 
     int getOrientation(int cameraId);
 
-    void setPreviewDisplay(SurfaceHolder holder);
+    void setPreviewTexture(SurfaceTexture surface);
 
     void startPreview();
 
     void stopPreview();
+
+    int getFrontCameraId();
+
+    int getBackCameraId();
 }

@@ -1,6 +1,7 @@
 package com.abborg.glom.di;
 
 import android.app.Application;
+import android.os.Build;
 
 import com.abborg.glom.ApplicationState;
 import com.abborg.glom.data.DataProvider;
@@ -56,6 +57,11 @@ public class ApplicationModule {
     @Provides
     @Singleton
     public CameraCompat providesCamera() {
-        return new CameraOld();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            return new CameraOld(); //TODO may change to new Camera2 API
+        }
+        else {
+            return new CameraOld();
+        }
     }
 }

@@ -1,9 +1,9 @@
 package com.abborg.glom.hardware.camera;
 
+import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.os.Handler;
 import android.util.Log;
-import android.view.SurfaceHolder;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
@@ -30,9 +30,11 @@ public class CameraOld implements CameraCompat {
         threadPool.submit(runnable);
     }
 
-    private void sendMessage(int msgId) {
+    private void sendMessage(int msgId, Object... args) {
         if (handler != null) {
-            handler.sendMessage(handler.obtainMessage(msgId));
+            if (args != null && args.length == 1) {
+                handler.sendMessage(handler.obtainMessage(msgId, args[0]));
+            }
         }
     }
 
@@ -42,19 +44,31 @@ public class CameraOld implements CameraCompat {
     }
 
     @Override
-    public void open(final int cameraId) {
+    public void open() {
+        open(-1);
+    }
+
+    @Override
+    public void open(final int id) {
         executeAsync(new Runnable() {
             @Override
             public void run() {
                 try {
-                    camera = Camera.open(cameraId);
+                    int cameraId = id;
+                    if (cameraId == -1) {
+                        camera = Camera.open();
+                        cameraId = getBackCameraId();
+                    }
+                    else {
+                        camera = Camera.open(cameraId);
+                    }
                     Camera.Parameters params = camera.getParameters();
                     params.set("orientation", "landscape");
                     params.set("rotation", 90);
                     camera.setParameters(params);
                     camera.setDisplayOrientation(90);
                     if (camera != null) {
-                        sendMessage(CAMERA_READY);
+                        sendMessage(CAMERA_READY, cameraId);
                         return;
                     }
                 }
@@ -84,9 +98,9 @@ public class CameraOld implements CameraCompat {
     }
 
     @Override
-    public void setPreviewDisplay(SurfaceHolder holder) {
+    public void setPreviewTexture(SurfaceTexture surface) {
         try {
-            camera.setPreviewDisplay(holder);
+            camera.setPreviewTexture(surface);
         }
         catch (IOException ex) {
             Log.e(TAG, ex.getMessage());
@@ -114,5 +128,35 @@ public class CameraOld implements CameraCompat {
             Log.e(TAG, ex.getMessage());
             ex.printStackTrace();
         }
+    }
+
+    @Override
+    public int getBackCameraId() {
+        int cameraID = -1;
+        int numberOfCameras = Camera.getNumberOfCameras();
+        for (int i = 0; i < numberOfCameras; i++) {
+            Camera.CameraInfo info = new Camera.CameraInfo();
+            Camera.getCameraInfo(i, info);
+            if (info.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
+                cameraID = i;
+                break;
+            }
+        }
+        return cameraID;
+    }
+
+    @Override
+    public int getFrontCameraId() {
+        int cameraID = -1;
+        int numberOfCameras = Camera.getNumberOfCameras();
+        for (int i = 0; i < numberOfCameras; i++) {
+            Camera.CameraInfo info = new Camera.CameraInfo();
+            Camera.getCameraInfo(i, info);
+            if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+                cameraID = i;
+                break;
+            }
+        }
+        return cameraID;
     }
 }
