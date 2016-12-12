@@ -1,13 +1,16 @@
 package com.abborg.glom.activities;
 
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 
 import com.abborg.glom.R;
 import com.abborg.glom.hardware.camera.CameraCompat;
@@ -15,17 +18,21 @@ import com.abborg.glom.hardware.camera.CameraView;
 
 public class CameraActivity extends AppCompatActivity implements
         Handler.Callback,
-        View.OnClickListener {
+        View.OnClickListener,
+        View.OnTouchListener {
 
     /* View that contains child camera view */
     private FrameLayout preview;
     private CameraView cameraView;
     private ImageView closeButton;
     private ImageView changeCameraButton;
+    private ProgressBar captureButton;
 
     private int currentCameraId;
     private static int BACK_CAMERA_ID;
     private static int FRONT_CAMERA_ID;
+
+    private boolean isVideoMode;
 
     private Handler handler;
 
@@ -41,9 +48,11 @@ public class CameraActivity extends AppCompatActivity implements
 
         preview = (FrameLayout) findViewById(R.id.camera_view);
         closeButton = (ImageView) findViewById(R.id.close_button);
-        closeButton.setOnClickListener(this);
         changeCameraButton = (ImageView) findViewById(R.id.change_camera_button);
+        captureButton = (ProgressBar) findViewById(R.id.capture_button);
+        closeButton.setOnClickListener(this);
         changeCameraButton.setOnClickListener(this);
+        captureButton.setOnTouchListener(this);
         preview.removeAllViews();
     }
 
@@ -82,6 +91,39 @@ public class CameraActivity extends AppCompatActivity implements
         }
     }
 
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        if (v.getId() == R.id.capture_button) {
+            switch (event.getAction()) {
+
+                case MotionEvent.ACTION_DOWN:
+                    animateCaptureButtonDown();
+                    break;
+                case MotionEvent.ACTION_UP:
+                    animateCaptureButtonUp();
+                    break;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private void animateCaptureButtonDown() {
+        Drawable background = captureButton.getBackground();
+        background.setAlpha(80);
+    }
+
+    private void animateCaptureButtonUp() {
+        Drawable background = captureButton.getBackground();
+        background.setAlpha(255);
+    }
+
+    private void takePicture() {
+
+    }
+
     private void openCamera() {
         cameraView = new CameraView(this, handler);
         FRONT_CAMERA_ID = cameraView.getFrontCameraId();
@@ -116,6 +158,7 @@ public class CameraActivity extends AppCompatActivity implements
                 preview.addView(cameraView);
                 preview.addView(closeButton);
                 preview.addView(changeCameraButton);
+                preview.addView(captureButton);
 
                 currentCameraId = (int) msg.obj;
 

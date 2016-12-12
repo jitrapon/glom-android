@@ -31,4 +31,16 @@
         android:clickable="true"
         android:foreground="?android:attr/selectableItemBackground"/>
 
+    <ProgressBar
+        android:id="@+id/capture_button"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="76dp"
+        android:layout_height="76dp"
+        android:layout_marginBottom="@dimen/activity_vertical_margin"
+        android:layout_gravity="center|bottom"
+        android:max="100"
+        android:progress="0"
+        android:progressDrawable="@drawable/bg_record_video_progress"
+        android:background="@drawable/bg_record_video" />
+
 </FrameLayout>
