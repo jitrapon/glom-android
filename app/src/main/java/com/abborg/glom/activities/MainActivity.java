@@ -1785,6 +1785,15 @@ public class MainActivity extends BaseActivity implements
                 }
                 break;
             }
+
+            /* User has done taking photo */
+            case Const.CAMERA_RESULT_CODE: {
+                if (resultCode == RESULT_OK && data != null) {
+                    String path = data.getStringExtra(getResources().getString(R.string.EXTRA_CAMERA_IMAGE));
+                    dataProvider.postCameraAsync(path, appState.getActiveCircle(), true);
+                }
+                break;
+            }
             default:
                 break;
         }

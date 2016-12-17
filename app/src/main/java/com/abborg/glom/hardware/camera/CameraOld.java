@@ -5,6 +5,8 @@ import android.hardware.Camera;
 import android.os.Handler;
 import android.util.Log;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -13,12 +15,16 @@ import java.util.concurrent.Executors;
  * Old wrapper around deprecated Android's camera1 API
  */
 @SuppressWarnings("deprecation")
-public class CameraOld implements CameraCompat {
+public class CameraOld implements
+        CameraCompat,
+        Camera.PictureCallback,
+        Camera.ShutterCallback {
 
     private Camera camera;
 
     private Handler handler;
     private ExecutorService threadPool;
+    private byte[] capturedImageData;
 
     private static final String TAG = "CameraOld";
 
@@ -35,7 +41,32 @@ public class CameraOld implements CameraCompat {
             if (args != null && args.length == 1) {
                 handler.sendMessage(handler.obtainMessage(msgId, args[0]));
             }
+            else {
+                handler.sendMessage(handler.obtainMessage(msgId));
+            }
         }
+    }
+
+    @Override
+    public void savePicture(final String path) {
+        executeAsync(new Runnable() {
+            @Override
+            public void run() {
+                File file = new File(path);
+                try {
+                    FileOutputStream fos = new FileOutputStream(file);
+                    fos.write(capturedImageData);
+                    fos.close();
+                    capturedImageData = null;
+                    sendMessage(PICTURE_SAVED, path);
+                }
+                catch (IOException e) {
+                    Log.e(TAG, e.getMessage());
+                    e.printStackTrace();
+                    sendMessage(PICTURE_ERROR, e);
+                }
+            }
+        });
     }
 
     @Override
@@ -163,11 +194,22 @@ public class CameraOld implements CameraCompat {
     @Override
     public void takePicture() {
         try {
-//            camera.takePicture(this, null, this, this);
+            camera.takePicture(this, null, this);
         }
         catch (Exception ex) {
             Log.e(TAG, ex.getMessage());
             ex.printStackTrace();
         }
+    }
+
+    @Override
+    public void onPictureTaken(byte[] data, Camera camera) {
+        capturedImageData = data;
+        sendMessage(CameraCompat.PICTURE_READY);
+    }
+
+    @Override
+    public void onShutter() {
+        sendMessage(CameraCompat.SHUTTER);
     }
 }

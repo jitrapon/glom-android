@@ -42,7 +42,7 @@ import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.EventItem;
 import com.abborg.glom.model.User;
 import com.abborg.glom.utils.CircleTransform;
-import com.abborg.glom.utils.LayoutUtils;
+import com.abborg.glom.utils.ViewUtils;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
@@ -186,7 +186,7 @@ public class LocationFragment extends SupportMapFragment implements
                                 boundBuilder.include(marker.getPosition());
                             }
                             LatLngBounds bounds = boundBuilder.build();
-                            int padding = LayoutUtils.dpToPx(getContext(), CAMERA_CENTER_PADDING);
+                            int padding = ViewUtils.getDpFromPx(getContext(), CAMERA_CENTER_PADDING);
                             googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
                         }
                     });
@@ -689,7 +689,7 @@ public class LocationFragment extends SupportMapFragment implements
                 } else {
                     LatLngBounds bounds = boundBuilder.build();
                     if (getContext() != null) {
-                        int padding = LayoutUtils.dpToPx(getContext(), CAMERA_CENTER_PADDING);
+                        int padding = ViewUtils.getDpFromPx(getContext(), CAMERA_CENTER_PADDING);
                         googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
                     }
                 }

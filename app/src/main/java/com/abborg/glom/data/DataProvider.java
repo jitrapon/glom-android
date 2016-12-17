@@ -3092,6 +3092,47 @@ public class DataProvider {
     }
 
     /*************************************************
+     * CAMERA ITEM
+     *************************************************/
+
+    public void postCameraAsync(final String path, final Circle circle, final boolean sync) {
+        if (TextUtils.isEmpty(path)) return;
+
+        executeAsync(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    File file = new File(path);
+                    FileItem item = FileItem.createFile(circle);
+                    item.setName(file.getName());
+                    item.setSize(file.length());
+                    item.setPath(file.getPath());
+                    item.setMimetype(FileUtils.getMimeType(file));
+
+                    //update db
+                    createFileDB(circle, item.getCreatedTime(), item,
+                            sync ? BoardItem.SYNC_IN_PROGRESS : BoardItem.NO_SYNC);
+
+                    // this 1000 ms delayed is set due to recyclerview animation bug where it needs some time
+                    // for animation to work
+                    if (handler != null && sync)
+                        handler.sendMessageDelayed(handler.obtainMessage(Const.MSG_FILE_POSTED, item), 1000);
+
+                    // whether or not to sync with the server
+                    if (sync) {
+                        Log.d(TAG, "Proceed to uploading file to remote server for item " + item.getName());
+                        requestUploadFileRemote(circle, item, CloudProvider.AMAZON_S3);
+                    }
+                }
+                catch (Exception ex) {
+                    ex.printStackTrace();
+                    Log.e(TAG, ex.getMessage());
+                }
+            }
+        });
+    }
+
+    /*************************************************
      * XMPP MESSAGE HANDLER
      *************************************************/
 

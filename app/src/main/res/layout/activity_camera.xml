@@ -8,8 +8,8 @@
     tools:context="com.abborg.glom.activities.CameraActivity" >
 
     <ImageView
-        android:layout_width="30dp"
-        android:layout_height="30dp"
+        android:layout_width="@dimen/camera_button_size"
+        android:layout_height="@dimen/camera_button_size"
         android:id="@+id/close_button"
         app:srcCompat="@drawable/ic_close_white"
         android:layout_gravity="top|start"
@@ -20,8 +20,8 @@
         android:foreground="?android:attr/selectableItemBackground" />
 
     <ImageView
-        android:layout_width="30dp"
-        android:layout_height="30dp"
+        android:layout_width="@dimen/camera_button_size"
+        android:layout_height="@dimen/camera_button_size"
         android:id="@+id/change_camera_button"
         app:srcCompat="@drawable/ic_change_camera"
         android:layout_gravity="top|end"
@@ -42,5 +42,13 @@
         android:progress="0"
         android:progressDrawable="@drawable/bg_record_video_progress"
         android:background="@drawable/bg_record_video" />
+
+    <ImageView
+        android:id="@+id/done_button"
+        android:layout_gravity="center|bottom"
+        android:background="@drawable/ic_done"
+        android:layout_marginBottom="28dp"
+        android:layout_width="52dp"
+        android:layout_height="52dp" />
 
 </FrameLayout>

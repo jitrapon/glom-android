@@ -52,6 +52,12 @@ public class CameraView extends TextureView implements
         camera.takePicture();
     }
 
+    public void startPreview() { camera.startPreview(); }
+
+    public void savePicture(String path) {
+        camera.savePicture(path);
+    }
+
     @Override
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
         Log.d(TAG, "SurfaceTexture is available");

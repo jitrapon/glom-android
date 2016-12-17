@@ -45,6 +45,7 @@ public class Const {
     public static final int CREATE_LIST_RESULT_CODE = 707;
     public static final int CREATE_NOTE_RESULT_CODE = 708;
     public static final int GOOGLE_PLAY_SERVICES_REQUEST_CODE = 709;
+    public static final int CAMERA_RESULT_CODE = 710;
 
     /************************
      * API

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 
 public class FileUtils {
@@ -51,6 +52,10 @@ public class FileUtils {
             Const.FILE_TYPE_3GP,
             Const.FILE_TYPE_MP4
     );
+
+    public static String getTimestampFilename() {
+        return new Date().getTime() + "";
+    }
 
     public static boolean isImage(String mimetype) {
         return !TextUtils.isEmpty(mimetype) && imageFileTypes.contains(mimetype);

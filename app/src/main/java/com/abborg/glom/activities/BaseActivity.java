@@ -446,7 +446,7 @@ public class BaseActivity extends AppCompatActivity implements
 
         if (EasyPermissions.hasPermissions(this, perm)) {
             Intent intent = new Intent(this, CameraActivity.class);
-            startActivity(intent);
+            startActivityForResult(intent, Const.CAMERA_RESULT_CODE);
         }
         else {
             EasyPermissions.requestPermissions(this, getString(R.string.permission_camera_rationale),

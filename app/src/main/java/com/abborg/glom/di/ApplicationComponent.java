@@ -1,6 +1,7 @@
 package com.abborg.glom.di;
 
 import com.abborg.glom.activities.BaseActivity;
+import com.abborg.glom.activities.CameraActivity;
 import com.abborg.glom.activities.ChatActivity;
 import com.abborg.glom.activities.DrawActivity;
 import com.abborg.glom.activities.EventActivity;
@@ -68,4 +69,6 @@ public interface ApplicationComponent {
     void inject(RegistrationIntentService service);
 
     void inject(CameraView view);
+
+    void inject(CameraActivity activity);
 }

@@ -11,6 +11,10 @@ public interface CameraCompat {
     int CAMERA_READY = 0;
     int CAMERA_RELEASED = 1;
     int CAMERA_ERROR = 2;
+    int SHUTTER = 3;
+    int PICTURE_READY = 4;
+    int PICTURE_SAVED = 5;
+    int PICTURE_ERROR = 6;
 
     void setHandler(Handler handler);
 
@@ -33,4 +37,6 @@ public interface CameraCompat {
     int getBackCameraId();
 
     void takePicture();
+
+    void savePicture(String path);
 }
