@@ -567,28 +567,28 @@ public class BoardItemAdapter
             icon = R.drawable.ic_placeholder_image;
             if (file.isGif()) {
                 Glide.with(context)
-                        .load(file.getLocalFile()).asGif().centerCrop()
+                        .load(file.getLocalFile()).asGif()
                         .signature(new StringSignature(String.valueOf(file.getLocalFile().lastModified())))
-                        .placeholder(icon)
+                        .placeholder(R.color.placeholderColor)
                         .error(icon)
-                        .crossFade(1000)
+                        .crossFade(300)
                         .into(holder.fileThumbnail);
             }
             else {
                 Glide.with(context)
-                        .load(file.getLocalFile()).centerCrop()
+                        .load(file.getLocalFile())
                         .signature(new StringSignature(String.valueOf(file.getLocalFile().lastModified())))
-                        .placeholder(icon)
+                        .placeholder(R.color.placeholderColor)
                         .error(icon)
-                        .crossFade(1000)
+                        .crossFade(300)
                         .into(holder.fileThumbnail);
             }
         }
         else {
             icon = file.isImage() ? R.drawable.ic_placeholder_image : R.drawable.ic_placeholder_file;
             Glide.with(context)
-                    .load(icon).centerCrop()
-                    .crossFade(1000)
+                    .load(icon)
+                    .crossFade(300)
                     .into(holder.fileThumbnail);
         }
     }
@@ -686,10 +686,10 @@ public class BoardItemAdapter
         File file = drawing.getLocalFile();
         if (file != null && file.exists()) {
             Glide.with(context)
-                    .load(file).centerCrop()
-                    .crossFade(1000)
+                    .load(file)
+                    .crossFade(300)
                     .signature(new StringSignature(String.valueOf(file.lastModified())))
-                    .placeholder(R.drawable.ic_placeholder_drawing)
+                    .placeholder(R.color.placeholderColor)
                     .error(R.drawable.ic_placeholder_drawing)
                     .into(holder.thumbnail);
         }

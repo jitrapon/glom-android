@@ -46,6 +46,7 @@
     <color name="notificationSuccessBackground">#00e676</color>
 
     <!-- other UI components -->
+    <color name="placeholderColor">#ffff</color>
     <color name="menuOverlay">#88000000</color>
     <color name="lineDivider">#1f000000</color>
     <color name="selectItemOverlay">#38000000</color>

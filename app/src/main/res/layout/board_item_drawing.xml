@@ -22,18 +22,11 @@
         android:background="@color/selectItemOverlay"
         android:visibility="gone" />
 
-    <LinearLayout
+    <ImageView
+        android:id="@+id/drawing_thumbnail"
+        android:layout_height="240dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical" >
-
-        <ImageView
-            android:id="@+id/drawing_thumbnail"
-            android:layout_height="240dp"
-            android:layout_width="match_parent"
-            android:scaleType="centerCrop"
-            android:src="@drawable/ic_placeholder_drawing" />
-
-    </LinearLayout>
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_placeholder_drawing" />
 
 </android.support.v7.widget.CardView>
