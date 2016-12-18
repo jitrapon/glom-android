@@ -2,6 +2,8 @@ package com.abborg.glom.hardware.camera;
 
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.media.CamcorderProfile;
+import android.media.MediaRecorder;
 import android.os.Handler;
 import android.util.Log;
 
@@ -25,6 +27,7 @@ public class CameraOld implements
     private Handler handler;
     private ExecutorService threadPool;
     private byte[] capturedImageData;
+    private MediaRecorder recorder;
 
     private static final String TAG = "CameraOld";
 
@@ -211,5 +214,80 @@ public class CameraOld implements
     @Override
     public void onShutter() {
         sendMessage(CameraCompat.SHUTTER);
+    }
+
+    @Override
+    public void startRecording(final String path) {
+        executeAsync(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    if (prepareForRecording(path)) {
+                        recorder.start();
+
+                        sendMessage(VIDEO_START_RECORDING);
+                    } else {
+                        releaseMediaRecorder();
+
+                        sendMessage(VIDEO_ERROR);
+                    }
+                }
+                catch (Exception ex) {
+                    Log.e(TAG, ex.getMessage());
+                    ex.printStackTrace();
+
+                    sendMessage(VIDEO_ERROR);
+                }
+            }
+        });
+    }
+
+    @Override
+    public void stopRecording() {
+        try {
+            if (recorder != null) {
+                recorder.stop();
+                releaseMediaRecorder();
+                camera.lock();
+
+                sendMessage(VIDEO_STOP_RECORDING);
+            }
+        }
+        catch (Exception ex) {
+            Log.e(TAG, ex.getMessage());
+            ex.printStackTrace();
+
+            sendMessage(VIDEO_ERROR);
+        }
+    }
+
+    private boolean prepareForRecording(String path) {
+        try {
+            if (recorder == null) {
+                recorder = new MediaRecorder();
+            }
+            camera.unlock();
+            recorder.setCamera(camera);
+            recorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
+            recorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
+            recorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH));
+            recorder.setOutputFile(path);
+            recorder.prepare();
+        }
+        catch (Exception ex) {
+            Log.e(TAG, ex.getMessage());
+            ex.printStackTrace();
+            releaseMediaRecorder();
+            return false;
+        }
+        return true;
+    }
+
+    private void releaseMediaRecorder(){
+        if (recorder != null) {
+            recorder.reset();
+            recorder.release();
+            recorder = null;
+        }
     }
 }

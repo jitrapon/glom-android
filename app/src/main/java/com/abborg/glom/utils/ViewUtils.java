@@ -1,11 +1,14 @@
 package com.abborg.glom.utils;
 
+import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.util.DisplayMetrics;
 import android.view.View;
 import android.view.animation.Animation;
+import android.view.animation.LinearInterpolator;
 import android.view.animation.RotateAnimation;
 import android.view.animation.ScaleAnimation;
+import android.widget.ProgressBar;
 
 public class ViewUtils {
 
@@ -31,5 +34,13 @@ public class ViewUtils {
         Animation animation = new RotateAnimation(from, to, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
         animation.setFillAfter(true);
         view.startAnimation(animation);
+    }
+
+    public static ObjectAnimator animateProgress(ProgressBar progressBar, int startValue, int endValue, long duration) {
+        ObjectAnimator animation = ObjectAnimator.ofInt(progressBar, "progress", startValue, endValue);
+        animation.setDuration(duration);
+        animation.setInterpolator(new LinearInterpolator());
+        animation.start();
+        return animation;
     }
 }

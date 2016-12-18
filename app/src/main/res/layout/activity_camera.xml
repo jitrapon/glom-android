@@ -20,6 +20,16 @@
         android:foreground="?android:attr/selectableItemBackground" />
 
     <ImageView
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:id="@+id/switch_mode_button"
+        android:background="@drawable/ic_video"
+        android:layout_gravity="top|center"
+        android:layout_marginTop="@dimen/activity_vertical_margin"
+        android:clickable="true"
+        android:foreground="?android:attr/selectableItemBackground"/>
+
+    <ImageView
         android:layout_width="@dimen/camera_button_size"
         android:layout_height="@dimen/camera_button_size"
         android:id="@+id/change_camera_button"
@@ -38,7 +48,7 @@
         android:layout_height="76dp"
         android:layout_marginBottom="@dimen/activity_vertical_margin"
         android:layout_gravity="center|bottom"
-        android:max="100"
+        android:max="20"
         android:progress="0"
         android:progressDrawable="@drawable/bg_record_video_progress"
         android:background="@drawable/bg_record_video" />

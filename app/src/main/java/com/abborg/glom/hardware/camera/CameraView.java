@@ -44,7 +44,7 @@ public class CameraView extends TextureView implements
         camera.open();
     }
 
-    public void releaseCamera() {
+    public void closeCamera() {
         camera.close();
     }
 
@@ -56,6 +56,14 @@ public class CameraView extends TextureView implements
 
     public void savePicture(String path) {
         camera.savePicture(path);
+    }
+
+    public void startRecording(String path) {
+        camera.startRecording(path);
+    }
+
+    public void stopRecording() {
+        camera.stopRecording();
     }
 
     @Override

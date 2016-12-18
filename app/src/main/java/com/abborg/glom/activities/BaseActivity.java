@@ -442,7 +442,7 @@ public class BaseActivity extends AppCompatActivity implements
      **************************************************/
 
     protected void launchCamera() {
-        String[] perm = {Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+        String[] perm = {Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO};
 
         if (EasyPermissions.hasPermissions(this, perm)) {
             Intent intent = new Intent(this, CameraActivity.class);

@@ -1,10 +1,12 @@
 package com.abborg.glom.activities;
 
+import android.animation.ObjectAnimator;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -41,6 +43,8 @@ public class CameraActivity extends AppCompatActivity implements
     private ImageView changeCameraButton;
     private ProgressBar captureButton;
     private ImageView doneButton;
+    private ImageView switchModeButton;
+    private ObjectAnimator recordingAnimation;
 
     private int currentCameraId;
     private static int BACK_CAMERA_ID;
@@ -48,11 +52,13 @@ public class CameraActivity extends AppCompatActivity implements
 
     private boolean isSaving;
     private boolean isVideoMode;
+    private boolean isRecording;
     private boolean isEditMode;
 
     private Handler handler;
 
     private static final String TAG = "CameraActivity";
+    private static final int MAX_VIDEO_DURATION_SEC = 20 * 1000;
 
     /**********************************************************
      * Activity Callbacks
@@ -72,11 +78,17 @@ public class CameraActivity extends AppCompatActivity implements
         changeCameraButton = (ImageView) findViewById(R.id.change_camera_button);
         captureButton = (ProgressBar) findViewById(R.id.capture_button);
         doneButton = (ImageView) findViewById(R.id.done_button);
+        switchModeButton = (ImageView) findViewById(R.id.switch_mode_button);
+        switchModeButton.setOnClickListener(this);
         closeButton.setOnClickListener(this);
         changeCameraButton.setOnClickListener(this);
         captureButton.setOnTouchListener(this);
         doneButton.setOnTouchListener(this);
         preview.removeAllViews();
+
+        isVideoMode = false;
+        captureButton.setMax(MAX_VIDEO_DURATION_SEC);
+        captureButton.setProgress(0);
     }
 
     @Override
@@ -90,6 +102,9 @@ public class CameraActivity extends AppCompatActivity implements
     protected void onPause() {
         super.onPause();
 
+        if (isRecording) {
+            stopRecording();
+        }
         closeCamera();
     }
 
@@ -134,6 +149,10 @@ public class CameraActivity extends AppCompatActivity implements
                     openCamera(BACK_CAMERA_ID);
                 }
                 break;
+
+            case R.id.switch_mode_button:
+                toggleCaptureMode();
+                break;
         }
     }
 
@@ -149,7 +168,17 @@ public class CameraActivity extends AppCompatActivity implements
                     break;
                 case MotionEvent.ACTION_UP:
                     background.setAlpha(255);
-                    cameraView.takePicture();
+                    if (!isVideoMode) {
+                        cameraView.takePicture();
+                    }
+                    else {
+                        if (!isRecording) {
+                            startRecording();
+                        }
+                        else {
+                            stopRecording();
+                        }
+                    }
                     break;
             }
 
@@ -193,7 +222,7 @@ public class CameraActivity extends AppCompatActivity implements
 
     private void closeCamera() {
         if (cameraView != null) {
-            cameraView.releaseCamera();
+            cameraView.closeCamera();
             preview.removeAllViews();
             cameraView = null;
         }
@@ -209,19 +238,60 @@ public class CameraActivity extends AppCompatActivity implements
         }
     }
 
+    private void startRecording() {
+        File downloadDir = appState.getExternalMediaDir();
+        if (downloadDir != null) {
+            cameraView.startRecording(downloadDir + File.separator + "video_" + FileUtils.getTimestampFilename() + ".mp4");
+        }
+    }
+
+    private void stopRecording() {
+        cameraView.stopRecording();
+    }
+
+    private void toggleCaptureMode() {
+        if (isVideoMode) {
+            isVideoMode = false;
+            switchModeButton.setBackground(ContextCompat.getDrawable(this, R.drawable.ic_video));
+            Toast.makeText(this, "Camera mode", Toast.LENGTH_SHORT).show();
+        }
+        else {
+            isVideoMode = true;
+            switchModeButton.setBackground(ContextCompat.getDrawable(this, R.drawable.ic_camera));
+            Toast.makeText(this, "Video mode", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private void updateView() {
         if (isEditMode) {
             changeCameraButton.setVisibility(View.GONE);
             captureButton.setVisibility(View.GONE);
+            switchModeButton.setVisibility(View.GONE);
+            if (closeButton.getVisibility() == View.GONE) {
+                closeButton.setVisibility(View.VISIBLE);
+                ViewUtils.animateScale(closeButton, 0, 1, 200);
+            }
             doneButton.setVisibility(View.VISIBLE);
             ViewUtils.animateScale(doneButton, 0, 1, 200);
+        }
+        else if (isRecording) {
+            switchModeButton.setVisibility(View.GONE);
+            closeButton.setVisibility(View.GONE);
+            changeCameraButton.setVisibility(View.GONE);
         }
         else {
             changeCameraButton.setVisibility(View.VISIBLE);
             captureButton.setVisibility(View.VISIBLE);
+            switchModeButton.setBackground(ContextCompat.getDrawable(this, isVideoMode ? R.drawable.ic_camera: R.drawable.ic_video));
+            switchModeButton.setVisibility(View.VISIBLE);
             doneButton.setVisibility(View.GONE);
+            if (closeButton.getVisibility() == View.GONE) {
+                closeButton.setVisibility(View.VISIBLE);
+                ViewUtils.animateScale(closeButton, 0, 1, 200);
+            }
             ViewUtils.animateScale(captureButton, 0, 1, 200);
             ViewUtils.animateScale(changeCameraButton, 0, 1, 200);
+            ViewUtils.animateScale(switchModeButton, 0, 1, 200);
         }
     }
 
@@ -238,6 +308,7 @@ public class CameraActivity extends AppCompatActivity implements
                 preview.addView(changeCameraButton);
                 preview.addView(captureButton);
                 preview.addView(doneButton);
+                preview.addView(switchModeButton);
 
                 updateView();
 
@@ -284,6 +355,27 @@ public class CameraActivity extends AppCompatActivity implements
             case CameraCompat.PICTURE_ERROR: {
                 isSaving = false;
                 Toast.makeText(this, "Could not save this image, please try again", Toast.LENGTH_SHORT).show();
+
+                break;
+            }
+
+            case CameraCompat.VIDEO_START_RECORDING: {
+                isRecording = true;
+                recordingAnimation = ViewUtils.animateProgress(captureButton, 0, MAX_VIDEO_DURATION_SEC, MAX_VIDEO_DURATION_SEC);
+                updateView();
+
+                break;
+            }
+
+            case CameraCompat.VIDEO_STOP_RECORDING: {
+                isRecording = false;
+                captureButton.setProgress(0);
+                if (recordingAnimation != null) {
+                    recordingAnimation.cancel();
+                    recordingAnimation = null;
+                }
+                captureButton.clearAnimation();
+                updateView();
 
                 break;
             }

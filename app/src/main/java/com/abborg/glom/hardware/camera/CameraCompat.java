@@ -15,6 +15,9 @@ public interface CameraCompat {
     int PICTURE_READY = 4;
     int PICTURE_SAVED = 5;
     int PICTURE_ERROR = 6;
+    int VIDEO_START_RECORDING = 7;
+    int VIDEO_STOP_RECORDING = 8;
+    int VIDEO_ERROR = 9;
 
     void setHandler(Handler handler);
 
@@ -39,4 +42,8 @@ public interface CameraCompat {
     void takePicture();
 
     void savePicture(String path);
+
+    void startRecording(String path);
+
+    void stopRecording();
 }
