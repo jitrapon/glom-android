@@ -8,6 +8,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -54,6 +55,7 @@ public class CameraActivity extends AppCompatActivity implements
     private boolean isVideoMode;
     private boolean isRecording;
     private boolean isEditMode;
+    private boolean isEditVideoMode;
 
     private Handler handler;
 
@@ -105,6 +107,7 @@ public class CameraActivity extends AppCompatActivity implements
         if (isRecording) {
             stopRecording();
         }
+        cameraView.stopPlayback();
         closeCamera();
     }
 
@@ -116,6 +119,15 @@ public class CameraActivity extends AppCompatActivity implements
     public void onBackPressed() {
         if (isEditMode) {
             isEditMode = false;
+
+            cameraView.stopPlayback();
+            if (!TextUtils.isEmpty(cameraView.getLastSavedVideoPath())) {
+                File temp = new File(cameraView.getLastSavedVideoPath());
+                if (temp.exists()){
+                    temp.delete();
+                }
+            }
+
             cameraView.startPreview();
             updateView();
         }
@@ -130,6 +142,15 @@ public class CameraActivity extends AppCompatActivity implements
             case R.id.close_button:
                 if (isEditMode) {
                     isEditMode = false;
+
+                    cameraView.stopPlayback();
+                    if (!TextUtils.isEmpty(cameraView.getLastSavedVideoPath())) {
+                        File temp = new File(cameraView.getLastSavedVideoPath());
+                        if (temp.exists()){
+                            temp.delete();
+                        }
+                    }
+
                     cameraView.startPreview();
                     updateView();
                 }
@@ -195,7 +216,12 @@ public class CameraActivity extends AppCompatActivity implements
                 case MotionEvent.ACTION_UP:
                     background.setAlpha(255);
                     if (!isSaving) {
-                        savePicture();
+                        if (isEditVideoMode) {
+                            finish();
+                        }
+                        else {
+                            savePicture();
+                        }
                     }
                     break;
             }
@@ -241,7 +267,8 @@ public class CameraActivity extends AppCompatActivity implements
     private void startRecording() {
         File downloadDir = appState.getExternalMediaDir();
         if (downloadDir != null) {
-            cameraView.startRecording(downloadDir + File.separator + "video_" + FileUtils.getTimestampFilename() + ".mp4");
+            cameraView.startRecording(downloadDir + File.separator + "video_" + FileUtils.getTimestampFilename() + ".mp4",
+                    MAX_VIDEO_DURATION_SEC);
         }
     }
 
@@ -263,7 +290,12 @@ public class CameraActivity extends AppCompatActivity implements
     }
 
     private void updateView() {
-        if (isEditMode) {
+        if (isEditMode || isEditVideoMode) {
+            cameraView.stopPreview();
+            if (isVideoMode) {
+                cameraView.startPlayback(this);
+            }
+
             changeCameraButton.setVisibility(View.GONE);
             captureButton.setVisibility(View.GONE);
             switchModeButton.setVisibility(View.GONE);
@@ -303,16 +335,15 @@ public class CameraActivity extends AppCompatActivity implements
     public boolean handleMessage(Message msg) {
         switch (msg.what) {
             case CameraCompat.CAMERA_READY: {
+                currentCameraId = (int) msg.obj;
+
                 preview.addView(cameraView);
                 preview.addView(closeButton);
                 preview.addView(changeCameraButton);
                 preview.addView(captureButton);
                 preview.addView(doneButton);
                 preview.addView(switchModeButton);
-
                 updateView();
-
-                currentCameraId = (int) msg.obj;
 
                 Log.d(TAG, "Camera is ready to start previewing on id " + currentCameraId);
 
@@ -360,6 +391,7 @@ public class CameraActivity extends AppCompatActivity implements
             }
 
             case CameraCompat.VIDEO_START_RECORDING: {
+                Log.d(TAG, "Video started recording");
                 isRecording = true;
                 recordingAnimation = ViewUtils.animateProgress(captureButton, 0, MAX_VIDEO_DURATION_SEC, MAX_VIDEO_DURATION_SEC);
                 updateView();
@@ -368,7 +400,9 @@ public class CameraActivity extends AppCompatActivity implements
             }
 
             case CameraCompat.VIDEO_STOP_RECORDING: {
+                Log.d(TAG, "Video stopped recording");
                 isRecording = false;
+                isEditVideoMode = true;
                 captureButton.setProgress(0);
                 if (recordingAnimation != null) {
                     recordingAnimation.cancel();

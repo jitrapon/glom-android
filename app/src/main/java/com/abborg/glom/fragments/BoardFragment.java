@@ -184,9 +184,12 @@ public class BoardFragment extends Fragment implements
             activityCallback.onToolbarTitleChanged(appState.getActiveCircle().getTitle());
 
             int itemCount = appState.getActiveCircle().getItems().size();
-            activityCallback.onToolbarSubtitleChanged(
-                    getContext().getResources().getQuantityString(R.plurals.subtitle_board_fragment,
-                            itemCount, itemCount));
+            Context context = getContext();
+            if (context != null) {
+                activityCallback.onToolbarSubtitleChanged(
+                        context.getResources().getQuantityString(R.plurals.subtitle_board_fragment,
+                                itemCount, itemCount));
+            }
         }
     }
 

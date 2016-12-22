@@ -1,5 +1,7 @@
 package com.abborg.glom.hardware.camera;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
@@ -7,6 +9,7 @@ import android.media.MediaRecorder;
 import android.os.Handler;
 import android.util.Log;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -23,6 +26,7 @@ public class CameraOld implements
         Camera.ShutterCallback {
 
     private Camera camera;
+    private int cameraId;
 
     private Handler handler;
     private ExecutorService threadPool;
@@ -58,7 +62,12 @@ public class CameraOld implements
                 File file = new File(path);
                 try {
                     FileOutputStream fos = new FileOutputStream(file);
-                    fos.write(capturedImageData);
+                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                    BitmapFactory.Options options = new BitmapFactory.Options();
+                    options.inMutable = true;
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(capturedImageData, 0, capturedImageData.length, options);
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 30, outputStream);
+                    fos.write(outputStream.toByteArray());
                     fos.close();
                     capturedImageData = null;
                     sendMessage(PICTURE_SAVED, path);
@@ -88,7 +97,9 @@ public class CameraOld implements
             @Override
             public void run() {
                 try {
-                    int cameraId = id;
+
+                    // open the camera
+                    cameraId = id;
                     if (cameraId == -1) {
                         camera = Camera.open();
                         cameraId = getBackCameraId();
@@ -96,11 +107,21 @@ public class CameraOld implements
                     else {
                         camera = Camera.open(cameraId);
                     }
+
+                    // set camera orientation
                     Camera.Parameters params = camera.getParameters();
                     params.set("orientation", "landscape");
-                    params.set("rotation", 90);
-                    camera.setParameters(params);
+                    if (cameraId == Camera.CameraInfo.CAMERA_FACING_BACK) {
+                        params.set("rotation", 90);
+                        params.setRotation(90);
+                    }
+                    else {
+                        params.set("rotation", 270);
+                        params.setRotation(270);
+                    }
                     camera.setDisplayOrientation(90);
+                    camera.setParameters(params);
+
                     if (camera != null) {
                         sendMessage(CAMERA_READY, cameraId);
                         return;
@@ -124,11 +145,6 @@ public class CameraOld implements
 
             sendMessage(CAMERA_RELEASED);
         }
-    }
-
-    @Override
-    public int getOrientation(int cameraId) {
-        return 0;
     }
 
     @Override
@@ -217,16 +233,17 @@ public class CameraOld implements
     }
 
     @Override
-    public void startRecording(final String path) {
+    public void startRecording(final String path, final int maxDuration) {
         executeAsync(new Runnable() {
             @Override
             public void run() {
                 try {
-                    if (prepareForRecording(path)) {
+                    if (prepareForRecording(path, maxDuration)) {
                         recorder.start();
 
                         sendMessage(VIDEO_START_RECORDING);
-                    } else {
+                    }
+                    else {
                         releaseMediaRecorder();
 
                         sendMessage(VIDEO_ERROR);
@@ -261,7 +278,7 @@ public class CameraOld implements
         }
     }
 
-    private boolean prepareForRecording(String path) {
+    private boolean prepareForRecording(String path, int maxDuration) {
         try {
             if (recorder == null) {
                 recorder = new MediaRecorder();
@@ -270,7 +287,14 @@ public class CameraOld implements
             recorder.setCamera(camera);
             recorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
             recorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
-            recorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH));
+            if (cameraId == getFrontCameraId()) {
+                recorder.setOrientationHint(270);
+            }
+            else {
+                recorder.setOrientationHint(90);
+            }
+            recorder.setMaxDuration(maxDuration);
+            recorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_LOW));
             recorder.setOutputFile(path);
             recorder.prepare();
         }
@@ -289,5 +313,10 @@ public class CameraOld implements
             recorder.release();
             recorder = null;
         }
+    }
+
+    @Override
+    public int getCameraId() {
+        return cameraId;
     }
 }

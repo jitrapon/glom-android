@@ -27,8 +27,6 @@ public interface CameraCompat {
 
     void close();
 
-    int getOrientation(int cameraId);
-
     void setPreviewTexture(SurfaceTexture surface);
 
     void startPreview();
@@ -43,7 +41,9 @@ public interface CameraCompat {
 
     void savePicture(String path);
 
-    void startRecording(String path);
+    void startRecording(String path, int maxDuration);
 
     void stopRecording();
+
+    int getCameraId();
 }
