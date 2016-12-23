@@ -7,6 +7,24 @@
     android:layout_height="match_parent"
     tools:context="com.abborg.glom.activities.CameraActivity" >
 
+    <RelativeLayout
+        android:id="@+id/video_preview_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <VideoView
+            android:id="@+id/video_preview"
+            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true" />
+
+    </RelativeLayout>
+
     <ImageView
         android:layout_width="@dimen/camera_button_size"
         android:layout_height="@dimen/camera_button_size"

@@ -2,17 +2,15 @@ package com.abborg.glom.hardware.camera;
 
 import android.content.Context;
 import android.graphics.SurfaceTexture;
-import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Handler;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.Surface;
 import android.view.TextureView;
+import android.widget.VideoView;
 
 import com.abborg.glom.di.ComponentInjector;
-
-import java.io.IOException;
 
 import javax.inject.Inject;
 
@@ -25,8 +23,7 @@ public class CameraView extends TextureView implements
     @Inject
     CameraCompat camera;
 
-    private MediaPlayer mediaPlayer;
-    private SurfaceTexture surfaceTexture;
+    private VideoView videoView;
     private String lastSavedVideoPath;
     private boolean isPlaybackMode;
 
@@ -82,44 +79,35 @@ public class CameraView extends TextureView implements
         camera.stopPreview();
     }
 
-    public void startPlayback(final Context context) {
-        if (surfaceTexture == null || TextUtils.isEmpty(lastSavedVideoPath)) return;
+    public void startPlayback(VideoView view) {
+        if (TextUtils.isEmpty(lastSavedVideoPath)) return;
 
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    //FIXME
-//                    isPlaybackMode = true;
-//
-//                    mediaPlayer = new MediaPlayer();
-//                    mediaPlayer.setDataSource(lastSavedVideoPath);
-//                    mediaPlayer.setSurface(new Surface(surfaceTexture));
-//                    mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-//                    mediaPlayer.setLooping(true);
-//                    mediaPlayer.prepareAsync();
-//                    mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-//                        @Override
-//                        public void onPrepared(MediaPlayer mp) {
-//                            mediaPlayer.start();
-//                            Log.d(TAG, "Start media player");
-//                        }
-//                    });
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    isPlaybackMode = false;
-                }
-            }
-        }, 5000);
+        try {
+            isPlaybackMode = true;
+
+            videoView = view;
+            videoView.setVideoURI(Uri.parse(lastSavedVideoPath));
+            videoView.setOnPreparedListener(
+                    new MediaPlayer.OnPreparedListener() {
+                        @Override
+                        public void onPrepared(MediaPlayer mp) {
+                            mp.setLooping(true);
+                            videoView.start();
+                        }
+                    });
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            isPlaybackMode = false;
+        }
     }
 
     public void stopPlayback() {
-        if (isPlaybackMode && mediaPlayer != null) {
-            mediaPlayer.stop();
-            mediaPlayer.release();
-            mediaPlayer = null;
+        if (isPlaybackMode && videoView != null)  {
+            videoView.stopPlayback();
 
             isPlaybackMode = false;
+            lastSavedVideoPath = null;
             Log.d(TAG, "Released media player");
         }
     }
@@ -143,7 +131,6 @@ public class CameraView extends TextureView implements
 //        }
 
         camera.setPreviewTexture(surface);
-        surfaceTexture = surface;
         camera.startPreview();
     }
 

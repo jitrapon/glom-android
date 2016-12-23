@@ -15,7 +15,9 @@ import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
+import android.widget.VideoView;
 
 import com.abborg.glom.ApplicationState;
 import com.abborg.glom.R;
@@ -38,6 +40,8 @@ public class CameraActivity extends AppCompatActivity implements
     ApplicationState appState;
 
     /* View that contains child camera view */
+    private RelativeLayout videoPreviewContainer;
+    private VideoView videoPreview;
     private FrameLayout preview;
     private CameraView cameraView;
     private ImageView closeButton;
@@ -75,6 +79,8 @@ public class CameraActivity extends AppCompatActivity implements
 
         setContentView(R.layout.activity_camera);
 
+        videoPreviewContainer = (RelativeLayout) findViewById(R.id.video_preview_container);
+        videoPreview = (VideoView) findViewById(R.id.video_preview);
         preview = (FrameLayout) findViewById(R.id.camera_view);
         closeButton = (ImageView) findViewById(R.id.close_button);
         changeCameraButton = (ImageView) findViewById(R.id.change_camera_button);
@@ -117,8 +123,9 @@ public class CameraActivity extends AppCompatActivity implements
 
     @Override
     public void onBackPressed() {
-        if (isEditMode) {
+        if (isEditMode || isEditVideoMode) {
             isEditMode = false;
+            isEditVideoMode = false;
 
             cameraView.stopPlayback();
             if (!TextUtils.isEmpty(cameraView.getLastSavedVideoPath())) {
@@ -140,8 +147,9 @@ public class CameraActivity extends AppCompatActivity implements
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.close_button:
-                if (isEditMode) {
+                if (isEditMode || isEditVideoMode) {
                     isEditMode = false;
+                    isEditVideoMode = false;
 
                     cameraView.stopPlayback();
                     if (!TextUtils.isEmpty(cameraView.getLastSavedVideoPath())) {
@@ -217,6 +225,9 @@ public class CameraActivity extends AppCompatActivity implements
                     background.setAlpha(255);
                     if (!isSaving) {
                         if (isEditVideoMode) {
+                            Intent intent = new Intent();
+                            intent.putExtra(getResources().getString(R.string.EXTRA_CAMERA_MEDIA_PATH), cameraView.getLastSavedVideoPath());
+                            setResult(RESULT_OK, intent);
                             finish();
                         }
                         else {
@@ -280,22 +291,21 @@ public class CameraActivity extends AppCompatActivity implements
         if (isVideoMode) {
             isVideoMode = false;
             switchModeButton.setBackground(ContextCompat.getDrawable(this, R.drawable.ic_video));
-            Toast.makeText(this, "Camera mode", Toast.LENGTH_SHORT).show();
         }
         else {
             isVideoMode = true;
             switchModeButton.setBackground(ContextCompat.getDrawable(this, R.drawable.ic_camera));
-            Toast.makeText(this, "Video mode", Toast.LENGTH_SHORT).show();
         }
     }
 
     private void updateView() {
         if (isEditMode || isEditVideoMode) {
             cameraView.stopPreview();
-            if (isVideoMode) {
-                cameraView.startPlayback(this);
-            }
 
+            if (isEditVideoMode) {
+                cameraView.startPlayback(videoPreview);
+                videoPreviewContainer.setVisibility(View.VISIBLE);
+            }
             changeCameraButton.setVisibility(View.GONE);
             captureButton.setVisibility(View.GONE);
             switchModeButton.setVisibility(View.GONE);
@@ -307,11 +317,13 @@ public class CameraActivity extends AppCompatActivity implements
             ViewUtils.animateScale(doneButton, 0, 1, 200);
         }
         else if (isRecording) {
+            videoPreviewContainer.setVisibility(View.GONE);
             switchModeButton.setVisibility(View.GONE);
             closeButton.setVisibility(View.GONE);
             changeCameraButton.setVisibility(View.GONE);
         }
         else {
+            videoPreviewContainer.setVisibility(View.GONE);
             changeCameraButton.setVisibility(View.VISIBLE);
             captureButton.setVisibility(View.VISIBLE);
             switchModeButton.setBackground(ContextCompat.getDrawable(this, isVideoMode ? R.drawable.ic_camera: R.drawable.ic_video));
@@ -338,6 +350,7 @@ public class CameraActivity extends AppCompatActivity implements
                 currentCameraId = (int) msg.obj;
 
                 preview.addView(cameraView);
+                preview.addView(videoPreviewContainer);
                 preview.addView(closeButton);
                 preview.addView(changeCameraButton);
                 preview.addView(captureButton);
@@ -376,7 +389,7 @@ public class CameraActivity extends AppCompatActivity implements
                 Log.d(TAG, "Picture is saved at " + path);
 
                 Intent intent = new Intent();
-                intent.putExtra(getResources().getString(R.string.EXTRA_CAMERA_IMAGE), path);
+                intent.putExtra(getResources().getString(R.string.EXTRA_CAMERA_MEDIA_PATH), path);
                 setResult(RESULT_OK, intent);
                 finish();
 

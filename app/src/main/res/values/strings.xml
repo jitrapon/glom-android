@@ -99,7 +99,7 @@
     <string name="ACTION_CREATE_NOTE">action.CREATE_NOTE</string>
     <string name="ACTION_UPDATE_NOTE">action.UPDATE_NOTE</string>
     <string name="EXTRA_NOTE_ID">extra.NOTE_ID</string>
-    <string name="EXTRA_CAMERA_IMAGE">extra.CAMERA_IMAGE</string>
+    <string name="EXTRA_CAMERA_MEDIA_PATH">extra.CAMERA_MEDIA</string>
 
     <!-- Profile activity strings -->
     <string name="profile_activity_label">My Profile</string>

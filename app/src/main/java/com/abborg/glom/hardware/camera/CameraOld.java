@@ -250,7 +250,6 @@ public class CameraOld implements
                     }
                 }
                 catch (Exception ex) {
-                    Log.e(TAG, ex.getMessage());
                     ex.printStackTrace();
 
                     sendMessage(VIDEO_ERROR);
@@ -271,7 +270,6 @@ public class CameraOld implements
             }
         }
         catch (Exception ex) {
-            Log.e(TAG, ex.getMessage());
             ex.printStackTrace();
 
             sendMessage(VIDEO_ERROR);
