@@ -13,7 +13,7 @@ import com.abborg.glom.model.CircleInfo;
 import java.util.ArrayList;
 import java.util.List;
 
-public class NavigationDrawerAdapter extends RecyclerView.Adapter<NavigationDrawerAdapter.MyViewHolder> {
+public class NavCircleAdapter extends RecyclerView.Adapter<NavCircleAdapter.MyViewHolder> {
 
     private List<CircleInfo> circles;
 
@@ -21,7 +21,7 @@ public class NavigationDrawerAdapter extends RecyclerView.Adapter<NavigationDraw
 
     private Context context;
 
-    public NavigationDrawerAdapter(Context context, List<CircleInfo> data) {
+    public NavCircleAdapter(Context context, List<CircleInfo> data) {
         this.context = context;
         inflater = LayoutInflater.from(context);
         circles = data == null ? new ArrayList<CircleInfo>() : data;

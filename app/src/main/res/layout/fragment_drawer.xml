@@ -5,7 +5,7 @@
     android:background="@color/darkBackground" >
 
     <RelativeLayout
-        android:id="@+id/top_container"
+        android:id="@+id/user_profile_section"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true" >
@@ -14,10 +14,32 @@
             android:id="@+id/user_avatar"
             android:layout_width="@dimen/user_avatar_width"
             android:layout_height="@dimen/user_avatar_height"
-            android:layout_marginTop="17dp"
+            android:layout_marginTop="16dp"
             android:src="@drawable/ic_profile"
-            android:scaleType="fitXY"
-            android:layout_centerVertical="true" />
+            android:scaleType="centerCrop"
+            android:layout_centerHorizontal="true" />
+
+        <TextView
+            android:id="@+id/user_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="19sp"
+            android:layout_below="@+id/user_avatar"
+            android:layout_marginTop="7dp"
+            android:layout_centerHorizontal="true"
+            android:textColor="@color/textLightPrimary" />
+
+        <TextView
+            android:id="@+id/user_id"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="14sp"
+            android:layout_below="@+id/user_name"
+            android:layout_centerHorizontal="true"
+            android:textColor="@color/textLightPrimary"
+            android:layout_marginBottom="16dp"/>
 
     </RelativeLayout>
 
@@ -25,7 +47,6 @@
         android:id="@+id/drawer_recycler_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/top_container"
-        android:layout_marginTop="15dp" />
+        android:layout_below="@id/user_profile_section" />
 
 </RelativeLayout>
