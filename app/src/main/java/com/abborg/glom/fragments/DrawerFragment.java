@@ -25,6 +25,8 @@ import com.abborg.glom.adapters.NavMenuAdapter;
 import com.abborg.glom.di.ComponentInjector;
 import com.abborg.glom.interfaces.CircleListListener;
 import com.abborg.glom.interfaces.ClickListener;
+import com.abborg.glom.model.NavMenuHeader;
+import com.abborg.glom.model.NavMenuItem;
 import com.abborg.glom.model.User;
 import com.abborg.glom.utils.CircleTransform;
 import com.bumptech.glide.Glide;
@@ -102,8 +104,12 @@ public class DrawerFragment extends Fragment implements
 
             @Override
             public void onClick(View view, int position) {
-                drawerListener.onNavMenuItemClicked(view, position);
-                drawerLayout.closeDrawer(containerView);
+                NavMenuItem item = adapter.getItemAtPosition(position);
+                drawerListener.onNavMenuItemClicked(item);
+
+                if (!(item instanceof NavMenuHeader)) {
+                    drawerLayout.closeDrawer(containerView);
+                }
             }
 
             @Override
@@ -196,7 +202,7 @@ public class DrawerFragment extends Fragment implements
     }
 
     public interface NavMenuClickListener {
-        void onNavMenuItemClicked(View view, int position);
+        void onNavMenuItemClicked(NavMenuItem item);
     }
 
     @Override

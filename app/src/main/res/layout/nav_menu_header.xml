@@ -8,22 +8,22 @@
     android:paddingRight="16dp"
     app:paddingEnd="16dp"
     android:clickable="true"
-    android:foreground="?android:attr/selectableItemBackground">
+    android:foreground="?android:attr/selectableItemBackground" >
 
     <TextView
         android:id="@+id/title"
-        android:paddingTop="24dp"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
         android:textSize="15sp"
-        android:textColor="@color/textLightPrimary"
+        android:text="circle"
+        android:textColor="@color/textLightSecondary"
         android:textAllCaps="true" />
 
     <View
         android:layout_width="match_parent"
         android:layout_height="1dip"
-        android:background="@color/lightSecondary"
+        android:background="@color/textLightSecondary"
         android:layout_below="@+id/title"
         android:layout_marginTop="8dp" />
 

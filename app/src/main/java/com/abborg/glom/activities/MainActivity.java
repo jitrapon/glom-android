@@ -63,6 +63,7 @@ import com.abborg.glom.model.FileItem;
 import com.abborg.glom.model.LinkItem;
 import com.abborg.glom.model.ListItem;
 import com.abborg.glom.model.MenuActionItem;
+import com.abborg.glom.model.NavMenuItem;
 import com.abborg.glom.model.NoteItem;
 import com.abborg.glom.model.User;
 import com.abborg.glom.service.RegistrationIntentService;
@@ -1686,9 +1687,11 @@ public class MainActivity extends BaseActivity implements
      **********************************************************/
 
     @Override
-    public void onNavMenuItemClicked(View view, int position) {
-        dataProvider.cancelAllNetworkRequests();
-        dataProvider.getCircleByIdAsync(appState.getCircleList().get(position).id);
+    public void onNavMenuItemClicked(NavMenuItem item) {
+        if (item instanceof CircleInfo) {
+            dataProvider.cancelAllNetworkRequests();
+            dataProvider.getCircleByIdAsync(((CircleInfo) item).id);
+        }
     }
 
     /**

@@ -87,6 +87,10 @@ public class NavMenuAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return items == null ? 0 : items.size();
     }
 
+    public NavMenuItem getItemAtPosition(int position) {
+        return items.get(position);
+    }
+
     private static class CircleViewHolder extends RecyclerView.ViewHolder {
         ImageView avatar;
         TextView title;
@@ -104,7 +108,7 @@ public class NavMenuAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         HeaderViewHolder(View itemView) {
             super(itemView);
 
-            header = (TextView) itemView;
+            header = (TextView) itemView.findViewById(R.id.title);
         }
     }
 }
