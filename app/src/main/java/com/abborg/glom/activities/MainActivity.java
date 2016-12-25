@@ -91,7 +91,7 @@ import pub.devrel.easypermissions.EasyPermissions;
  */
 @SuppressWarnings("ConstantConditions")
 public class MainActivity extends BaseActivity implements
-        DrawerFragment.FragmentDrawerListener,
+        DrawerFragment.NavMenuClickListener,
         Handler.Callback,
         ActionMode.Callback,
         CircleMenuListener,
@@ -271,7 +271,7 @@ public class MainActivity extends BaseActivity implements
         // set up the navigation drawer
         drawerFragment = (DrawerFragment)
                 getSupportFragmentManager().findFragmentById(R.id.fragment_drawer);
-        drawerFragment.init(R.id.fragment_drawer, (DrawerLayout) findViewById(R.id.drawer_layout), toolbar,
+        drawerFragment.setupView(R.id.fragment_drawer, (DrawerLayout) findViewById(R.id.drawer_layout), toolbar,
                 R.id.nav_icon);
         drawerFragment.setDrawerListener(this);
 
@@ -1686,7 +1686,7 @@ public class MainActivity extends BaseActivity implements
      **********************************************************/
 
     @Override
-    public void onDrawerItemSelected(View view, int position) {
+    public void onNavMenuItemClicked(View view, int position) {
         dataProvider.cancelAllNetworkRequests();
         dataProvider.getCircleByIdAsync(appState.getCircleList().get(position).id);
     }

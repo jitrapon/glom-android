@@ -99,6 +99,10 @@
     <dimen name="bottom_sheet_icon_size">48dp</dimen>
     <dimen name="bottom_sheet_label_size">16sp</dimen>
 
+    <!-- nav menu -->
+    <dimen name="nav_menu_circle_avatar">32dp</dimen>
+    <dimen name="nav_menu_text_size">15sp</dimen>
+
     <!-- others -->
     <dimen name="content_inset">16dp</dimen>
 

@@ -21,7 +21,7 @@ import android.widget.TextView;
 
 import com.abborg.glom.ApplicationState;
 import com.abborg.glom.R;
-import com.abborg.glom.adapters.NavCircleAdapter;
+import com.abborg.glom.adapters.NavMenuAdapter;
 import com.abborg.glom.di.ComponentInjector;
 import com.abborg.glom.interfaces.CircleListListener;
 import com.abborg.glom.interfaces.ClickListener;
@@ -41,16 +41,16 @@ public class DrawerFragment extends Fragment implements
     private ImageView userAvatar;
     private TextView userName;
     private TextView userId;
-    private ActionBarDrawerToggle mDrawerToggle;
-    private DrawerLayout mDrawerLayout;
-    private NavCircleAdapter adapter;
+    private ActionBarDrawerToggle drawerToggleIndicator;
+    private DrawerLayout drawerLayout;
+    private NavMenuAdapter adapter;
     private View containerView;
-    private FragmentDrawerListener drawerListener;
+    private NavMenuClickListener drawerListener;
 
     public DrawerFragment() {
     }
 
-    public void setDrawerListener(FragmentDrawerListener listener) {
+    public void setDrawerListener(NavMenuClickListener listener) {
         drawerListener = listener;
     }
 
@@ -92,18 +92,18 @@ public class DrawerFragment extends Fragment implements
         }
     }
 
-    public void init(int fragmentId, DrawerLayout drawerLayout, final Toolbar toolbar, @IdRes int toolbarNavICon) {
+    public void setupView(int fragmentId, DrawerLayout layout, final Toolbar toolbar, @IdRes int toolbarNavICon) {
         updateUserProfileSection();
 
-        adapter = new NavCircleAdapter(getActivity(), appState.getCircleList());
+        adapter = new NavMenuAdapter(getActivity(), appState.getCircleList());
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         recyclerView.addOnItemTouchListener(new RecyclerTouchListener(getActivity(), recyclerView, new ClickListener() {
 
             @Override
             public void onClick(View view, int position) {
-                drawerListener.onDrawerItemSelected(view, position);
-                mDrawerLayout.closeDrawer(containerView);
+                drawerListener.onNavMenuItemClicked(view, position);
+                drawerLayout.closeDrawer(containerView);
             }
 
             @Override
@@ -113,8 +113,8 @@ public class DrawerFragment extends Fragment implements
         }));
 
         containerView = getActivity().findViewById(fragmentId);
-        mDrawerLayout = drawerLayout;
-        mDrawerToggle = new ActionBarDrawerToggle(getActivity(), drawerLayout, toolbar, R.string.ACTION_OPEN_DRAWER, R.string.ACTION_CLOSE_DRAWER) {
+        drawerLayout = layout;
+        drawerToggleIndicator = new ActionBarDrawerToggle(getActivity(), drawerLayout, toolbar, R.string.ACTION_OPEN_DRAWER, R.string.ACTION_CLOSE_DRAWER) {
 
             @Override
             public void onDrawerOpened(View drawerView) {
@@ -134,20 +134,20 @@ public class DrawerFragment extends Fragment implements
                 toolbar.setAlpha(1 - slideOffset / 2);
             }
         };
-        mDrawerToggle.setDrawerIndicatorEnabled(false);
+        drawerToggleIndicator.setDrawerIndicatorEnabled(false);
         View navIcon = toolbar.findViewById(toolbarNavICon);
         navIcon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mDrawerLayout.openDrawer(Gravity.LEFT);
+                DrawerFragment.this.drawerLayout.openDrawer(Gravity.LEFT);
             }
         });
 
-        mDrawerLayout.addDrawerListener(mDrawerToggle);
-        mDrawerLayout.post(new Runnable() {
+        drawerLayout.addDrawerListener(drawerToggleIndicator);
+        drawerLayout.post(new Runnable() {
             @Override
             public void run() {
-                mDrawerToggle.syncState();
+                drawerToggleIndicator.syncState();
             }
         });
     }
@@ -157,9 +157,10 @@ public class DrawerFragment extends Fragment implements
         private GestureDetector gestureDetector;
         private ClickListener clickListener;
 
-        public RecyclerTouchListener(Context context, final RecyclerView recyclerView, final ClickListener clickListener) {
+         RecyclerTouchListener(Context context, final RecyclerView recyclerView, final ClickListener clickListener) {
             this.clickListener = clickListener;
             gestureDetector = new GestureDetector(context, new GestureDetector.SimpleOnGestureListener() {
+
                 @Override
                 public boolean onSingleTapUp(MotionEvent e) {
                     return true;
@@ -169,18 +170,17 @@ public class DrawerFragment extends Fragment implements
                 public void onLongPress(MotionEvent e) {
                     View child = recyclerView.findChildViewUnder(e.getX(), e.getY());
                     if (child != null && clickListener != null) {
-                        clickListener.onLongClick(child, recyclerView.getChildPosition(child));
+                        clickListener.onLongClick(child, recyclerView.getChildAdapterPosition(child));
                     }
                 }
             });
         }
 
         @Override
-        public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent e) {
-
-            View child = rv.findChildViewUnder(e.getX(), e.getY());
+        public boolean onInterceptTouchEvent(RecyclerView recyclerView, MotionEvent e) {
+            View child = recyclerView.findChildViewUnder(e.getX(), e.getY());
             if (child != null && clickListener != null && gestureDetector.onTouchEvent(e)) {
-                clickListener.onClick(child, rv.getChildPosition(child));
+                clickListener.onClick(child, recyclerView.getChildAdapterPosition(child));
             }
             return false;
         }
@@ -193,17 +193,14 @@ public class DrawerFragment extends Fragment implements
         public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
 
         }
-
-
     }
 
-    public interface FragmentDrawerListener {
-        void onDrawerItemSelected(View view, int position);
+    public interface NavMenuClickListener {
+        void onNavMenuItemClicked(View view, int position);
     }
-
 
     @Override
     public void onCircleListChanged() {
-        adapter.update(appState.getCircleList());
+        adapter.setCircles(appState.getCircleList());
     }
 }

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="38dp"
+    android:paddingLeft="16dp"
+    android:paddingStart="16dp"
+    android:clickable="true"
+    android:foreground="?android:attr/selectableItemBackground" >
+
+    <ImageView
+        android:id="@+id/circle_avatar"
+        android:layout_width="@dimen/nav_menu_circle_avatar"
+        android:layout_height="@dimen/nav_menu_circle_avatar"
+        android:layout_centerVertical="true" />
+
+    <TextView
+        android:id="@+id/circle_title"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@+id/circle_avatar"
+        android:layout_toEndOf="@+id/circle_avatar"
+        android:layout_marginLeft="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_centerVertical="true"
+        android:textSize="@dimen/nav_menu_text_size"
+        android:textColor="@color/textLightPrimary" />
+
+</RelativeLayout>

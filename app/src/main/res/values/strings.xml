@@ -146,6 +146,9 @@
     <string name="card_select_app_to_launch">Complete action using</string>
     <string name="date_to_be_determined">TBD</string>
 
+    <!-- Navigation menu -->
+    <string name="nav_menu_header_circle">circles (%1$d)</string>
+
     <!-- Notification messages -->
     <string name="notification_placeholder">No message</string>
     <string name="notification_offline">Not Connected</string>
