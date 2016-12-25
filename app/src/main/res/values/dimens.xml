@@ -61,7 +61,7 @@
     <!-- card items -->
     <dimen name="card_elevation">1dp</dimen>
     <dimen name="card_padding">8dp</dimen>
-    <dimen name="card_corner_radius">0dp</dimen>
+    <dimen name="card_corner_radius">7dp</dimen>
     <dimen name="card_margin">8dp</dimen>
     <dimen name="card_content_padding">10dp</dimen>
     <dimen name="card_avatar_size">40dp</dimen>
