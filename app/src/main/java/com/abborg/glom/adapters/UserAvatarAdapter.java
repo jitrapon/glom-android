@@ -134,7 +134,7 @@ public class UserAvatarAdapter extends BaseAdapter {
             holder = (ViewHolder) convertView.getTag();
 
         Glide.with(context)
-                .load(user.getAvatar()).fitCenter()
+                .load(user.getAvatar())
                 .transform(new CircleTransform(context))
                 .override((int) context.getResources().getDimension(R.dimen.user_avatar_width),
                         (int) context.getResources().getDimension(R.dimen.user_avatar_height))

@@ -18,6 +18,17 @@ public class ViewPagerAdapter extends FragmentPagerAdapter {
         super(manager);
     }
 
+    public Fragment getItem(String title) {
+        int index = 0;
+        for (String fragmentTitle : fragmentTitleList) {
+            if (fragmentTitle.equals(title)) {
+                return fragmentList.get(index);
+            }
+            index++;
+        }
+        return null;
+    }
+
     @Override
     public Fragment getItem(int position) {
         return fragmentList.get(position);

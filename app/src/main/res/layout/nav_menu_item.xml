@@ -9,6 +9,7 @@
 
     <ImageView
         android:id="@+id/circle_avatar"
+        android:scaleType="centerCrop"
         android:layout_width="@dimen/nav_menu_circle_avatar"
         android:layout_height="@dimen/nav_menu_circle_avatar"
         android:layout_centerVertical="true" />

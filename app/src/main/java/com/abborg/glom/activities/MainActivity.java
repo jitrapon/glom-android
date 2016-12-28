@@ -227,24 +227,17 @@ public class MainActivity extends BaseActivity implements
 
     private void setupViewPager(ViewPager viewPager) {
         adapter = new ViewPagerAdapter(getSupportFragmentManager());
-        adapter.addFragment(new CircleFragment(), Const.TAB_CIRCLE);
-        adapter.addFragment(new LocationFragment(), Const.TAB_MAP);
         adapter.addFragment(new BoardFragment(), Const.TAB_BOARD);
+        adapter.addFragment(new LocationFragment(), Const.TAB_MAP);
         adapter.addFragment(new DiscoverFragment(), Const.TAB_DISCOVER);
+        adapter.addFragment(new CircleFragment(), Const.TAB_CIRCLE);
         viewPager.setAdapter(adapter);
-    }
 
-    @SuppressWarnings("ConstantConditions")
-    private void updateView() {
-        super.setupBroadcastLocationSheet();
-
-        // set up tabs
-        setupViewPager(viewPager);
         tabLayout.setupWithViewPager(viewPager);
-        tabLayout.getTabAt(0).setIcon(R.drawable.ic_tab_circle).setTag(Const.TAB_CIRCLE);
+        tabLayout.getTabAt(0).setIcon(R.drawable.ic_tab_event).setTag(Const.TAB_BOARD);
         tabLayout.getTabAt(1).setIcon(R.drawable.ic_tab_location).setTag(Const.TAB_MAP);
-        tabLayout.getTabAt(2).setIcon(R.drawable.ic_tab_event).setTag(Const.TAB_BOARD);
-        tabLayout.getTabAt(3).setIcon(R.drawable.ic_tab_discover).setTag(Const.TAB_DISCOVER);
+        tabLayout.getTabAt(2).setIcon(R.drawable.ic_tab_discover).setTag(Const.TAB_DISCOVER);
+        tabLayout.getTabAt(3).setIcon(R.drawable.ic_tab_circle).setTag(Const.TAB_CIRCLE);
         tabLayout.setOnTabSelectedListener(
                 new TabLayout.ViewPagerOnTabSelectedListener(viewPager) {
                     @Override
@@ -254,6 +247,14 @@ public class MainActivity extends BaseActivity implements
                         }
                     }
                 });
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    private void updateView() {
+        super.setupBroadcastLocationSheet();
+
+        // set up tabs
+        setupViewPager(viewPager);
 
         // set up the action bar
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
@@ -478,24 +479,29 @@ public class MainActivity extends BaseActivity implements
      **************************************************/
 
     private void setupCallbackListeners() {
+        CircleFragment circleFragment = (CircleFragment) adapter.getItem(Const.TAB_CIRCLE);
+        BoardFragment boardFragment = (BoardFragment) adapter.getItem(Const.TAB_BOARD);
+        LocationFragment mapFragment = (LocationFragment) adapter.getItem(Const.TAB_MAP);
+        DiscoverFragment discoverFragment = (DiscoverFragment) adapter.getItem(Const.TAB_DISCOVER);
+
         addCircleListListener(drawerFragment);
 
-        addUsersChangeListener((CircleFragment) adapter.getItem(0));
-        addUsersChangeListener((LocationFragment) adapter.getItem(1));
+        addUsersChangeListener(circleFragment);
+        addUsersChangeListener(mapFragment);
 
-        addCircleChangeListener((CircleFragment) adapter.getItem(0));
-        addCircleChangeListener((LocationFragment) adapter.getItem(1));
-        addCircleChangeListener((BoardFragment) adapter.getItem(2));
+        addCircleChangeListener(circleFragment);
+        addCircleChangeListener(mapFragment);
+        addCircleChangeListener(boardFragment);
 
-        addItemChangeListener((LocationFragment) adapter.getItem(1));
-        addItemChangeListener((BoardFragment) adapter.getItem(2));
+        addItemChangeListener(mapFragment);
+        addItemChangeListener(boardFragment);
 
-        addBroadcastLocationListener((CircleFragment) adapter.getItem(0));
-        addBroadcastLocationListener((LocationFragment) adapter.getItem(1));
+        addBroadcastLocationListener(circleFragment);
+        addBroadcastLocationListener(mapFragment);
 
-        addDiscoverItemChangeListener((DiscoverFragment) adapter.getItem(3));
+        addDiscoverItemChangeListener(discoverFragment);
 
-        actionModeCallbacks = ((BoardFragment) adapter.getItem(2));
+        actionModeCallbacks = boardFragment;
     }
 
     private void addCircleListListener(CircleListListener listener) {
@@ -582,19 +588,23 @@ public class MainActivity extends BaseActivity implements
                     //TODO show screen that user is not in any circles
                 }
                 else {
-                    if (circleListListeners != null) {
-                        for (CircleListListener listener : circleListListeners) {
-                            listener.onCircleListChanged();
-                        }
-                    }
-
                     for (CircleInfo circle : circles) {
                         if (circle.id.equals(appState.getActiveCircle().getId())) {
                             Circle activeCircle = appState.getActiveCircle();
                             activeCircle.setTitle(circle.name);
                             activeCircle.setAvatar(circle.avatar);
                             activeCircle.setInfo(circle.info);
+
+                            onToolbarNavIconChanged(circle.avatar);
+                            onToolbarTitleChanged(circle.name);
+
                             break;
+                        }
+                    }
+
+                    if (circleListListeners != null) {
+                        for (CircleListListener listener : circleListListeners) {
+                            listener.onCircleListChanged();
                         }
                     }
 
@@ -1592,7 +1602,7 @@ public class MainActivity extends BaseActivity implements
     @Override
     public void onToolbarNavIconChanged(String imageUrl) {
         Glide.with(this)
-                .load(imageUrl).fitCenter()
+                .load(imageUrl)
                 .transform(new CircleTransform(this))
                 .override(getResources().getDimensionPixelSize(R.dimen.toolbar_nav_icon_size),
                         getResources().getDimensionPixelSize(R.dimen.toolbar_nav_icon_size))
