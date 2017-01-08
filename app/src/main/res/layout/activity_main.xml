@@ -72,6 +72,7 @@
         </android.support.design.widget.CoordinatorLayout>
 
         <RelativeLayout
+            android:backgroundTint="#84ffff"
             android:id="@+id/category_bar"
             android:layout_width="match_parent"
             android:layout_height="@dimen/bottom_bar_height"
@@ -89,6 +90,7 @@
 
         <RelativeLayout
             android:id="@+id/tag_bar"
+            android:backgroundTint="#ffab91"
             android:layout_width="match_parent"
             android:layout_height="@dimen/bottom_bar_height"
             android:background="@android:color/white"

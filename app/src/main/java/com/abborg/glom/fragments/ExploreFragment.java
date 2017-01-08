@@ -189,6 +189,7 @@ public class ExploreFragment extends Fragment implements
 
     @Override
     public boolean shouldShowCategoryBar() {
-        return categories != null && !categories.isEmpty();
+//        return categories != null && !categories.isEmpty();
+        return true;
     }
 }

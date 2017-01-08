@@ -88,8 +88,6 @@ import java.util.List;
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
-import static android.R.attr.translationY;
-
 /**
  * This is the default entry point launching activity that contains all the tabs to display
  * information to the user
@@ -282,9 +280,9 @@ public class MainActivity extends BaseActivity implements
 
                 // show or hide category bar
                 if (position != adapter.getItemIndex(Const.TAB_EXPLORE)) {
-                    if (((int) tagBar.getTag()) == View.VISIBLE) {
-                        ViewUtils.animateTranslateY(tagBar, 0, translationY, 200);
-                        tagBar.setTag(View.INVISIBLE);
+                    if (((int) categoryBar.getTag()) == View.VISIBLE) {
+                        ViewUtils.animateTranslateY(categoryBar, 0, translationY, 200);
+                        categoryBar.setTag(View.INVISIBLE);
                     }
                 }
                 else {
@@ -358,6 +356,7 @@ public class MainActivity extends BaseActivity implements
         // set up bar
         tagBar.setTag(View.VISIBLE);                //FIXME whether or not to set visible depends on preference's last opened tab
         categoryBar.setTag(View.INVISIBLE);         // FIXME whether or not to set visible depends on preference's last opened tab
+        categoryBar.setTranslationY(getResources().getDimensionPixelSize(R.dimen.bottom_bar_height));
         ViewCompat.setElevation(tagBar, ViewUtils.convertDpToPx(this, 40));
         ViewCompat.setElevation(categoryBar, ViewUtils.convertDpToPx(this, 40));
 
@@ -1773,6 +1772,7 @@ public class MainActivity extends BaseActivity implements
     @Override
     public void onShowCategoryBar() {
         if (((int)categoryBar.getTag()) == View.INVISIBLE) {
+            final int translationY = getResources().getDimensionPixelSize(R.dimen.bottom_bar_height);
             ViewUtils.animateTranslateY(categoryBar, translationY, 0, 200);
             categoryBar.setTag(View.VISIBLE);
         }
