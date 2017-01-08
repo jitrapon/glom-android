@@ -1,19 +1,19 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/circle_discover_layout"
+    android:id="@+id/circle_explore_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/lightBackground"
-    tools:context=".fragments.DiscoverFragment">
+    tools:context=".fragments.ExploreFragment">
 
     <android.support.v4.widget.SwipeRefreshLayout
         xmlns:android="http://schemas.android.com/apk/res/android"
-        android:id="@+id/discover_refresh_layout"
+        android:id="@+id/explore_refresh_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
         <android.support.v7.widget.RecyclerView
-            android:id="@+id/circle_discover_view"
+            android:id="@+id/explore_recycler_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:scrollbars="vertical"/>

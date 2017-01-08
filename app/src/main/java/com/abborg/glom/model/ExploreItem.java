@@ -2,7 +2,7 @@ package com.abborg.glom.model;
 
 import org.joda.time.DateTime;
 
-public abstract class DiscoverItem {
+public abstract class ExploreItem {
 
     public static final int TYPE_EMPTY = 0;
     public static final int TYPE_MOVIE = 1;
@@ -10,9 +10,7 @@ public abstract class DiscoverItem {
     public static final int TYPE_FOOD = 3;
 
     protected String id;
-
     protected DateTime createdTime;
-
     protected DateTime updatedTime;
 
     public String getId() { return id; }
@@ -23,9 +21,9 @@ public abstract class DiscoverItem {
 
     public abstract int getType();
 
-    public DiscoverItem() {}
+    public ExploreItem() {}
 
-    public DiscoverItem(String itemId, DateTime created, DateTime updated) {
+    public ExploreItem(String itemId, DateTime created, DateTime updated) {
         id = itemId;
         createdTime = created;
         updatedTime = updated;

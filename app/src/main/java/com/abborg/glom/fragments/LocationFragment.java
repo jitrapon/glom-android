@@ -186,7 +186,7 @@ public class LocationFragment extends SupportMapFragment implements
                                 boundBuilder.include(marker.getPosition());
                             }
                             LatLngBounds bounds = boundBuilder.build();
-                            int padding = ViewUtils.getDpFromPx(getContext(), CAMERA_CENTER_PADDING);
+                            int padding = ViewUtils.convertDpToPx(getContext(), CAMERA_CENTER_PADDING);
                             googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
                         }
                     });
@@ -689,7 +689,7 @@ public class LocationFragment extends SupportMapFragment implements
                 } else {
                     LatLngBounds bounds = boundBuilder.build();
                     if (getContext() != null) {
-                        int padding = ViewUtils.getDpFromPx(getContext(), CAMERA_CENTER_PADDING);
+                        int padding = ViewUtils.convertDpToPx(getContext(), CAMERA_CENTER_PADDING);
                         googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
                     }
                 }

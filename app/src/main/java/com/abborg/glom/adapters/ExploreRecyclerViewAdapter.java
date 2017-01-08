@@ -15,9 +15,9 @@ import android.widget.Toast;
 
 import com.abborg.glom.Const;
 import com.abborg.glom.R;
-import com.abborg.glom.model.DiscoverItem;
+import com.abborg.glom.model.ExploreItem;
 import com.abborg.glom.model.EmptyItem;
-import com.abborg.glom.model.Movie;
+import com.abborg.glom.model.MovieItem;
 import com.abborg.glom.model.WatchableImage;
 import com.abborg.glom.model.WatchableRating;
 import com.abborg.glom.model.WatchableVideo;
@@ -34,7 +34,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class DiscoverRecyclerViewAdapter
+public class ExploreRecyclerViewAdapter
         extends SectionedRecyclerViewAdapter<RecyclerView.ViewHolder> {
 
     private static final String TAG = "DiscoverAdapter";
@@ -48,7 +48,7 @@ public class DiscoverRecyclerViewAdapter
     /** the main model in this adapter, maps the item type to listView of the items so we can easily
      * retrieve the item listView based on their types
      */
-    private Map<Integer, List<DiscoverItem>> items;
+    private Map<Integer, List<ExploreItem>> items;
 
     private static final String YOUTUBE_VIDEO_ID_REGEX =
             "http(?:s)?://(?:www\\.)?youtu(?:\\.be/|be\\.com/(?:watch\\?v=|v/|embed/|user/(?:[\\w#]+/)+))([^&#?\n]+)";
@@ -56,12 +56,12 @@ public class DiscoverRecyclerViewAdapter
 
     /** Maps section to view types **/
     private static final int[] sections = {
-            DiscoverItem.TYPE_MOVIE,
-            DiscoverItem.TYPE_EVENT,
-            DiscoverItem.TYPE_FOOD
+            ExploreItem.TYPE_MOVIE,
+            ExploreItem.TYPE_EVENT,
+            ExploreItem.TYPE_FOOD
     };
 
-    public DiscoverRecyclerViewAdapter(Context context, Handler handler) {
+    public ExploreRecyclerViewAdapter(Context context, Handler handler) {
         this.context = context;
         this.handler = handler;
 
@@ -69,7 +69,7 @@ public class DiscoverRecyclerViewAdapter
         // the section will not be visible if there is no object in the listView
         items = new HashMap<>(sections.length);
         for (Integer type : sections) {
-            List<DiscoverItem> list = new ArrayList<>();
+            List<ExploreItem> list = new ArrayList<>();
             list.add(new EmptyItem());
             items.put(type, list);
         }
@@ -92,27 +92,27 @@ public class DiscoverRecyclerViewAdapter
      */
     @Override
     public int getItemCount(int section) {
-        List<DiscoverItem> items = getItems(section);
+        List<ExploreItem> items = getItems(section);
         return items == null ? 0 : items.size();
     }
 
     @Override
     public void onBindHeaderViewHolder(RecyclerView.ViewHolder viewHolder, int section) {
         SectionHeaderViewHolder holder = (SectionHeaderViewHolder) viewHolder;
-        if (sections[section] == DiscoverItem.TYPE_MOVIE)
+        if (sections[section] == ExploreItem.TYPE_MOVIE)
             holder.title.setText(context.getResources().getString(R.string.discover_section_header_movie));
-        else if (sections[section] == DiscoverItem.TYPE_EVENT)
+        else if (sections[section] == ExploreItem.TYPE_EVENT)
             holder.title.setText(context.getResources().getString(R.string.discover_section_header_event));
-        else if (sections[section] == DiscoverItem.TYPE_FOOD)
+        else if (sections[section] == ExploreItem.TYPE_FOOD)
             holder.title.setText(context.getResources().getString(R.string.discover_section_header_food));
     }
 
-    private List<DiscoverItem> getItems(int section) {
+    private List<ExploreItem> getItems(int section) {
         return items.get(sections[section]);
     }
 
-    private DiscoverItem getItem(int section, int sectionPosition) {
-        List<DiscoverItem> items = getItems(section);
+    private ExploreItem getItem(int section, int sectionPosition) {
+        List<ExploreItem> items = getItems(section);
         if (items != null && !items.isEmpty()) return items.get(sectionPosition);
         else return null;
     }
@@ -123,7 +123,7 @@ public class DiscoverRecyclerViewAdapter
         final String emptyText = context.getResources().getString(R.string.discover_item_empty);
         final String unsupportedActionText = context.getResources().getString(R.string.error_unsupported_action);
         final String noTrailerText = context.getResources().getString(R.string.error_no_trailer);
-        DiscoverItem item = getItem(section, sectionPosition);
+        ExploreItem item = getItem(section, sectionPosition);
 
         // movies!
         if (viewHolder instanceof MovieItemViewHolder) {
@@ -131,8 +131,8 @@ public class DiscoverRecyclerViewAdapter
             if (item != null) {
 
                 // when there is an actual movie to display
-                if (item instanceof Movie) {
-                    final Movie movie = (Movie) item;
+                if (item instanceof MovieItem) {
+                    final MovieItem movie = (MovieItem) item;
                     String placeholder = context.getResources().getString(R.string.empty_placeholder);
                     holder.title.setText(movie.getTitle());
                     holder.releaseDate.setText(dateFormatter.print(movie.getReleaseDate()));
@@ -207,11 +207,11 @@ public class DiscoverRecyclerViewAdapter
 
     @Override
     public int getItemViewType(int section, int sectionPosition, int absolutePosition) {
-        DiscoverItem item = getItem(section, sectionPosition);
-        if (item == null || item instanceof EmptyItem) return DiscoverItem.TYPE_EMPTY;
+        ExploreItem item = getItem(section, sectionPosition);
+        if (item == null || item instanceof EmptyItem) return ExploreItem.TYPE_EMPTY;
         else {
-            if (item instanceof Movie) return DiscoverItem.TYPE_MOVIE;
-            else return DiscoverItem.TYPE_EMPTY;
+            if (item instanceof MovieItem) return ExploreItem.TYPE_MOVIE;
+            else return ExploreItem.TYPE_EMPTY;
         }
     }
 
@@ -223,13 +223,13 @@ public class DiscoverRecyclerViewAdapter
                         .inflate(R.layout.section_header, parent, false);
                 return new SectionHeaderViewHolder(view);
             }
-            case DiscoverItem.TYPE_MOVIE: {
+            case ExploreItem.TYPE_MOVIE: {
                 View view = LayoutInflater.from(parent.getContext())
                         .inflate(R.layout.card_movie, parent, false);
                 return new MovieItemViewHolder(view);
             }
-            case DiscoverItem.TYPE_EVENT:
-            case DiscoverItem.TYPE_FOOD:
+            case ExploreItem.TYPE_EVENT:
+            case ExploreItem.TYPE_FOOD:
             default:
                 View view = LayoutInflater.from(parent.getContext())
                         .inflate(R.layout.discover_item_empty, parent, false);
@@ -305,13 +305,13 @@ public class DiscoverRecyclerViewAdapter
      * HELPERS
      *******************/
 
-    public void update(int type, List<DiscoverItem> newList) {
+    public void update(int type, List<ExploreItem> newList) {
         if (newList == null || newList.isEmpty()) {
             newList = new ArrayList<>();
             newList.add(new EmptyItem());
         }
 
-        List<DiscoverItem> prevList = items.get(type);
+        List<ExploreItem> prevList = items.get(type);
         if (prevList != null) {
             prevList.clear();
             prevList.addAll(newList);

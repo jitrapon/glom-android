@@ -10,7 +10,8 @@
         xmlns:android="http://schemas.android.com/apk/res/android"
         android:id="@+id/board_refresh_layout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:layout_marginBottom="@dimen/bottom_bar_height" >
 
         <FrameLayout
             android:layout_width="match_parent"

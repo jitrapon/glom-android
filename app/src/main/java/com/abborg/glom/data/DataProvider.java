@@ -27,19 +27,20 @@ import com.abborg.glom.interfaces.FileDownloadListener;
 import com.abborg.glom.interfaces.ResponseListener;
 import com.abborg.glom.model.BaseChatMessage;
 import com.abborg.glom.model.BoardItem;
+import com.abborg.glom.model.Category;
 import com.abborg.glom.model.CheckedItem;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CircleInfo;
 import com.abborg.glom.model.CloudProvider;
-import com.abborg.glom.model.DiscoverItem;
 import com.abborg.glom.model.DrawItem;
 import com.abborg.glom.model.EventItem;
+import com.abborg.glom.model.ExploreItem;
 import com.abborg.glom.model.FeedAction;
 import com.abborg.glom.model.FileItem;
 import com.abborg.glom.model.LinkItem;
 import com.abborg.glom.model.ListItem;
 import com.abborg.glom.model.MenuActionItem;
-import com.abborg.glom.model.Movie;
+import com.abborg.glom.model.MovieItem;
 import com.abborg.glom.model.NoteItem;
 import com.abborg.glom.model.User;
 import com.abborg.glom.model.WatchableFeed;
@@ -3164,8 +3165,67 @@ public class DataProvider {
     }
 
     /*************************************************
-     * DISCOVER ITEMS
+     * EXPLORE SECTION ITEMS
      *************************************************/
+
+    public void requestExploreItems() {
+        httpClient.get("Explore", Const.API_EXPLORE,
+                new ResponseListener() {
+                    @Override
+                    public void onSuccess(JSONObject response) {
+                        handleNetworkSuccess();
+
+                        try {
+                            Log.d(TAG, response.toString(3));
+                            if (handler != null) {
+                                handler.sendMessage(handler.obtainMessage(Const.MSG_EXPLORE_CATEGORIES, new ArrayList<Category>()));
+                                handler.sendMessage(handler.obtainMessage(Const.MSG_EXPLORE_ITEMS, new ArrayList<ExploreItem>()));
+                            }
+                        }
+                        catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    @Override
+                    public void onError(VolleyError error) {
+                        handleNetworkError(error);
+
+                        if (handler != null) {
+                            handler.sendMessage(handler.obtainMessage(Const.MSG_EXPLORE_CATEGORIES, null));
+                            handler.sendMessage(handler.obtainMessage(Const.MSG_EXPLORE_ITEMS, null));
+                        }
+                    }
+                }
+        );
+    }
+
+    public void requestExploreItems(int categoryId) {
+        httpClient.get("Explore Category " + categoryId, String.format(Const.API_EXPLORE_CATEGORY, categoryId),
+                new ResponseListener() {
+                    @Override
+                    public void onSuccess(JSONObject response) {
+                        handleNetworkSuccess();
+
+                        try {
+                            Log.d(TAG, response.toString(3));
+                        }
+                        catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    @Override
+                    public void onError(VolleyError error) {
+                        if (handler != null) {
+                            handler.sendMessage(handler.obtainMessage(Const.MSG_EXPLORE_CATEGORIES, null));
+                            handleNetworkError(error);
+                        }
+                    }
+                }
+        );
+    }
+
     public void requestMovies() {
         httpClient.get("Get Movies", Const.API_GET_MOVIES,
                 new ResponseListener() {
@@ -3178,14 +3238,14 @@ public class DataProvider {
                             @Override
                             public void run() {
                                 try {
-                                    List<Movie> movies = new ArrayList<>();
+                                    List<MovieItem> movies = new ArrayList<>();
                                     int type = 0;
                                     if (respJson != null) {
                                         JSONArray itemsJson = respJson.getJSONArray(Const.JSON_SERVER_ITEMS);
                                         for (int i = 0; i < itemsJson.length(); i++) {
                                             JSONObject itemJson = itemsJson.getJSONObject(i);
                                             type = itemJson.getInt(Const.JSON_SERVER_ITEM_TYPE);
-                                            if (type == DiscoverItem.TYPE_MOVIE) {
+                                            if (type == ExploreItem.TYPE_MOVIE) {
                                                 JSONArray ratingsJson = itemJson.getJSONArray(Const.JSON_SERVER_RATINGS);
                                                 List<WatchableRating> ratings = new ArrayList<>();
                                                 for (int j = 0; j < ratingsJson.length(); j++) {
@@ -3226,7 +3286,7 @@ public class DataProvider {
                                                     feeds.add(feed);
                                                 }
 
-                                                Movie movie = new Movie();
+                                                MovieItem movie = new MovieItem();
                                                 movie.setId(itemJson.getString(Const.JSON_SERVER_ITEM_ID))
                                                         .setUpdatedTime(null)
                                                         .setCreatedTime(null)
@@ -3248,13 +3308,13 @@ public class DataProvider {
 
                                     if (handler != null)
                                         handler.sendMessage(
-                                                handler.obtainMessage(Const.MSG_DISCOVER_ITEM, DiscoverItem.TYPE_MOVIE, 0, movies));
+                                                handler.obtainMessage(Const.MSG_EXPLORE_ITEMS, ExploreItem.TYPE_MOVIE, 0, movies));
                                 }
                                 catch (Exception ex) {
                                     ex.printStackTrace();
                                     if (handler != null)
                                         handler.sendMessage(
-                                                handler.obtainMessage(Const.MSG_DISCOVER_ITEM, DiscoverItem.TYPE_MOVIE, -1, null));
+                                                handler.obtainMessage(Const.MSG_EXPLORE_ITEMS, ExploreItem.TYPE_MOVIE, -1, null));
                                 }
                             }
                         });
@@ -3263,7 +3323,7 @@ public class DataProvider {
                     @Override
                     public void onError(VolleyError error) {
                         if (handler != null) {
-                            handler.sendMessage(handler.obtainMessage(Const.MSG_DISCOVER_ITEM, DiscoverItem.TYPE_MOVIE, -1, null));
+                            handler.sendMessage(handler.obtainMessage(Const.MSG_EXPLORE_ITEMS, ExploreItem.TYPE_MOVIE, -1, null));
                             handleNetworkError(error);
                         }
                     }

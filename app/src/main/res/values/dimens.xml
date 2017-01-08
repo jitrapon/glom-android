@@ -9,7 +9,7 @@
     <dimen name="status_bar_height">25dp</dimen>
 
     <!-- toolbar -->
-    <dimen name="toolbar_elevation">0dp</dimen>
+    <dimen name="toolbar_elevation">5dp</dimen>
     <dimen name="toolbar_height">48dp</dimen>
     <dimen name="toolbar_nav_icon_size">32dp</dimen>
     <dimen name="toolbar_title_text_size">18sp</dimen>
@@ -84,6 +84,9 @@
     <dimen name="chat_text_size_medium">16sp</dimen>
     <dimen name="chat_text_size_large">20sp</dimen>
     <dimen name="card_progress_bar_size">4dp</dimen>
+
+    <!-- bottom bar  -->
+    <dimen name="bottom_bar_height">48dp</dimen>
 
     <!-- camera -->
     <dimen name="camera_button_size">30dp</dimen>

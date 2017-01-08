@@ -15,20 +15,23 @@ import android.view.ViewGroup;
 
 import com.abborg.glom.ApplicationState;
 import com.abborg.glom.R;
-import com.abborg.glom.adapters.DiscoverRecyclerViewAdapter;
+import com.abborg.glom.adapters.ExploreRecyclerViewAdapter;
 import com.abborg.glom.data.DataProvider;
 import com.abborg.glom.di.ComponentInjector;
-import com.abborg.glom.interfaces.DiscoverItemChangeListener;
+import com.abborg.glom.interfaces.CategoryBarListener;
+import com.abborg.glom.interfaces.ExploreItemChangeListener;
 import com.abborg.glom.interfaces.MainActivityCallbacks;
-import com.abborg.glom.model.DiscoverItem;
+import com.abborg.glom.model.Category;
+import com.abborg.glom.model.ExploreItem;
 
 import java.util.List;
 
 import javax.inject.Inject;
 
-public class DiscoverFragment extends Fragment implements
+public class ExploreFragment extends Fragment implements
         SwipeRefreshLayout.OnRefreshListener,
-        DiscoverItemChangeListener {
+        ExploreItemChangeListener,
+        CategoryBarListener {
 
     @Inject
     ApplicationState appState;
@@ -36,20 +39,22 @@ public class DiscoverFragment extends Fragment implements
     @Inject
     DataProvider dataProvider;
 
-    private static final String TAG = "DiscoverFragment";
+    private static final String TAG = "ExploreFragment";
 
     public boolean isFragmentVisible;
     private SwipeRefreshLayout refreshView;
-    private RecyclerView recyclerView;
-    private RecyclerView.LayoutManager layoutManager;
-    private DiscoverRecyclerViewAdapter adapter;
+    private ExploreRecyclerViewAdapter adapter;
     private boolean firstView;
 
     private MainActivityCallbacks activityCallback;
 
     private Handler handler;
 
-    public DiscoverFragment() {}
+    private int currentCategoryId;
+    private List<Category> categories;
+    private List<ExploreItem> items;
+
+    public ExploreFragment() {}
 
     /**********************************************************
      * View Initializations
@@ -76,38 +81,50 @@ public class DiscoverFragment extends Fragment implements
         super.onCreate(savedInstanceState);
         ComponentInjector.INSTANCE.getApplicationComponent().inject(this);
 
-        adapter = new DiscoverRecyclerViewAdapter(getContext(), handler);
+        adapter = new ExploreRecyclerViewAdapter(getContext(), handler);
+        currentCategoryId = -1;
     }
 
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        View root = inflater.inflate(R.layout.fragment_discover, container, false);
-        refreshView = (SwipeRefreshLayout) root.findViewById(R.id.discover_refresh_layout);
+        View root = inflater.inflate(R.layout.fragment_explore, container, false);
+        refreshView = (SwipeRefreshLayout) root.findViewById(R.id.explore_refresh_layout);
         refreshView.setOnRefreshListener(this);
         refreshView.setColorSchemeResources(R.color.colorPrimary, R.color.colorPrimaryDark);
-        recyclerView = (RecyclerView) root.findViewById(R.id.circle_discover_view);
+        RecyclerView recyclerView = (RecyclerView) root.findViewById(R.id.explore_recycler_view);
         recyclerView.setHasFixedSize(true);
-        layoutManager = new LinearLayoutManager(getContext());
+        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getContext());
         recyclerView.setLayoutManager(layoutManager);
-
-        // set up adapter and its appearance animation
         recyclerView.setAdapter(adapter);
 
         return root;
     }
 
+    /**********************************************************
+     * REFRESH CALLBACKS
+     **********************************************************/
+
+    private void refreshData() {
+        if (categories == null || categories.isEmpty() || currentCategoryId == -1) {
+            dataProvider.requestExploreItems();
+        }
+        else {
+            dataProvider.requestExploreItems(currentCategoryId);
+        }
+    }
+
     @Override
     public void onRefresh() {
-        dataProvider.requestMovies();
+        refreshData();
     }
 
     @Override
     public void setUserVisibleHint(boolean isVisibleToUser) {
         super.setUserVisibleHint(isVisibleToUser);
         if (isVisibleToUser) {
+            Log.d(TAG, "ExploreFragment is visible to user and first view is " + firstView);
             isFragmentVisible = true;
 
             if (dataProvider != null) {
@@ -122,7 +139,7 @@ public class DiscoverFragment extends Fragment implements
                             });
                         }
                     }
-                    dataProvider.requestMovies();
+                    refreshData();
                 }
             }
 
@@ -147,11 +164,31 @@ public class DiscoverFragment extends Fragment implements
      **********************************************************/
 
     @Override
-    public void onItemsReceived(int type, List<DiscoverItem> items) {
+    public void onItemsReceived(int categoryId, List<ExploreItem> exploreItems) {
+        currentCategoryId = categoryId;
+        items = exploreItems;
         if (refreshView != null && refreshView.isRefreshing()) {
             refreshView.setRefreshing(false);
         }
 
-        if (adapter != null) adapter.update(type, items);
+        if (adapter != null) adapter.update(categoryId, items);
+    }
+
+    /**********************************************************
+     * CATEGORY BAR
+     **********************************************************/
+
+    @Override
+    public void onCategoryBarRequireUpdate(List<Category> items, RecyclerView recyclerView) {
+        categories = items;
+
+        // notify adapter
+
+        activityCallback.onShowCategoryBar();
+    }
+
+    @Override
+    public boolean shouldShowCategoryBar() {
+        return categories != null && !categories.isEmpty();
     }
 }

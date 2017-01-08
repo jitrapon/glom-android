@@ -12,16 +12,14 @@ import android.widget.ProgressBar;
 
 public class ViewUtils {
 
-    public static int getDpFromPx(Context context, float dp) {
+    public static int convertDpToPx(Context context, float dp) {
         DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
-        int px = Math.round(dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
-        return px;
+        return Math.round(dp * (displayMetrics.densityDpi / DisplayMetrics.DENSITY_DEFAULT));
     }
 
-    public static int getPxFromDp(Context context, int px) {
+    public static int convertPxToDp(Context context, int px) {
         DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
-        int dp = Math.round(px / (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
-        return dp;
+        return Math.round(px / (displayMetrics.densityDpi / DisplayMetrics.DENSITY_DEFAULT));
     }
 
     public static void animateScale(View view, float from, float to, long duration) {
@@ -42,5 +40,12 @@ public class ViewUtils {
         animation.setInterpolator(new LinearInterpolator());
         animation.start();
         return animation;
+    }
+
+    public static ObjectAnimator animateTranslateY(View view, int from, int to, long duration) {
+        ObjectAnimator translation = ObjectAnimator.ofFloat(view, "translationY", from, to);
+        translation.setDuration(duration);
+        translation.start();
+        return translation;
     }
 }

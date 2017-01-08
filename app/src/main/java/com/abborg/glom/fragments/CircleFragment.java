@@ -89,11 +89,11 @@ public class CircleFragment extends Fragment implements
         gridView.setBackgroundColor(Color.TRANSPARENT);
         gridView.setNumColumns(3);
         gridView.setColumnWidth(GridView.AUTO_FIT);
-        gridView.setVerticalSpacing(ViewUtils.getPxFromDp(getContext(), 10));
-        gridView.setHorizontalSpacing(ViewUtils.getPxFromDp(getContext(), 10));
+        gridView.setVerticalSpacing(ViewUtils.convertPxToDp(getContext(), 10));
+        gridView.setHorizontalSpacing(ViewUtils.convertPxToDp(getContext(), 10));
         gridView.setStretchMode(GridView.STRETCH_COLUMN_WIDTH);
         gridView.setGravity(Gravity.CENTER);
-        gridView.setPadding(0, ViewUtils.getPxFromDp(getContext(), (int) getResources().getDimension(R.dimen.user_avatar_padding_bottom)), 0, 0);
+        gridView.setPadding(0, ViewUtils.convertPxToDp(getContext(), (int) getResources().getDimension(R.dimen.user_avatar_padding_bottom)), 0, 0);
 
         // set the adapter for this view
         avatarAdapter = new UserAvatarAdapter(getContext(), users);

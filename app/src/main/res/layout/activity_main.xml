@@ -7,64 +7,103 @@
     android:fitsSystemWindows="true"
     tools:context=".activities.MainActivity" >
 
-    <android.support.design.widget.CoordinatorLayout
-        android:id="@+id/coordinator_layout"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent" >
 
-        <android.support.design.widget.AppBarLayout
+        <android.support.design.widget.CoordinatorLayout
+            android:id="@+id/coordinator_layout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:theme="@style/AppMaterialTheme.AppBarOverlay"
-            app:elevation="@dimen/toolbar_elevation" >
+            android:layout_height="match_parent" >
 
-            <include
-                android:id="@+id/toolbar"
-                layout="@layout/toolbar" />
-
-            <android.support.design.widget.TabLayout
-                style="@style/AppMaterialTheme.TabBarLayout"
-                android:id="@+id/tabs"
+            <android.support.design.widget.AppBarLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:tabMode="fixed"
-                app:tabGravity="fill" />
+                android:theme="@style/AppMaterialTheme.AppBarOverlay"
+                app:elevation="@dimen/toolbar_elevation" >
 
-        </android.support.design.widget.AppBarLayout>
+                <include
+                    android:id="@+id/toolbar"
+                    layout="@layout/toolbar" />
+
+                <android.support.design.widget.TabLayout
+                    style="@style/AppMaterialTheme.TabBarLayout"
+                    android:id="@+id/tabs"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:tabMode="fixed"
+                    app:tabGravity="fill" />
+
+            </android.support.design.widget.AppBarLayout>
+
+            <RelativeLayout
+                android:id="@+id/main_content"
+                android:layout_height="match_parent"
+                android:layout_width="match_parent"
+                app:layout_behavior="@string/appbar_scrolling_view_behavior" >
+
+                <ViewStub
+                    android:id="@+id/stub_notification_bar"
+                    android:inflatedId="@+id/stub_notification_bar"
+                    android:layout="@layout/notification_bar"
+                    android:layout_width="match_parent"
+                    android:layout_height="32dp" />
+
+                <android.support.v4.view.ViewPager
+                    android:id="@+id/viewpager"
+                    android:layout_below="@id/stub_notification_bar"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+            </RelativeLayout>
+
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/fab"
+                android:layout_gravity="bottom|end"
+                style="@style/FabStyle"
+                android:src="@drawable/ic_action_new" />
+
+            <RelativeLayout
+                android:id="@+id/circle_menu_layout"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" >
+            </RelativeLayout>
+
+        </android.support.design.widget.CoordinatorLayout>
 
         <RelativeLayout
-            android:id="@+id/main_content"
-            android:layout_height="match_parent"
+            android:id="@+id/category_bar"
             android:layout_width="match_parent"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior" >
+            android:layout_height="@dimen/bottom_bar_height"
+            android:background="@android:color/white"
+            android:layout_gravity="bottom" >
 
-            <ViewStub
-                android:id="@+id/stub_notification_bar"
-                android:inflatedId="@+id/stub_notification_bar"
-                android:layout="@layout/notification_bar"
-                android:layout_width="match_parent"
-                android:layout_height="32dp" />
-
-            <android.support.v4.view.ViewPager
-                android:id="@+id/viewpager"
-                android:layout_below="@id/stub_notification_bar"
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/category_recycler_view"
+                android:orientation="horizontal"
+                app:layoutManager="android.support.v7.widget.LinearLayoutManager"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
 
         </RelativeLayout>
 
-        <android.support.design.widget.FloatingActionButton
-            android:id="@+id/fab"
-            android:layout_gravity="bottom|end"
-            style="@style/FabStyle"/>
-
         <RelativeLayout
-            android:id="@+id/circle_menu_layout"
+            android:id="@+id/tag_bar"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" >
+            android:layout_height="@dimen/bottom_bar_height"
+            android:background="@android:color/white"
+            android:layout_gravity="bottom" >
+
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/tag_recycler_view"
+                android:orientation="horizontal"
+                app:layoutManager="android.support.v7.widget.LinearLayoutManager"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
         </RelativeLayout>
 
-    </android.support.design.widget.CoordinatorLayout>
+    </FrameLayout>
 
     <fragment
         android:id="@+id/fragment_drawer"

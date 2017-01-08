@@ -16,7 +16,7 @@ public class Const {
     public static final String TAB_CIRCLE = "Circle";
     public static final String TAB_MAP = "Map";
     public static final String TAB_BOARD = "Board";
-    public static final String TAB_DISCOVER = "Discover";
+    public static final String TAB_EXPLORE = "Explore";
 
     /************************
      * TEST INFO
@@ -60,6 +60,8 @@ public class Const {
     public static final String API_BOARD_ITEM = "/circle/%1$s/board/%2$s";
     public static final String API_GET_MOVIES = "/movie";
     public static final String API_SERVER_STATUS = "/";
+    public static final String API_EXPLORE = "/explore";
+    public static final String API_EXPLORE_CATEGORY = "/explore/%d";
 
     public static final String JSON_SERVER_MESSAGE = "message";
     public static final String JSON_SERVER_USERID = "user_id";
@@ -152,7 +154,7 @@ public class Const {
     public static final int MSG_ITEM_DELETED_SUCCESS = 5010;
     public static final int MSG_ITEM_DELETED_FAILED = 5011;
     public static final int MSG_INIT_SUCCESS = 5012;
-    public static final int MSG_DISCOVER_ITEM = 5013;
+    public static final int MSG_EXPLORE_ITEMS = 5013;
     public static final int MSG_PLAY_YOUTUBE_VIDEO = 5014;
     public static final int MSG_FILE_POSTED = 5015;
     public static final int MSG_FILE_POST_FAILED = 5016;
@@ -204,6 +206,7 @@ public class Const {
     public static final int MSG_GOOGLE_PLAY_SERVICES_UNAVAILABLE = 5073;
     public static final int MSG_GET_CIRCLES = 5074;
     public static final int MSG_VIEW_FILE = 5075;
+    public static final int MSG_EXPLORE_CATEGORIES = 5076;
 
     /************************
      * Mimetypes

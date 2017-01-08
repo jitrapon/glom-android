@@ -20,4 +20,6 @@ public interface MainActivityCallbacks {
     void onSetFabVisible(boolean visible);
 
     Handler getThreadHandler();
+
+    void onShowCategoryBar();
 }

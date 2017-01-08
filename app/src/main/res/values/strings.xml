@@ -280,6 +280,7 @@
 
     <!--Board -->
     <string name="label_empty_board">No items in this board\nAdd something to share!</string>
+    <string name="tag_bar_empty_label">TODO: This area will show item tags</string>
 
     <!-- Action mode -->
     <string name="title_action_mode_board_items">%d selected</string>

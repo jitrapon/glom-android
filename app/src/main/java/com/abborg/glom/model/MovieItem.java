@@ -4,88 +4,88 @@ import org.joda.time.DateTime;
 
 import java.util.List;
 
-public class Movie extends DiscoverItem {
+public class MovieItem extends ExploreItem {
 
-    String title;
-    String summary;
-    String genre;
-    String lang;
-    DateTime releaseDate;
-    String director;
-    String cast;
-    List<WatchableRating> ratings;
-    List<WatchableImage> images;
-    List<WatchableVideo> videos;
-    List<WatchableFeed> feeds;
+    private String title;
+    private String summary;
+    private String genre;
+    private String lang;
+    private DateTime releaseDate;
+    private String director;
+    private String cast;
+    private List<WatchableRating> ratings;
+    private List<WatchableImage> images;
+    private List<WatchableVideo> videos;
+    private List<WatchableFeed> feeds;
 
-    public Movie() { super(); }
+    public MovieItem() { super(); }
 
-    public Movie setId(String id) {
+    public MovieItem setId(String id) {
         this.id = id;
         return this;
     }
 
-    public Movie setCreatedTime(DateTime createdTime) {
+    public MovieItem setCreatedTime(DateTime createdTime) {
         this.createdTime = createdTime;
         return this;
     }
 
-    public Movie setUpdatedTime(DateTime updatedTime) {
+    public MovieItem setUpdatedTime(DateTime updatedTime) {
         this.updatedTime = updatedTime;
         return this;
     }
 
-    public Movie setTitle(String title) {
+    public MovieItem setTitle(String title) {
         this.title = title;
         return this;
     }
 
-    public Movie setSummary(String summary) {
+    public MovieItem setSummary(String summary) {
         this.summary = summary;
         return this;
     }
 
-    public Movie setGenre(String genre) {
+    public MovieItem setGenre(String genre) {
         this.genre = genre;
         return this;
     }
 
-    public Movie setLang(String lang) {
+    public MovieItem setLang(String lang) {
         this.lang = lang;
         return this;
     }
 
-    public Movie setReleaseDate(DateTime time) {
+    public MovieItem setReleaseDate(DateTime time) {
         this.releaseDate = time;
         return this;
     }
 
-    public Movie setDirector(String director) {
+    public MovieItem setDirector(String director) {
         this.director = director;
         return this;
     }
 
-    public Movie setCast(String cast) {
+    public MovieItem setCast(String cast) {
         this.cast = cast;
         return this;
     }
 
-    public Movie setRatings(List<WatchableRating> ratings) {
+    public MovieItem setRatings(List<WatchableRating> ratings) {
         this.ratings = ratings;
         return this;
     }
 
-    public Movie setImages(List<WatchableImage> images) {
+    public MovieItem setImages(List<WatchableImage> images) {
         this.images = images;
         return this;
     }
 
-    public Movie setVideos(List<WatchableVideo> videos) {
+    public MovieItem setVideos(List<WatchableVideo> videos) {
         this.videos = videos;
         return this;
     }
 
-    public Movie setFeeds(List<WatchableFeed> feeds) {
+    public MovieItem setFeeds(List<WatchableFeed> feeds) {
         this.feeds = feeds;
         return this;
     }
@@ -114,6 +114,6 @@ public class Movie extends DiscoverItem {
 
     @Override
     public int getType() {
-        return DiscoverItem.TYPE_MOVIE;
+        return ExploreItem.TYPE_MOVIE;
     }
 }

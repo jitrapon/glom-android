@@ -13,7 +13,7 @@ import com.abborg.glom.adapters.UserAvatarAdapter;
 import com.abborg.glom.data.DataProvider;
 import com.abborg.glom.fragments.BoardFragment;
 import com.abborg.glom.fragments.CircleFragment;
-import com.abborg.glom.fragments.DiscoverFragment;
+import com.abborg.glom.fragments.ExploreFragment;
 import com.abborg.glom.fragments.DrawerFragment;
 import com.abborg.glom.fragments.LocationFragment;
 import com.abborg.glom.hardware.camera.CameraView;
@@ -56,7 +56,7 @@ public interface ApplicationComponent {
 
     void inject(CircleFragment fragment);
 
-    void inject(DiscoverFragment fragment);
+    void inject(ExploreFragment fragment);
 
     void inject(DrawerFragment fragment);
 

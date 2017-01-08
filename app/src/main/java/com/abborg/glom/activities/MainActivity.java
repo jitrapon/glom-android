@@ -23,6 +23,7 @@ import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.view.ActionMode;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
@@ -41,24 +42,26 @@ import com.abborg.glom.R;
 import com.abborg.glom.adapters.ViewPagerAdapter;
 import com.abborg.glom.fragments.BoardFragment;
 import com.abborg.glom.fragments.CircleFragment;
-import com.abborg.glom.fragments.DiscoverFragment;
 import com.abborg.glom.fragments.DrawerFragment;
+import com.abborg.glom.fragments.ExploreFragment;
 import com.abborg.glom.fragments.LocationFragment;
 import com.abborg.glom.interfaces.ActionModeCallbacks;
 import com.abborg.glom.interfaces.BoardItemChangeListener;
+import com.abborg.glom.interfaces.CategoryBarListener;
 import com.abborg.glom.interfaces.CircleChangeListener;
 import com.abborg.glom.interfaces.CircleListListener;
 import com.abborg.glom.interfaces.CircleMenuListener;
-import com.abborg.glom.interfaces.DiscoverItemChangeListener;
+import com.abborg.glom.interfaces.ExploreItemChangeListener;
 import com.abborg.glom.interfaces.MainActivityCallbacks;
 import com.abborg.glom.interfaces.UsersChangeListener;
 import com.abborg.glom.model.BoardItem;
+import com.abborg.glom.model.Category;
 import com.abborg.glom.model.Circle;
 import com.abborg.glom.model.CircleInfo;
 import com.abborg.glom.model.CloudProvider;
-import com.abborg.glom.model.DiscoverItem;
 import com.abborg.glom.model.DrawItem;
 import com.abborg.glom.model.EventItem;
+import com.abborg.glom.model.ExploreItem;
 import com.abborg.glom.model.FileItem;
 import com.abborg.glom.model.LinkItem;
 import com.abborg.glom.model.ListItem;
@@ -69,6 +72,7 @@ import com.abborg.glom.model.User;
 import com.abborg.glom.service.RegistrationIntentService;
 import com.abborg.glom.utils.CircleTransform;
 import com.abborg.glom.utils.TaskUtils;
+import com.abborg.glom.utils.ViewUtils;
 import com.abborg.glom.views.CircleMenu;
 import com.bumptech.glide.Glide;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -83,6 +87,8 @@ import java.util.List;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
+
+import static android.R.attr.translationY;
 
 /**
  * This is the default entry point launching activity that contains all the tabs to display
@@ -114,8 +120,9 @@ public class MainActivity extends BaseActivity implements
     private List<UsersChangeListener> usersChangeListeners;
     private List<CircleChangeListener> circleChangeListeners;
     private List<BoardItemChangeListener> boardItemChangeListeners;
-    private List<DiscoverItemChangeListener> discoverItemChangeListeners;
+    private List<ExploreItemChangeListener> exploreItemChangeListeners;
     private ActionModeCallbacks actionModeCallbacks;
+    private CategoryBarListener categoryBarListener;
 
     // UI elements
     private CircleMenu circleMenu;
@@ -134,6 +141,11 @@ public class MainActivity extends BaseActivity implements
     private TextView notificationText;
     private boolean firstLaunch;
     private CoordinatorLayout mainCoordinatorLayout;
+    private Snackbar snackbar;
+    private RelativeLayout tagBar;
+    private RelativeLayout categoryBar;
+    private RecyclerView tagRecyclerView;
+    private RecyclerView categoryRecyclerView;
 
     /**********************************************************
      * VIEW INITIALIZATIONS
@@ -219,6 +231,10 @@ public class MainActivity extends BaseActivity implements
         viewPager = (ViewPager) findViewById(R.id.viewpager);
         fab = (FloatingActionButton) findViewById(R.id.fab);
         circleMenuLayout = (RelativeLayout) findViewById(R.id.circle_menu_layout);
+        tagBar = (RelativeLayout) findViewById(R.id.tag_bar);
+        tagRecyclerView = (RecyclerView) findViewById(R.id.tag_recycler_view);
+        categoryBar = (RelativeLayout) findViewById(R.id.category_bar);
+        categoryRecyclerView = (RecyclerView) findViewById(R.id.category_recycler_view);
 
         setSupportActionBar(toolbar);
 
@@ -229,14 +245,14 @@ public class MainActivity extends BaseActivity implements
         adapter = new ViewPagerAdapter(getSupportFragmentManager());
         adapter.addFragment(new BoardFragment(), Const.TAB_BOARD);
         adapter.addFragment(new LocationFragment(), Const.TAB_MAP);
-        adapter.addFragment(new DiscoverFragment(), Const.TAB_DISCOVER);
+        adapter.addFragment(new ExploreFragment(), Const.TAB_EXPLORE);
         adapter.addFragment(new CircleFragment(), Const.TAB_CIRCLE);
         viewPager.setAdapter(adapter);
 
         tabLayout.setupWithViewPager(viewPager);
         tabLayout.getTabAt(0).setIcon(R.drawable.ic_tab_event).setTag(Const.TAB_BOARD);
         tabLayout.getTabAt(1).setIcon(R.drawable.ic_tab_location).setTag(Const.TAB_MAP);
-        tabLayout.getTabAt(2).setIcon(R.drawable.ic_tab_discover).setTag(Const.TAB_DISCOVER);
+        tabLayout.getTabAt(2).setIcon(R.drawable.ic_tab_discover).setTag(Const.TAB_EXPLORE);
         tabLayout.getTabAt(3).setIcon(R.drawable.ic_tab_circle).setTag(Const.TAB_CIRCLE);
         tabLayout.setOnTabSelectedListener(
                 new TabLayout.ViewPagerOnTabSelectedListener(viewPager) {
@@ -247,6 +263,40 @@ public class MainActivity extends BaseActivity implements
                         }
                     }
                 });
+
+        final int translationY = getResources().getDimensionPixelSize(R.dimen.bottom_bar_height);
+        viewPager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
+            @Override
+            public void onPageSelected(int position) {
+                // show or hide tag bar
+                if (position != adapter.getItemIndex(Const.TAB_BOARD)) {
+                    if (((int) tagBar.getTag()) == View.VISIBLE) {
+                        ViewUtils.animateTranslateY(tagBar, 0, translationY, 200);
+                        tagBar.setTag(View.INVISIBLE);
+                    }
+                }
+                else {
+                    ViewUtils.animateTranslateY(tagBar, translationY, 0, 200);
+                    tagBar.setTag(View.VISIBLE);
+                }
+
+                // show or hide category bar
+                if (position != adapter.getItemIndex(Const.TAB_EXPLORE)) {
+                    if (((int) tagBar.getTag()) == View.VISIBLE) {
+                        ViewUtils.animateTranslateY(tagBar, 0, translationY, 200);
+                        tagBar.setTag(View.INVISIBLE);
+                    }
+                }
+                else {
+                    if (categoryBarListener != null) {
+                        if (categoryBarListener.shouldShowCategoryBar()) {
+                            ViewUtils.animateTranslateY(categoryBar, translationY, 0, 200);
+                            categoryBar.setTag(View.VISIBLE);
+                        }
+                    }
+                }
+            }
+        });
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -304,6 +354,30 @@ public class MainActivity extends BaseActivity implements
                 }
             }
         });
+
+        // set up bar
+        tagBar.setTag(View.VISIBLE);                //FIXME whether or not to set visible depends on preference's last opened tab
+        categoryBar.setTag(View.INVISIBLE);         // FIXME whether or not to set visible depends on preference's last opened tab
+        ViewCompat.setElevation(tagBar, ViewUtils.convertDpToPx(this, 40));
+        ViewCompat.setElevation(categoryBar, ViewUtils.convertDpToPx(this, 40));
+
+        // set up fab margin
+        CoordinatorLayout.LayoutParams fabParams = (CoordinatorLayout.LayoutParams) fab.getLayoutParams();
+        fabParams.setMargins(fabParams.leftMargin,
+                fabParams.topMargin,
+                fabParams.rightMargin,
+                fabParams.bottomMargin + getResources().getDimensionPixelSize(R.dimen.bottom_bar_height));
+        fab.setLayoutParams(fabParams);
+
+        // setup snackbar bottom margin
+        snackbar = Snackbar.make(mainCoordinatorLayout, "", Snackbar.LENGTH_LONG);
+        View snackbarView = snackbar.getView();
+        CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams) snackbarView.getLayoutParams();
+        params.setMargins(params.leftMargin,
+                params.topMargin,
+                params.rightMargin,
+                params.bottomMargin + getResources().getDimensionPixelSize(R.dimen.bottom_bar_height));
+        snackbarView.setLayoutParams(params);
     }
 
     @Override
@@ -482,7 +556,7 @@ public class MainActivity extends BaseActivity implements
         CircleFragment circleFragment = (CircleFragment) adapter.getItem(Const.TAB_CIRCLE);
         BoardFragment boardFragment = (BoardFragment) adapter.getItem(Const.TAB_BOARD);
         LocationFragment mapFragment = (LocationFragment) adapter.getItem(Const.TAB_MAP);
-        DiscoverFragment discoverFragment = (DiscoverFragment) adapter.getItem(Const.TAB_DISCOVER);
+        ExploreFragment exploreFragment = (ExploreFragment) adapter.getItem(Const.TAB_EXPLORE);
 
         addCircleListListener(drawerFragment);
 
@@ -499,7 +573,9 @@ public class MainActivity extends BaseActivity implements
         addBroadcastLocationListener(circleFragment);
         addBroadcastLocationListener(mapFragment);
 
-        addDiscoverItemChangeListener(discoverFragment);
+        addExploreItemChangeListener(exploreFragment);
+
+        addCategoryBarListener(exploreFragment);
 
         actionModeCallbacks = boardFragment;
     }
@@ -532,11 +608,15 @@ public class MainActivity extends BaseActivity implements
         boardItemChangeListeners.add(listener);
     }
 
-    private void addDiscoverItemChangeListener(DiscoverItemChangeListener listener) {
-        if (discoverItemChangeListeners == null) {
-            discoverItemChangeListeners = new ArrayList<>();
+    private void addExploreItemChangeListener(ExploreItemChangeListener listener) {
+        if (exploreItemChangeListeners == null) {
+            exploreItemChangeListeners = new ArrayList<>();
         }
-        discoverItemChangeListeners.add(listener);
+        exploreItemChangeListeners.add(listener);
+    }
+
+    private void addCategoryBarListener(CategoryBarListener listener) {
+        categoryBarListener = listener;
     }
 
     /**************************************************
@@ -774,8 +854,8 @@ public class MainActivity extends BaseActivity implements
                     }
                 }
 
-                Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_created_item_failed),
-                        Snackbar.LENGTH_LONG)
+
+                snackbar.setText(getResources().getString(R.string.notification_created_item_failed))
                         .setAction(getResources().getString(R.string.menu_item_try_again), new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
@@ -836,8 +916,7 @@ public class MainActivity extends BaseActivity implements
                     }
                 }
 
-                Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_updated_item_failed),
-                        Snackbar.LENGTH_LONG)
+                snackbar.setText(getResources().getString(R.string.notification_updated_item_failed))
                         .setAction(getResources().getString(R.string.menu_item_try_again), new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
@@ -870,8 +949,7 @@ public class MainActivity extends BaseActivity implements
                         }
                     }
 
-                    Snackbar.make(mainCoordinatorLayout, getResources().getQuantityString(R.plurals.notification_delete_item, 1, 1),
-                            Snackbar.LENGTH_LONG)
+                    snackbar.setText(getResources().getQuantityString(R.plurals.notification_delete_item, 1, 1))
                             .setAction(getResources().getString(R.string.menu_item_undo), new View.OnClickListener() {
                                 @Override
                                 public void onClick(View v) {
@@ -891,8 +969,7 @@ public class MainActivity extends BaseActivity implements
             case Const.MSG_ITEM_DELETED_FAILED: {
                 final BoardItem item = msg.obj==null ? null : (BoardItem) msg.obj;
 
-                Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_delete_item_failed),
-                        Snackbar.LENGTH_LONG)
+                snackbar.setText(getResources().getString(R.string.notification_delete_item_failed))
                         .setAction(getResources().getString(R.string.menu_item_try_again), new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
@@ -904,17 +981,23 @@ public class MainActivity extends BaseActivity implements
                 break;
             }
 
-            /* Request: discover items received */
-            case Const.MSG_DISCOVER_ITEM: {
-                int type = msg.arg1;
-                boolean ok = msg.arg2 == 0;
-                List<DiscoverItem> results = null;
-                if (msg.obj != null && ok) {
-                    results = (List<DiscoverItem>) msg.obj;
+            /* Request: explore category received */
+            case Const.MSG_EXPLORE_CATEGORIES: {
+                List<Category> results = msg.obj != null ? (List<Category>) msg.obj : null;
+                if (categoryBarListener != null) {
+                    categoryBarListener.onCategoryBarRequireUpdate(results, categoryRecyclerView);
                 }
 
-                if (discoverItemChangeListeners != null) {
-                    for (DiscoverItemChangeListener listener : discoverItemChangeListeners) {
+                break;
+            }
+
+            /* Request: explore items received */
+            case Const.MSG_EXPLORE_ITEMS: {
+                int type = msg.arg1;
+                List<ExploreItem> results = msg.obj != null ? (List<ExploreItem>) msg.obj : null;
+
+                if (exploreItemChangeListeners != null) {
+                    for (ExploreItemChangeListener listener : exploreItemChangeListeners) {
                         listener.onItemsReceived(type, results);
                     }
                 }
@@ -1000,8 +1083,8 @@ public class MainActivity extends BaseActivity implements
                     }
                 }
 
-                Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_created_item_failed),
-                        Snackbar.LENGTH_LONG).show();
+                snackbar.setText(getResources().getString(R.string.notification_created_item_failed))
+                        .show();
                 break;
             }
 
@@ -1148,8 +1231,8 @@ public class MainActivity extends BaseActivity implements
                     }
                 }
 
-                Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_updated_item_failed),
-                        Snackbar.LENGTH_LONG).show();
+                snackbar.setText(getResources().getString(R.string.notification_updated_item_failed))
+                        .show();
                 break;
             }
 
@@ -1326,8 +1409,7 @@ public class MainActivity extends BaseActivity implements
                     }
                 }
 
-                Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_updated_item_failed),
-                        Snackbar.LENGTH_LONG)
+                snackbar.setText(getResources().getString(R.string.notification_updated_item_failed))
                         .setAction(getResources().getString(R.string.menu_item_try_again), new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
@@ -1398,8 +1480,7 @@ public class MainActivity extends BaseActivity implements
                     }
                 }
 
-                Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_created_item_failed),
-                        Snackbar.LENGTH_LONG)
+                snackbar.setText(getResources().getString(R.string.notification_created_item_failed))
                         .setAction(getResources().getString(R.string.menu_item_try_again), new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
@@ -1457,8 +1538,7 @@ public class MainActivity extends BaseActivity implements
                     }
                 }
 
-                Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_updated_item_failed),
-                        Snackbar.LENGTH_LONG)
+                snackbar.setText(getResources().getString(R.string.notification_updated_item_failed))
                         .setAction(getResources().getString(R.string.menu_item_try_again), new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
@@ -1516,8 +1596,7 @@ public class MainActivity extends BaseActivity implements
                     }
                 }
 
-                Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_created_item_failed),
-                        Snackbar.LENGTH_LONG)
+                snackbar.setText(getResources().getString(R.string.notification_created_item_failed))
                         .setAction(getResources().getString(R.string.menu_item_try_again), new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
@@ -1574,8 +1653,7 @@ public class MainActivity extends BaseActivity implements
                     }
                 }
 
-                Snackbar.make(mainCoordinatorLayout, getResources().getString(R.string.notification_updated_item_failed),
-                        Snackbar.LENGTH_LONG)
+                snackbar.setText(getResources().getString(R.string.notification_updated_item_failed))
                         .setAction(getResources().getString(R.string.menu_item_try_again), new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
@@ -1690,6 +1768,14 @@ public class MainActivity extends BaseActivity implements
     @Override
     public Handler getThreadHandler() {
         return handler;
+    }
+
+    @Override
+    public void onShowCategoryBar() {
+        if (((int)categoryBar.getTag()) == View.INVISIBLE) {
+            ViewUtils.animateTranslateY(categoryBar, translationY, 0, 200);
+            categoryBar.setTag(View.VISIBLE);
+        }
     }
 
     /**********************************************************
