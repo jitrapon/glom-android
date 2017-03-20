@@ -1419,6 +1419,8 @@ public class DataProvider {
                     info.put(Const.JSON_SERVER_EVENT_NOTE, event.getNote());
                 else
                     info.put(Const.JSON_SERVER_EVENT_NOTE, JSONObject.NULL);
+                body.put(Const.JSON_SERVER_EVENT_FULL_DAY, false);
+                body.put(Const.JSON_SERVER_EVENT_REPEAT, null);
                 body.put(Const.JSON_SERVER_INFO, info);
 
                 httpClient.post("Create EventItem", String.format(Const.API_BOARD, circle.getId()), body,

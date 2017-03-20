@@ -2,7 +2,7 @@ package com.abborg.glom;
 
 public class Const {
 
-//    public static final String HOST_ADDRESS = "http://putsreq.com/KJVQCdWbHg0xXf2aHWf1";
+    //    public static final String HOST_ADDRESS = "http://putsreq.com/KJVQCdWbHg0xXf2aHWf1";
     public static String HOST_ADDRESS = BuildConfig.SERVER_URL;
     public static String AWS_IDENTIY_POOL_ID = BuildConfig.AWS_COGNITO_IDENTITY_POOL;
     public static String AWS_S3_BUCKET = BuildConfig.AWS_S3_BUCKET;
@@ -87,6 +87,8 @@ public class Const {
     public static final String JSON_SERVER_EVENT_END_TIME = "end_time";
     public static final String JSON_SERVER_EVENT_PLACE_ID = "place_id";
     public static final String JSON_SERVER_EVENT_NOTE = "note";
+    public static final String JSON_SERVER_EVENT_FULL_DAY = "is_full_day";
+    public static final String JSON_SERVER_EVENT_REPEAT = "repeat";
     public static final String JSON_SERVER_ERROR = "error";
     public static final String JSON_SERVER_TIME = "time";
     public static final String JSON_SERVER_MESSAGE_ID = "id";
