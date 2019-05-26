@@ -1,7 +1,7 @@
 package io.jitrapon.glom.base.util
 
 import android.content.Context
-import com.google.android.gms.maps.model.LatLng
+import com.google.android.libraries.maps.model.LatLng
 import io.jitrapon.glom.R
 import io.jitrapon.glom.base.util.MapStyle.styleEncodedUri
 

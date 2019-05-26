@@ -3,11 +3,11 @@ package io.jitrapon.glom.base.util
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.annotation.RawRes
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MapStyleOptions
-import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.libraries.maps.CameraUpdateFactory
+import com.google.android.libraries.maps.GoogleMap
+import com.google.android.libraries.maps.model.LatLng
+import com.google.android.libraries.maps.model.MapStyleOptions
+import com.google.android.libraries.maps.model.MarkerOptions
 
 @SuppressLint("MissingPermission")
 fun GoogleMap.setStyle(context: Context, @RawRes mapResId: Int,

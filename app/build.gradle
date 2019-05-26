@@ -159,7 +159,16 @@ dependencies {
     api "io.reactivex.rxjava2:rxandroid:$rootProject.rxAndroidVersion"
 
     // google play services
-    api "com.google.android.libraries.places:places:$rootProject.placeVersion"
+    api name: "maps-sdk-$rootProject.mapsVersion", ext: 'aar'
+    api name: "places-maps-sdk-$rootProject.mapsVersion", ext: 'aar'
+    implementation 'com.google.android.gms:play-services-basement:16.2.0'
+    implementation 'com.google.android.gms:play-services-base:16.1.0'
+    implementation 'com.google.android.gms:play-services-gcm:16.1.0'
+    implementation 'com.google.android.gms:play-services-location:16.0.0'
+    implementation 'com.android.volley:volley:1.1.1'
+    implementation 'com.google.code.gson:gson:2.8.5'
+    implementation 'com.google.android.gms:play-services-tasks:16.0.1'
+    implementation 'com.google.android.gms:play-services-clearcut:16.0.0'
 
     // networking
     api ("com.squareup.retrofit2:retrofit:$rootProject.retrofitVersion") {

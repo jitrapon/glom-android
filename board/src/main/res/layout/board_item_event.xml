@@ -147,7 +147,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/event_card_source_image" />
 
-        <com.google.android.gms.maps.MapView
+        <com.google.android.libraries.maps.MapView
             android:visibility="gone"
             android:id="@+id/event_card_map"
             android:layout_width="0dp"

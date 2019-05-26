@@ -9,7 +9,7 @@ import androidx.core.text.bold
 import androidx.core.text.buildSpannedString
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.google.android.gms.maps.model.LatLng
+import com.google.android.libraries.maps.model.LatLng
 import com.google.android.libraries.places.api.model.Place
 import io.jitrapon.glom.base.component.PlaceProvider
 import io.jitrapon.glom.base.model.*

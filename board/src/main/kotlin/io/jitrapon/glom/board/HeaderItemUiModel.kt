@@ -1,6 +1,6 @@
 package io.jitrapon.glom.board
 
-import com.google.android.gms.maps.model.LatLng
+import com.google.android.libraries.maps.model.LatLng
 import io.jitrapon.glom.base.model.AndroidString
 import io.jitrapon.glom.base.model.UiModel
 import io.jitrapon.glom.board.item.BoardItemUiModel

@@ -7,26 +7,25 @@ import android.location.Geocoder
 import android.text.TextUtils
 import androidx.annotation.WorkerThread
 import androidx.collection.ArrayMap
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.tasks.Tasks
+import com.google.android.libraries.maps.model.LatLng
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.AutocompletePrediction
 import com.google.android.libraries.places.api.model.AutocompleteSessionToken
 import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.model.RectangularBounds
-import com.google.android.libraries.places.api.model.TypeFilter
 import com.google.android.libraries.places.api.net.FetchPhotoRequest
 import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
 import com.google.android.libraries.places.api.net.PlacesClient
-import com.google.android.libraries.places.internal.it
 import io.jitrapon.glom.R
 import io.jitrapon.glom.base.util.AppLogger
 import io.jitrapon.glom.base.util.get
 import io.reactivex.Single
 import java.util.Arrays
 import java.util.Locale
+import kotlin.collections.ArrayList
+import kotlin.collections.set
 
 /**
  * Lifecycle-aware components that abstracts away logic to retrieve Place information
@@ -216,7 +215,7 @@ class GooglePlaceProvider(context: Context) : PlaceProvider {
                         val address = geocoder.getFromLocationName(query, 1).get(0, null)
                         result[query] = address
 
-                        AppLogger.d("Found geocoding result for query=$query")
+                        AppLogger.d("Found geocoding result for query=$query, address=$address")
                     }
                     single.onSuccess(result)
                 }

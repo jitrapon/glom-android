@@ -11,11 +11,11 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.MapView
-import com.google.android.gms.maps.MapsInitializer
-import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.model.LatLng
+import com.google.android.libraries.maps.GoogleMap
+import com.google.android.libraries.maps.MapView
+import com.google.android.libraries.maps.MapsInitializer
+import com.google.android.libraries.maps.OnMapReadyCallback
+import com.google.android.libraries.maps.model.LatLng
 import io.jitrapon.glom.base.model.UiModel
 import io.jitrapon.glom.base.ui.widget.recyclerview.HorizontalSpaceItemDecoration
 import io.jitrapon.glom.base.ui.widget.recyclerview.ItemTouchHelperCallback

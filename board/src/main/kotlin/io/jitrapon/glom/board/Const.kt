@@ -1,6 +1,6 @@
 package io.jitrapon.glom.board
 
-import com.google.android.gms.maps.model.LatLng
+import com.google.android.libraries.maps.model.LatLng
 
 /**
  * All constants for this module that should not belong in Strings.xml

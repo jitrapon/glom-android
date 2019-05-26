@@ -1,7 +1,7 @@
 package io.jitrapon.glom.base.util
 
 import android.location.Address
-import com.google.android.gms.maps.model.LatLng
+import com.google.android.libraries.maps.model.LatLng
 
 val Address.fullAddress: String?
     get() = with(this) {

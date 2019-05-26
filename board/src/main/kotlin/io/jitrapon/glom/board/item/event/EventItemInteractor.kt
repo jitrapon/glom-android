@@ -4,7 +4,7 @@ import android.text.TextUtils
 import android.util.SparseArray
 import androidx.annotation.WorkerThread
 import androidx.core.util.set
-import com.google.android.gms.maps.model.LatLng
+import com.google.android.libraries.maps.model.LatLng
 import com.google.android.libraries.places.api.model.Place
 import io.jitrapon.glom.base.component.PlaceProvider
 import io.jitrapon.glom.base.datastructure.LimitedBooleanArray

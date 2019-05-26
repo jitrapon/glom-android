@@ -10,9 +10,9 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.AdapterView
 import androidx.lifecycle.Observer
-import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.model.LatLng
+import com.google.android.libraries.maps.GoogleMap
+import com.google.android.libraries.maps.OnMapReadyCallback
+import com.google.android.libraries.maps.model.LatLng
 import io.jitrapon.glom.base.model.UiModel
 import io.jitrapon.glom.base.ui.widget.GlomAutoCompleteTextView
 import io.jitrapon.glom.base.ui.widget.recyclerview.HorizontalSpaceItemDecoration
